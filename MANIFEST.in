@@ -1,0 +1,10 @@
+include README.md
+include requirements.txt
+
+# Include taco source in sdist
+recursive-include src/taco/ *
+exclude src/taco/.git
+exclude src/taco/.gitignore
+
+# Exclude taco binaries in wheel
+recursive-exclude src/tensora/taco *

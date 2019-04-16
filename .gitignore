@@ -1,0 +1,12 @@
+*.egg-info
+.tox
+.idea
+__pycache__
+.coverage
+.coverage.*
+htmlcov
+*.pyc
+build
+venv
+dist
+src/tensora/taco
