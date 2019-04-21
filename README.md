@@ -39,7 +39,7 @@ x = Tensor.from_lol([0, -1, 2])
 
 y = evaluate('y(i) = A(i,j) * x(j)', 'd', A=A, x=x)
 
-assert y == Tensor.from_lol([2,4])
+assert y == Tensor.from_lol([2,8])
 ``` 
 
 
