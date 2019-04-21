@@ -85,11 +85,6 @@ tensor_lib = tensor_cdefs.dlopen(None)
 
 @lru_cache(maxsize=256)
 def taco_kernel(expression: str, formats: FrozenSet[Tuple[str, str]]) -> Tuple[List[str], Any]:
-    import os
-    import sys
-    print(__file__)
-    print(os.getcwd())
-    print(sys.path)
     """Call taco with expression and compile resulting function.
 
     Given an expression and a set of formats:

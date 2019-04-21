@@ -37,7 +37,7 @@ elements = {
 A = Tensor.from_dok(elements, dimensions=(2,3), format='ds')
 x = Tensor.from_lol([0, -1, 2])
 
-y = evaluate('y(i) = A(i,j) * x(j)', A=A, x=x)
+y = evaluate('y(i) = A(i,j) * x(j)', 'd', A=A, x=x)
 
 assert y == Tensor.from_lol([2,4])
 ``` 
