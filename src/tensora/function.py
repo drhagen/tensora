@@ -51,12 +51,10 @@ class PureTensorMethod:
 
         # Compile taco function
         all_formats = {self.assignment.target.name: output_format, **input_formats}
-        all_mode_orderings = {name: format.ordering for name, format in all_formats.items()}
-        expression_string = assignment.reorder_indexes(all_mode_orderings).deparse()
-        format_strings = frozenset((parameter_name, ''.join(mode.character for mode in format.modes))
+        format_strings = frozenset((parameter_name, format_to_taco_format(format))
                                    for parameter_name, format in all_formats.items()
                                    if format.order != 0)  # Taco does not like formats for scalars
-        self.parameter_order, self.cffi_lib = taco_kernel(expression_string, format_strings)
+        self.parameter_order, self.cffi_lib = taco_kernel(assignment.deparse(), format_strings)
 
     def __call__(self, *args, **kwargs):
         # Handle arguments like normal Python function
@@ -142,3 +140,7 @@ def evaluate(assignment: str, output_format: str, **inputs: Tensor) -> Tensor:
     function = tensor_method(assignment, input_formats, output_format)
 
     return function(**inputs)
+
+
+def format_to_taco_format(format: Format):
+    return ''.join(mode.character for mode in format.modes) + ':' + ','.join(map(str, format.ordering))

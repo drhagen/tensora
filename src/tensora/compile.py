@@ -4,7 +4,6 @@ __all__ = ['taco_kernel', 'allocate_taco_structure', 'taco_structure_to_cffi', '
 import re
 import subprocess
 import tempfile
-from functools import lru_cache
 from pathlib import Path
 from typing import List, Tuple, FrozenSet, Any
 from weakref import WeakKeyDictionary
@@ -83,7 +82,6 @@ tensor_cdefs.set_source('_main', '')
 tensor_lib = tensor_cdefs.dlopen(None)
 
 
-@lru_cache(maxsize=256)
 def taco_kernel(expression: str, formats: FrozenSet[Tuple[str, str]]) -> Tuple[List[str], Any]:
     """Call taco with expression and compile resulting function.
 
@@ -100,8 +98,8 @@ def taco_kernel(expression: str, formats: FrozenSet[Tuple[str, str]]) -> Tuple[L
         expression: An expression that can parsed by taco.
         formats: A frozen set of pairs of strings. It must be a frozen set because `lru_cache` requires that the
         arguments be hashable and therefore immutable. The first element of each pair is a variable name; the second
-        element is the format in taco format (e.g. 'dd', 'dss'). Scalar variables must not be listed because taco does
-        not understand them having a format.
+        element is the format in taco format (e.g. 'dd:1,0', 'dss:0,1,2'). Scalar variables must not be listed because
+        taco does not understand them having a format.
 
     Returns:
         A tuple where the first element is the list of variable names in the order they appear in the function

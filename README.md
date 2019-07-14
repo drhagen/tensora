@@ -94,7 +94,7 @@ Convert a list of coordinates and a corresponding list of values to a `Tensor`.
 
 * `format`has the same default as `Tensor.from_dok`, dense for an many dimensions as needed to fit the non-zeros.
 
-### `from_aos`: struct of arrays
+### `from_soa`: struct of arrays
 
 ```python
 Tensor.from_soa(soa: Tuple[Iterable[int], ...], values: Iterable[float], *, 

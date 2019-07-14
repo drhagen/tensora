@@ -32,20 +32,6 @@ class Node:
         """
         pass
 
-    @abstractmethod
-    def reorder_indexes(self, mode_orderings: Dict[str, List[int]]):
-        """Transform expression with different order of indexes.
-
-        Args:
-            mode_orderings: A mapping where each key is a variable name and each value is a list of integers. The ith
-            element j in the list is the jth index of the variable is not the ith index of the variable. Not every
-            variable needs to be listed; those that are not listed will be unchanged.
-
-        Returns:
-             A copy of this `Assignment` with the indexes in each tensor possible with a new ordering.
-        """
-        pass
-
     def __str__(self):
         return self.deparse()
 
@@ -60,9 +46,6 @@ class Literal(Expression):
 
     def index_participants(self) -> Dict[str, Set[Tuple[str, int]]]:
         return {}
-
-    def reorder_indexes(self, mode_orderings: Dict[str, List[int]]):
-        return self
 
 
 @dataclass(frozen=True)
@@ -92,11 +75,6 @@ class Variable(Expression):
     def variable_orders(self) -> Dict[str, int]:
         return {self.name: self.order}
 
-    def assert_reorder_indexes_of_correct_order(self, new_ordering):
-        if len(new_ordering) != self.order:
-            raise ValueError(f'Cannot reorder indexes of variable {self.name} of order {self.order} with mode ordering '
-                             f'{new_ordering} with length {len(new_ordering)}')
-
     def index_participants(self) -> Dict[str, Set[Tuple[str, int]]]:
         participants = {}
         for i, index_name in enumerate(self.indexes):
@@ -115,14 +93,6 @@ class Scalar(Variable):
     def deparse(self):
         return self.name
 
-    def reorder_indexes(self, mode_orderings: Dict[str, List[int]]):
-        new_ordering = mode_orderings.get(self.name)
-        if new_ordering is not None:
-            self.assert_reorder_indexes_of_correct_order(new_ordering)
-            return self
-        else:
-            return self
-
 
 @dataclass(frozen=True)
 class Tensor(Variable):
@@ -131,14 +101,6 @@ class Tensor(Variable):
 
     def deparse(self):
         return self.name + '(' + ','.join(self.indexes) + ')'
-
-    def reorder_indexes(self, mode_orderings: Dict[str, List[int]]):
-        new_ordering = mode_orderings.get(self.name)
-        if new_ordering is not None:
-            self.assert_reorder_indexes_of_correct_order(new_ordering)
-            return Tensor(self.name, [self.indexes[i] for i in new_ordering])
-        else:
-            return self
 
 
 def merge_index_participants(left: Expression, right: Expression):
@@ -162,9 +124,6 @@ class Add(Expression):
     def index_participants(self) -> Dict[str, Set[Tuple[str, int]]]:
         return merge_index_participants(self.left, self.right)
 
-    def reorder_indexes(self, mode_orderings: Dict[str, List[int]]):
-        return Add(self.left.reorder_indexes(mode_orderings), self.right.reorder_indexes(mode_orderings))
-
 
 @dataclass(frozen=True)
 class Subtract(Expression):
@@ -179,9 +138,6 @@ class Subtract(Expression):
 
     def index_participants(self) -> Dict[str, Set[Tuple[str, int]]]:
         return merge_index_participants(self.left, self.right)
-
-    def reorder_indexes(self, mode_orderings: Dict[str, List[int]]):
-        return Subtract(self.left.reorder_indexes(mode_orderings), self.right.reorder_indexes(mode_orderings))
 
 
 @dataclass(frozen=True)
@@ -208,9 +164,6 @@ class Multiply(Expression):
     def index_participants(self) -> Dict[str, Set[Tuple[str, int]]]:
         return merge_index_participants(self.left, self.right)
 
-    def reorder_indexes(self, mode_orderings: Dict[str, List[int]]):
-        return Multiply(self.left.reorder_indexes(mode_orderings), self.right.reorder_indexes(mode_orderings))
-
 
 @dataclass(frozen=True)
 class Assignment(Node):
@@ -225,9 +178,6 @@ class Assignment(Node):
 
     def index_participants(self) -> Dict[str, Set[Tuple[str, int]]]:
         return merge_index_participants(self.target, self.expression)
-
-    def reorder_indexes(self, mode_orderings: Dict[str, List[int]]) -> 'Assignment':
-        return Assignment(self.target.reorder_indexes(mode_orderings), self.expression.reorder_indexes(mode_orderings))
 
     def is_mutating(self) -> bool:
         """Does the target participate in the expression.

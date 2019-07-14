@@ -67,26 +67,3 @@ def test_variable_order(string, output):
 ])
 def test_index_participants(string, output):
     assert parse(string).index_participants() == output
-
-
-@pytest.mark.parametrize('string,new_order,output', [
-    ('y(i) = 0.5 * (b - a) * (x1(i,j) + x2(i,j)) * z(j)', {'x1': [1, 0]},
-     'y(i) = 0.5 * (b - a) * (x1(j,i) + x2(i,j)) * z(j)'),
-    ('B2(i,k) = B(i,j) * B(j,k)', {'B': [1, 0]},
-     'B2(i,k) = B(j,i) * B(k,j)'),
-    ('y(i) = x(i, j, k) * a(j) * b(k)', {'x': [2, 0, 1]},
-     'y(i) = x(k, i, j) * a(j) * b(k)'),
-    ('a = x(i) * x(i)', {'a': [], 'x': [0]},
-     'a = x(i) * x(i)')
-])
-def test_reorder_indexes(string, new_order, output):
-    assert parse(string).reorder_indexes(new_order) == parse(output)
-
-
-@pytest.mark.parametrize('string,new_order', [
-    ('y(i) = A(i,j) * x(j)', {'A': [0, 1, 2]}),
-    ('y(i) = a * x(i)', {'a': [1, 0]}),
-])
-def test_reorder_indexes_bad(string, new_order):
-    with pytest.raises(ValueError):
-        _ = parse(string).reorder_indexes(new_order)
