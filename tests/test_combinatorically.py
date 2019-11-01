@@ -76,3 +76,17 @@ def test_matrix_vector_product(dense1, dense2, format1, format2, format_out):
     if format_out == 's':
         pytest.skip('taco fails when output is sparse')
     assert_same_as_dense('out(i) = in1(i,j) * in2(j)', format_out, in1=(dense1, format1), in2=(dense2, format2))
+
+
+@pytest.mark.parametrize('dense1', [[[0, 2, 4], [0, -1, 0]], [[0, 0, 0], [0, 0, 0]]])
+@pytest.mark.parametrize('dense2', [[[-1, 3.5], [0, 0], [4, 0]], [[0, 0], [0, 0], [0, 0]]])
+@pytest.mark.parametrize('dense3', [[[-3, 0], [7, 0]], [[0, 0], [0, 0]]])
+@pytest.mark.parametrize('format1', ['dd', 'ds'])
+@pytest.mark.parametrize('format2', ['dd'])
+@pytest.mark.parametrize('format3', ['dd', 'ds'])
+@pytest.mark.parametrize('format_out', ['dd'])
+def test_matrix_multiply_add(dense1, dense2, dense3, format1, format2, format3, format_out):
+    assert_same_as_dense('out(i,k) = in1(i,j) * in2(j,k) + in3(i,k)', format_out,
+                         in1=(dense1, format1),
+                         in2=(dense2, format2),
+                         in3=(dense3, format3))
