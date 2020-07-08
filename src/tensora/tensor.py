@@ -12,7 +12,7 @@ class Tensor:
     """Tensor with arbitrarily dense or sparse dimensions.
 
     This is a thin Python wrapper around a taco structure stored in C and managed by cffi. An instance should be
-    constructed via the `Tensor.from_*` static methods or with the `tensor` convenience function.
+    constructed via the `Tensor.from_*` static methods.
     """
 
     def __init__(self, cffi_tensor):
@@ -257,7 +257,7 @@ class Tensor:
             return NotImplemented
 
     def __repr__(self):
-        return f'tensor({str(self.to_dok())}, dimensions={self.dimensions}, format={self.format.deparse()})'
+        return f'Tensor.from_dok({str(self.to_dok())}, dimensions={self.dimensions}, format={self.format.deparse()!r})'
 
 
 def lol_to_coordinates_and_values(data: Any, keep_zero: bool = False
@@ -363,8 +363,8 @@ def evaluate_binary_operator(left: Union[Tensor, Real], right: Union[Tensor, Rea
 
     if isinstance(left, Tensor) and isinstance(right, Tensor):
         if left.dimensions != right.dimensions:
-            raise ValueError(f'Cannot add tensor with dimensions {left.dimensions} to tensor with dimensions '
-                             f'{right.dimensions}')
+            raise ValueError(f'Cannot apply operator {operator} between tensor with dimensions {left.dimensions} and '
+                             f'tensor with dimensions {right.dimensions}')
 
         if operator == '*':
             # Output has density of least dense tensor
@@ -475,7 +475,7 @@ def default_aos_dimensions(coordinates: Iterable[Tuple[int, ...]]) -> Tuple[int,
     for coordinate in coordinates:
         if order is None:
             order = len(coordinate)
-            maximums = coordinate
+            maximums = list(coordinate)
         else:
             if len(coordinate) != order:
                 raise ValueError(f'All coordinates must be the same length; the first coordinate has length'
