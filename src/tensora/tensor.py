@@ -323,7 +323,7 @@ def tree_to_indices_and_values(tree: Any, modes: Tuple[Mode, ...], dimensions: T
         if modes[i_level] == Mode.dense:
             iter_next_level = range(dimensions[i_level])
         elif modes[i_level] == Mode.compressed:
-            idx = [key for key in node.keys()]
+            idx = sorted([key for key in node.keys()])
             indexes[i_level][0].append(indexes[i_level][0][-1] + len(idx))
             indexes[i_level][1].extend(idx)
 

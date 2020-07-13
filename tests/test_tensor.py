@@ -2,10 +2,9 @@ import pytest
 
 from tensora import Mode, Format, Tensor
 
-
 # The example tensors from the original taco paper:
 # http://tensor-compiler.org/kjolstad-oopsla17-tensor-compiler.pdf
-@pytest.mark.parametrize('format,indices,vals', [
+figure_5_taco_data = [
     ('d0d1', [[], []], [6, 0, 9, 8, 0, 0, 0, 0, 5, 0, 0, 7]),
     ('s0d1', [[[0, 2], [0, 2]], []], [6, 0, 9, 8, 5, 0, 0, 7]),
     ('d0s1', [[], [[0, 3, 3, 5], [0, 2, 3, 0, 3]]], [6, 9, 8, 5, 7]),
@@ -14,10 +13,48 @@ from tensora import Mode, Format, Tensor
     ('s1d0', [[[0, 3], [0, 2, 3]], []], [6, 0, 5, 9, 0, 0, 8, 0, 7]),
     ('d1s0', [[], [[0, 2, 2, 3, 5], [0, 2, 0, 0, 2]]], [6, 5, 9, 8, 7]),
     ('s1s0', [[[0, 3], [0, 2, 3]], [[0, 2, 3, 5], [0, 2, 0, 0, 2]]], [6, 5, 9, 8, 7]),
-])
+]
+
+
+@pytest.mark.parametrize('format,indices,vals', figure_5_taco_data)
 def test_figure_5(format, indices, vals):
     data = [[6, 0, 9, 8], [0, 0, 0, 0], [5, 0, 0, 7]]
     A = Tensor.from_lol(data, dimensions=(3, 4), format=format)
+
+    assert A.taco_indices == indices
+    assert A.taco_vals == vals
+
+
+@pytest.mark.parametrize('format,indices,vals', figure_5_taco_data)
+@pytest.mark.parametrize('permutation', [
+    [0, 1, 2, 3, 4],
+    [4, 3, 2, 1, 0],
+    [0, 4, 3, 2, 1],
+    [2, 1, 3, 4, 0],
+])
+def test_unsorted_coordinates(format, indices, vals, permutation):
+    data = [
+        ((0, 0), 6),
+        ((0, 2), 9),
+        ((0, 3), 8),
+        ((2, 0), 5),
+        ((2, 3), 7),
+    ]
+
+    permutated_data = [data[i] for i in permutation]
+    coordinates, values = zip(*permutated_data)
+
+    A = Tensor.from_aos(coordinates, values, dimensions=(3, 4), format=format)
+
+    assert A.taco_indices == indices
+    assert A.taco_vals == vals
+
+    A = Tensor.from_soa(zip(*coordinates), values, dimensions=(3, 4), format=format)
+
+    assert A.taco_indices == indices
+    assert A.taco_vals == vals
+
+    A = Tensor.from_dok(dict(permutated_data), dimensions=(3, 4), format=format)
 
     assert A.taco_indices == indices
     assert A.taco_vals == vals
