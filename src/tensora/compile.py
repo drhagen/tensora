@@ -338,5 +338,5 @@ def take_ownership_of_arrays(cffi_tensor) -> None:
     memory_holder['vals'] = tensor_cdefs.gc(cffi_tensor.vals, tensor_lib.free)
 
 
-def weakly_increasing(l: List[int]):
-    return all(x <= y for x, y in zip(l, l[1:]))
+def weakly_increasing(list: List[int]):
+    return all(x <= y for x, y in zip(list, list[1:]))
