@@ -73,6 +73,22 @@ class Contract(IterationGraph):
 
 
 @dataclass(frozen=True)
+class Scratch(IterationGraph):
+    layers: List[LatticeLeaf]
+    next: IterationGraph
+
+    def exhaust_tensor(self, tensor: TensorLeaf):
+        new_layers = [layer for layer in self.layers if layer.tensor.variable != tensor]
+        return Scratch(new_layers, self.next.exhaust_tensor(tensor))
+
+    def all_dense(self):
+        return self.next.all_dense()
+
+    def is_sparse_output(self):
+        return self.next.is_sparse_output()
+
+
+@dataclass(frozen=True)
 class IterationVariable(IterationGraph):
     index_variable: str
     output: Optional[LatticeLeaf]

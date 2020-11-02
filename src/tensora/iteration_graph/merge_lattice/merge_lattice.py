@@ -74,9 +74,6 @@ class LatticeLeaf(Lattice):
     def value_from_crd(self):
         return f'i_{self.tensor.variable.to_string()}_{self.layer}'
 
-    def tensor_to_pos(self):
-        return f'{self.tensor.variable.name}_{self.layer}_pos'
-
     def pos_name(self):
         return f'{self.tensor.variable.name}_{self.layer}_pos'
 
@@ -94,6 +91,9 @@ class LatticeLeaf(Lattice):
 
     def vals_capacity_name(self):
         return f'{self.tensor.variable.name}_vals_capacity'
+
+    def dimension_name(self):
+        return f'{self.tensor.indexes[self.layer]}_dim'
 
     def is_dense(self) -> bool:
         return self.mode == Mode.dense

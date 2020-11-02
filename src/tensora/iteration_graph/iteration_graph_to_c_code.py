@@ -4,7 +4,7 @@ from enum import Enum, auto
 from functools import singledispatch
 from typing import List
 
-from .iteration_graph import IterationGraph, IterationVariable, TerminalExpression, Contract, Add
+from .iteration_graph import IterationGraph, IterationVariable, TerminalExpression, Contract, Add, Scratch
 from .identifiable_expression import to_c_code, layer_pointer
 from .merge_lattice import LatticeLeaf
 from ..format import Mode
@@ -60,6 +60,70 @@ class AccumulatorOutput(Output):
         source = SourceBuilder()
         source.append(f'{self.name} += {right_hand_side};')
         return source
+
+
+@dataclass(frozen=True)
+class ScratchOutput(Output):
+    layers: List[LatticeLeaf]
+
+    def write_declarations(self):
+        return SourceBuilder()
+
+    def write_assignment(self, right_hand_side: str):
+        source = SourceBuilder()
+        source.include(self.ravel_indexes([layer.layer_pointer() for layer in self.layers], self.sums_position_name()))
+        source.append(f'{self.sums_name()}[{self.sums_position_name()}] += {right_hand_side};')
+
+        source.append(f'if ({self.next_name()}[{self.sums_position_name()}] < 0) {{')
+        with source.indented():
+            source.append(f'{self.next_name()}[{self.sums_position_name()}] = {self.head_name()};')
+            source.append(f'{self.head_name()} = {self.sums_position_name()};')
+            source.append(f'{self.nnz_name()}++;')
+        source.append('}')
+        return source
+
+    def ravel_indexes(self, indexes: List[str], index: str):
+        source = SourceBuilder()
+        dimensions_so_far = []
+        cumulative_sum = []
+        for layer, index_i in zip(self.layers, indexes):
+            cumulative_sum.append(' * '.join([index_i] + dimensions_so_far))
+            dimensions_so_far.append(layer.dimension_name())
+
+        ravel_index = ' + '.join(cumulative_sum)
+        source.append(f'int32_t {index} = {ravel_index};')
+
+        return source
+
+    def unravel_indexes(self, index: str, indexes: List[str]):
+        source = SourceBuilder()
+        source.append(f'int32_t remaining_{index} = {index};')
+        for layer, index_i in zip(self.layers, indexes):
+            source.append(f'int32_t {index_i} = remaining_{index} % {layer.dimension_name()};')
+            source.append(f'remaining_{index} = remaining_{index} / {layer.dimension_name()};')
+
+        return source
+
+    def next_name(self):
+        return 'next_' + '_'.join(layer.tensor.variable.to_string() for layer in self.layers)
+
+    def sums_name(self):
+        return 'sums_' + '_'.join(layer.tensor.variable.to_string() for layer in self.layers)
+
+    def head_name(self):
+        return 'head_' + '_'.join(layer.tensor.variable.to_string() for layer in self.layers)
+
+    def old_head_name(self):
+        return 'old_head_' + '_'.join(layer.tensor.variable.to_string() for layer in self.layers)
+
+    def nnz_name(self):
+        return 'nnz_' + '_'.join(layer.tensor.variable.to_string() for layer in self.layers)
+
+    def sums_position_name(self):
+        return f'p_{self.sums_name()}'
+
+    def old_sums_position_name(self):
+        return f'old_p_{self.sums_name()}'
 
 
 @singledispatch
@@ -128,8 +192,8 @@ def write_sparse_initialization(leaf: LatticeLeaf):
     else:
         end_index = f'{start_index}+1'
 
-    source.append(f'int32_t {index_variable} = {leaf.tensor_to_pos()}[{start_index}];')
-    source.append(f'int32_t {index_variable}_end = {leaf.tensor_to_pos()}[{end_index}];')
+    source.append(f'int32_t {index_variable} = {leaf.pos_name()}[{start_index}];')
+    source.append(f'int32_t {index_variable}_end = {leaf.pos_name()}[{end_index}];')
 
     return source
 
@@ -340,6 +404,68 @@ def iteration_variable_to_c_code(graph: IterationVariable, output: Output, kerne
             end_index = f'{previous_pointer}+1'
 
         source.append(f'{pos}[{end_index}] = {pointer};')
+
+    return source
+
+
+@iteration_graph_to_c_code.register(Scratch)
+def scratch_node_to_code(graph: Scratch, output: Output, kernel_type: KernelType):
+    source = SourceBuilder()
+
+    new_output = ScratchOutput(graph.layers)
+    source.include(new_output.write_declarations())
+
+    if kernel_type.is_assembly():
+        source.append(f'int32_t {new_output.head_name()} = -2;')
+        source.append(f'int32_t {new_output.nnz_name()} = 0;')
+        source.append('')
+
+    source.include(iteration_graph_to_c_code(graph.next, new_output, kernel_type))
+
+    source.append('')
+
+    if kernel_type.is_assembly():
+        source.append(f'while (1) {{')
+        with source.indented():
+            source.append(f'if ({new_output.head_name()} < 0) {{')
+            with source.indented():
+                source.append('break;')
+            source.append('}')
+            source.append('else {')
+            with source.indented():
+                indexes = [layer.layer_pointer() for layer in new_output.layers]
+                source.include(new_output.unravel_indexes(new_output.sums_position_name(), indexes))
+                for layer, index in zip(graph.layers, indexes):
+                    source.append(f'{layer.crd_name()}[{layer.layer_pointer()}] = {index};')
+
+                # Reset scratch space
+                source.append(f'int32_t {new_output.old_head_name()} = {new_output.head_name()};')
+                source.append(f'{new_output.head_name()} = {new_output.next_name()}[{new_output.old_head_name()}];')
+                source.append(f'{new_output.next_name()}[{new_output.old_head_name()}] = -1;')
+
+            source.append('}')
+        source.append('}')
+
+    # Sort indexes
+
+    if len(graph.layers) > 1:
+        raise NotImplementedError('Scratch space larger than 1 dimension is not fully supported')
+
+    # Compress indexes
+    # TODO: All but the top level need to be compressed
+
+    # Write vals
+    # TODO: ravel indexes to properly clear higher dimensional scratch space
+    only_layer = graph.layers[0]
+    source.include(write_sparse_initialization(only_layer))
+    source.append(f'while ({only_layer.layer_pointer()} < {only_layer.layer_pointer()}_end) {{')
+    with source.indented():
+        source.include(output.write_assignment(f'{new_output.sums_name()}[{new_output.head_name()}]'))
+
+        # Reset scratch space
+        source.append(f'{new_output.sums_name()}[{only_layer.layer_pointer()}] = 0.0;')
+        source.append(f'{only_layer.layer_pointer()}++;')
+    source.append('}')
 
     return source
 
