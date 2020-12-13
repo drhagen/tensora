@@ -55,40 +55,6 @@ class Multiply(IterationGraph):
 
 
 @dataclass(frozen=True)
-class Contract(IterationGraph):
-    next: IterationGraph
-
-    def exhaust_tensor(self, tensor: TensorLeaf):
-        new_next = self.next.exhaust_tensor(tensor)
-        if new_next is not None:
-            return replace(self, next=new_next)
-        else:
-            return None
-
-    def all_dense(self):
-        return True
-
-    def is_sparse_output(self):
-        return False
-
-
-@dataclass(frozen=True)
-class Scratch(IterationGraph):
-    layers: List[LatticeLeaf]
-    next: IterationGraph
-
-    def exhaust_tensor(self, tensor: TensorLeaf):
-        new_layers = [layer for layer in self.layers if layer.tensor.variable != tensor]
-        return Scratch(new_layers, self.next.exhaust_tensor(tensor))
-
-    def all_dense(self):
-        return self.next.all_dense()
-
-    def is_sparse_output(self):
-        return self.next.is_sparse_output()
-
-
-@dataclass(frozen=True)
 class IterationVariable(IterationGraph):
     index_variable: str
     output: Optional[LatticeLeaf]

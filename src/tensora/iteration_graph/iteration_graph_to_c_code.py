@@ -1,12 +1,18 @@
+from __future__ import annotations
+
 from abc import abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from enum import Enum, auto
 from functools import singledispatch
-from typing import List
+from pathlib import Path
+from typing import List, Optional, Set, Tuple
 
-from .iteration_graph import IterationGraph, IterationVariable, TerminalExpression, Contract, Add, Scratch
-from .identifiable_expression import to_c_code, layer_pointer
+from .identifiable_expression.ast import Tensor
+from .iteration_graph import IterationGraph, IterationVariable, TerminalExpression, Add
+from .identifiable_expression import to_c_code
 from .merge_lattice import LatticeLeaf
+from .names import dimension_name, pos_name, crd_name, vals_name, crd_capacity_name, pos_capacity_name, \
+    vals_capacity_name, layer_pointer, value_from_crd, bucket_name
 from ..format import Mode
 from .problem import Problem
 from ..source_builder import SourceBuilder
@@ -23,107 +29,369 @@ class KernelType(Enum):
 
 class Output:
     @abstractmethod
-    def write_declarations(self):
+    def write_assignment(self, right_hand_side: str, kernel_type: KernelType) -> SourceBuilder:
         raise NotImplementedError()
 
     @abstractmethod
-    def write_assignment(self, right_hand_side: str):
+    def next_output(self, iteration_output: Optional[LatticeLeaf]) -> Tuple[Output, SourceBuilder]:
         raise NotImplementedError()
 
 
 @dataclass(frozen=True)
-class TensorOutput(Output):
-    output: LatticeLeaf
+class AppendOutput(Output):
+    output: Tensor
+    next_layer: int
 
-    def write_declarations(self):
+    def vals_pointer(self):
+        return layer_pointer(self.output.variable, len(self.output.indexes) - 1)
+
+    def write_declarations(self, kernel_type: KernelType):
         source = SourceBuilder()
-        source.append(f'int32_t {self.output.layer_pointer()} = 0;')
+
+        target_name = self.output.variable.name
+
+        if kernel_type.is_assembly():
+            all_dense = True
+            for i, mode in enumerate(self.output.modes):
+                if mode == Mode.dense:
+                    pass
+                elif mode == Mode.compressed:
+                    # How pos is handled depends on what the previous modes were
+                    if all_dense:
+                        # If the previous dimensions were all dense, then the size of pos in this dimension is fixed
+                        if i == 0:
+                            nnz_string = '1'
+                        else:
+                            nnz_string = " * ".join(f"{target_name}->dimensions[{i_prev}]" for i_prev in range(i))
+
+                        capacity = f'({nnz_string} + 1)'
+                    else:
+                        capacity = pos_capacity_name(target_name, i)
+                        source.append(f'int32_t {capacity} = 1024*1024;')
+                    source.append(f'{pos_name(target_name, i)} = (int32_t*)malloc(sizeof(int32_t) * {capacity});')
+                    source.append(f'{pos_name(target_name, i)}[0] = 0;')
+
+                    capacity = crd_capacity_name(target_name, i)
+                    source.append(f'int32_t {capacity} = 1024*1024;')
+                    source.append(f'{crd_name(target_name, i)} = (int32_t*)malloc(sizeof(int32_t) * {capacity}')
+                    source.append(f'int32_t {layer_pointer(self.output.variable, i)} = 0;')
+
+                    all_dense = False
+                else:
+                    raise NotImplementedError
+
+            if all_dense:
+                vals_size = ' * '.join(f'{target_name}->dimensions[{i}]' for i in range(self.output.order))
+            else:
+                vals_size = '1024*1024'
+            vals_capacity = vals_capacity_name(target_name)
+            source.append(f'int32_t {vals_capacity} = {vals_size};')
+            source.append(f'{target_name}_vals = (double*)malloc(sizeof(double) * {vals_capacity});')
+        else:
+            # Provide the vals pointer even when not doing assembly
+            source.append(f'int32_t {self.vals_pointer()} = 0;')
+
         return source
 
-    def write_assignment(self, right_hand_side: str):
+    def write_assignment(self, right_hand_side: str, kernel_type: KernelType):
         source = SourceBuilder()
-        source.append(f'{self.output.vals_name()}[{self.output.layer_pointer()}] = {right_hand_side};')
-        source.append(f'{self.output.layer_pointer()}++;')
+
+        if self.next_layer != self.output.order:
+            raise RuntimeError()
+
+        source.append(f'{vals_name(self.output.variable.name)}'
+                      f'[{layer_pointer(self.output.variable, self.next_layer)}] = {right_hand_side};')
+
         return source
+
+    def write_cleanup(self, kernel_type: KernelType):
+        source = SourceBuilder()
+
+        target_name = self.output.variable.name
+
+        if kernel_type.is_assembly():
+            for i, mode in enumerate(self.output.modes):
+                if mode == Mode.dense:
+                    pass
+                elif mode == Mode.compressed:
+                    source.append(f'{target_name}->indices[{i}][0] = (unit8_t*){pos_name(target_name, i)};')
+                    source.append(f'{target_name}->indices[{i}][1] = (unit8_t*){crd_name(target_name, i)};')
+                else:
+                    raise NotImplementedError
+            source.append(f'{target_name}->vals = (uint8_t*){vals_name(target_name)};')
+
+        return source
+
+    @abstractmethod
+    def next_output(self, iteration_output: Optional[LatticeLeaf]) -> Tuple[Output, SourceBuilder]:
+        if iteration_output is None:
+            next_output = HashOutput(self.output, self.next_layer)
+            return next_output, next_output.write_declarations()
+        elif self.next_layer == iteration_output.layer:
+            return AppendOutput(self.output, self.next_layer + 1), SourceBuilder()
+        else:
+            # Wrong layer was encountered
+            dense_only_remaining = all(mode == Mode.dense for mode in self.output.modes[self.next_layer:])
+            if dense_only_remaining:
+                next_output = BucketOutput(self.output, list(range(self.next_layer, len(self.output.modes))))
+            else:
+                next_output = HashOutput(self.output, self.next_layer)
+            return next_output, next_output.write_declarations()
 
 
 @dataclass(frozen=True)
-class AccumulatorOutput(Output):
-    name: str
+class HashOutput(Output):
+    output: Tensor
+    starting_layer: int
+    unfulfilled: Set[int]
 
-    def write_declarations(self):
+    def __init__(self, output: Tensor, starting_layer: int, unfulfilled: Set[int] = None):
+        object.__setattr__(self, 'output', output)
+        object.__setattr__(self, 'starting_layer', starting_layer)
+        if unfulfilled is not None:
+            object.__setattr__(self, 'unfulfilled', unfulfilled)
+        else:
+            object.__setattr__(self, 'unfulfilled', set(range(starting_layer, self.final_dense_index())))
+
+    def final_dense_index(self):
+        final_dense_index = self.output.order
+        for i in reversed(range(self.starting_layer, self.output.order)):
+            if self.output.modes[i] == Mode.compressed:
+                break
+            else:
+                final_dense_index = i
+
+        return final_dense_index
+
+    def write_declarations(self) -> SourceBuilder:
         source = SourceBuilder()
-        source.append(f'double {self.name} = 0.0;')
+
+        modes = self.output.modes[self.starting_layer:]
+        dim_names = [dimension_name(variable) for variable in self.output.indexes[self.starting_layer:]]
+
+        source.add_dependency('hash', Path(__file__).parent.joinpath('tensora_hash_table.c').read_text())
+
+        source.append(f'hash_table_t {self.name()};')
+        source.append(f'taco_mode_t[{len(modes)}] {self.name()}_modes = {{{", ".join(mode.name for mode in modes)}}};')
+        source.append(f'uint32_t[{len(modes)}] {self.name()}_dims = {{{", ".join(dim_names)}}};')
+        source.append(f'hash_construct(&{self.name()}, {len(modes)}, '
+                      f'{self.final_dense_index() - self.starting_layer}, &{self.name()}_modes, '
+                      f'&{self.name()}_dims);')
+        source.append('')
+
         return source
 
-    def write_assignment(self, right_hand_side: str):
+    def write_assignment(self, right_hand_side: str, kernel_type: KernelType) -> SourceBuilder:
+        raise RuntimeError()
+
+    def write_cleanup(self, kernel_type: KernelType) -> SourceBuilder:
         source = SourceBuilder()
-        source.append(f'{self.name} += {right_hand_side};')
-        return source
 
-
-@dataclass(frozen=True)
-class ScratchOutput(Output):
-    layers: List[LatticeLeaf]
-
-    def write_declarations(self):
-        return SourceBuilder()
-
-    def write_assignment(self, right_hand_side: str):
-        source = SourceBuilder()
-        source.include(self.ravel_indexes([layer.layer_pointer() for layer in self.layers], self.sums_position_name()))
-        source.append(f'{self.sums_name()}[{self.sums_position_name()}] += {right_hand_side};')
-
-        source.append(f'if ({self.next_name()}[{self.sums_position_name()}] < 0) {{')
+        # Argsort the elements by key
+        source.append(f'uint32_t[] {self.name()}_order = malloc(sizeof(uint32_t) * {self.name()}->count);')
+        source.append(f'for (uint32_t i = 0; i < {self.name()}->count; i++) {{')
         with source.indented():
-            source.append(f'{self.next_name()}[{self.sums_position_name()}] = {self.head_name()};')
-            source.append(f'{self.head_name()} = {self.sums_position_name()};')
-            source.append(f'{self.nnz_name()}++;')
+            source.append(f'{self.name()}_order[i] = i;')
         source.append('}')
+        source.append(f'qsort_r({self.name()}_order, {self.name()}->count, sizeof(uint32_t), hash_comparator, '
+                      f'&{self.name()});')
+
+        # Extract indexes recursively
+        source.append('i_order = 0;')
+        source.include(self.write_layer_cleanup(self.starting_layer, kernel_type))
+
+        # Free temporaries
+        source.append(f'free({self.name()}_order);')
+
         return source
 
-    def ravel_indexes(self, indexes: List[str], index: str):
+    def write_layer_cleanup(self, layer: int, kernel_type: KernelType):
+        source = SourceBuilder()
+
+        if layer < self.final_dense_index():
+            layer_index = value_from_crd(self.output.variable, layer)
+            dimension_size = dimension_name(self.output.indexes[layer])
+            position = layer_pointer(self.output.variable, layer)
+            if layer == 0:
+                previous_position = '0'
+            else:
+                previous_position = layer_pointer(self.output.variable, layer - 1)
+            end_position = {self.end_position(layer)}
+            next_end_position = {self.end_position(layer + 1)}
+
+            # Reusable search code
+            search_source = SourceBuilder()
+            search_source.append(f'uint32_t {next_end_position} = 0;')
+            search_source.append(f'while ({next_end_position} < {end_position}) {{')
+            with search_source.indented():
+                search_source.append(f'if ({self.name()}->keys[{self.name()}_order[i_order]][{layer}] '
+                                     f'!= {layer_index}) {{')
+                with search_source.indented():
+                    search_source.append('break;')
+                search_source.append('}')
+                search_source.append(f'{next_end_position}++;')
+            search_source.append('}')
+
+            # Keys phase
+            if self.output.modes[layer] == Mode.dense:
+                source.append(f'for (uint32_t {layer_index} = 0; {layer_index} < {dimension_size}; {layer_index}++)')
+                with source.indented():
+                    source.append(f'uint32_t {position} = {previous_position} + {layer_index};')
+                    source.include(search_source)
+                    source.include(self.write_layer_cleanup(layer + 1, kernel_type))
+
+            elif self.output.modes[layer] == Mode.compressed:
+                source.append(f'while (i_order < {end_position}) {{')
+                with source.indented():
+                    source.append(f'uint23_t {layer_index} = '
+                                  f'{self.name()}->keys[{self.name()}_order[i_order]][{layer}];')
+                    source.include(search_source)
+                    source.include(self.write_layer_cleanup(layer + 1, kernel_type))
+
+                if kernel_type.is_assembly():
+                    source.include(write_crd_assembly(LatticeLeaf(self.output, layer)))
+
+            if kernel_type.is_assembly():
+                source.include(write_pos_assembly(LatticeLeaf(self.output, layer)))
+
+            if layer == self.final_dense_index() - 1:
+                with source.indented():
+                    source.append(f'i_order++')
+            source.append('}')  # end loop
+        elif layer < self.output.order:
+            # Bucket phase
+            layer_index = value_from_crd(self.output.variable, layer)
+            dimension_size = dimension_name(self.output.indexes[layer])
+            position = layer_pointer(self.output.variable, layer)
+            bucket_position = f'{position}_bucket'
+            if layer == 0:
+                previous_position = '0'
+                previous_bucket_position = '0'
+            else:
+                previous_position = layer_pointer(self.output.variable, layer - 1)
+                previous_bucket_position = f'{previous_position}_bucket'
+
+            source.append(f'for (uint32_t {layer_index} = 0; {layer_index} < {dimension_size}; {layer_index}++) {{')
+            with source.indented():
+                source.append(f'uint32_t {position} = {previous_position} + {layer_index};')
+                source.append(f'uint32_t {bucket_position} = {previous_bucket_position} + {layer_index};')
+                source.include(self.write_layer_cleanup(layer + 1, kernel_type))
+            source.append('}')
+        elif layer == self.output.order:
+            # Final phase
+            vals = vals_name(self.output.variable.name)
+            if layer == 0:
+                previous_position = '0'
+                previous_bucket_position = '0'
+            else:
+                previous_position = layer_pointer(self.output.variable, layer - 1)
+                previous_bucket_position = f'{previous_position}_bucket'
+            bucket = f'{self.name()}_bucket'
+            source.append(f'{vals}[{previous_position}] = {bucket}[{previous_bucket_position}];')
+
+        return source
+
+    def next_output(self, iteration_output: Optional[LatticeLeaf]) -> Tuple[Output, SourceBuilder]:
+        if iteration_output is None:
+            return self, SourceBuilder()
+        else:
+            next_unfulfilled = self.unfulfilled - {iteration_output.layer}
+            if len(next_unfulfilled) == 0:
+                final_dense_index = self.final_dense_index()
+
+                next_output = BucketOutput(self.output, list(range(final_dense_index, self.output.order)))
+
+                # Write declaration of bucket
+                source = SourceBuilder()
+
+                key_names = [value_from_crd(self.output.name, layer)
+                             for layer in range(self.starting_layer, final_dense_index)]
+
+                source.append(f'uint32_t[] {self.name()}_key = {{{", ".join(key_names)}}};')
+                source.include(next_output.write_declarations(f'hash_get_bucket(&{self.name()}, &{self.name()}_key)'))
+                source.append('')
+
+                return next_output, source
+            else:
+                return replace(self, unfulfilled=next_unfulfilled), SourceBuilder()
+
+    def name(self):
+        return f'hash_table_{layer_pointer(self.output.variable.name, self.starting_layer)}'
+
+    def start_position(self, layer: int):
+        if layer < 0:
+            return '0'
+        else:
+            return f'p_{self.name()}_{layer}_start'
+
+    def end_position(self, layer: int):
+        if layer < 0:
+            return f'{self.name()}->count'
+        else:
+            return f'p_{self.name()}_{layer}_start'
+
+
+@dataclass(frozen=True)
+class BucketOutput(Output):
+    output: Tensor
+    layers: List[int]
+    unfulfilled: Set[int]
+
+    def __init__(self, output: Tensor, layers: List[int], unfulfilled: Set[int] = None):
+        object.__setattr__(self, 'output', output)
+        object.__setattr__(self, 'layers', layers)
+        if unfulfilled is not None:
+            object.__setattr__(self, 'unfulfilled', unfulfilled)
+        else:
+            unfulfilled = {layer for layer in layers if output.modes[layer] == Mode.compressed}
+            object.__setattr__(self, 'unfulfilled', unfulfilled)
+
+    def write_declarations(self, right_hand_side: str) -> SourceBuilder:
+        source = SourceBuilder()
+        source.append(f'double[] {self.name()} = {right_hand_side};')
+        return source
+
+    def next_output(self, iteration_output: Optional[LatticeLeaf]) -> Tuple[Output, SourceBuilder]:
+        if iteration_output is None:
+            return self, SourceBuilder()
+        else:
+            next_unfulfilled = self.unfulfilled - {iteration_output.layer}
+            return replace(self, unfulfilled=next_unfulfilled), SourceBuilder()
+
+    def write_assignment(self, right_hand_side: str, kernel_type: KernelType):
+        source = SourceBuilder()
+        source.include(self.ravel_indexes(
+            [dimension_name(self.output.indexes[layer]) for layer in self.layers],
+            [layer_pointer(self.output.variable.name, layer) for layer in self.layers],
+            self.position_name(),
+        ))
+        source.append(f'{self.name()}[{self.position_name()}] += {right_hand_side};')
+        return source
+
+    def ravel_indexes(self, dimensions: List[str], indexes: List[str], index: str):
         source = SourceBuilder()
         dimensions_so_far = []
         cumulative_sum = []
-        for layer, index_i in zip(self.layers, indexes):
+        for dim_i, index_i in zip(dimensions, indexes):
             cumulative_sum.append(' * '.join([index_i] + dimensions_so_far))
-            dimensions_so_far.append(layer.dimension_name())
+            dimensions_so_far.append(dim_i)
 
-        ravel_index = ' + '.join(cumulative_sum)
+        if len(cumulative_sum) == 0:
+            ravel_index = '0'
+        else:
+            ravel_index = ' + '.join(cumulative_sum)
         source.append(f'int32_t {index} = {ravel_index};')
 
         return source
 
-    def unravel_indexes(self, index: str, indexes: List[str]):
-        source = SourceBuilder()
-        source.append(f'int32_t remaining_{index} = {index};')
-        for layer, index_i in zip(self.layers, indexes):
-            source.append(f'int32_t {index_i} = remaining_{index} % {layer.dimension_name()};')
-            source.append(f'remaining_{index} = remaining_{index} / {layer.dimension_name()};')
+    def write_cleanup(self, kernel_type: KernelType):
+        return SourceBuilder()
 
-        return source
+    def name(self):
+        return bucket_name(self.output.variable.name, self.layers)
 
-    def next_name(self):
-        return 'next_' + '_'.join(layer.tensor.variable.to_string() for layer in self.layers)
-
-    def sums_name(self):
-        return 'sums_' + '_'.join(layer.tensor.variable.to_string() for layer in self.layers)
-
-    def head_name(self):
-        return 'head_' + '_'.join(layer.tensor.variable.to_string() for layer in self.layers)
-
-    def old_head_name(self):
-        return 'old_head_' + '_'.join(layer.tensor.variable.to_string() for layer in self.layers)
-
-    def nnz_name(self):
-        return 'nnz_' + '_'.join(layer.tensor.variable.to_string() for layer in self.layers)
-
-    def sums_position_name(self):
-        return f'p_{self.sums_name()}'
-
-    def old_sums_position_name(self):
-        return f'old_p_{self.sums_name()}'
+    def position_name(self):
+        return f'p_{self.name()}'
 
 
 @singledispatch
@@ -198,12 +466,13 @@ def write_sparse_initialization(leaf: LatticeLeaf):
     return source
 
 
-def write_crd_assembly(output: LatticeLeaf, index_variable: str):
+def write_crd_assembly(output: LatticeLeaf):
     source = SourceBuilder()
 
     pointer = output.layer_pointer()
     capacity = output.crd_capacity_name()
     crd = output.crd_name()
+    index_variable = output.tensor.indexes[output.layer]
 
     source.append(f'if ({pointer} >= {capacity}) {{')
     with source.indented():
@@ -213,6 +482,22 @@ def write_crd_assembly(output: LatticeLeaf, index_variable: str):
 
     source.append(f'{crd}[{pointer}] = {index_variable};')
     source.append(f'{pointer}++;')
+
+    return source
+
+
+def write_pos_assembly(output: LatticeLeaf) -> SourceBuilder:
+    source = SourceBuilder()
+    pointer = output.layer_pointer()
+    pos = output.pos_name()
+    previous_pointer = output.previous_layer_pointer()
+
+    if previous_pointer == '0':
+        end_index = '1'
+    else:
+        end_index = f'{previous_pointer}+1'
+
+    source.append(f'{pos}[{end_index}] = {pointer};')
 
     return source
 
@@ -244,7 +529,7 @@ def write_pos_allocation(output: LatticeLeaf):
     if len(dense_dimensions) == 0:
         source.append(f'if ({output.layer_pointer()}{bonus} >= {capacity}) {{')
         with source.indented():
-            source.append(f'{capacity} *= {capacity};')
+            source.append(f'{capacity} *= 2;')
             source.append(f'{array} = ({type}*)realloc({array}, sizeof({type}) * {capacity});')
         source.append('}')
     else:
@@ -265,6 +550,10 @@ def iteration_variable_to_c_code(graph: IterationVariable, output: Output, kerne
 
     # If this node is_dense, then every index needs to be iterated over
     is_dense = graph.lattice.is_dense()
+
+    # Compute the next output
+    next_output, next_output_declarations = output.next_output(graph.output)
+    source.include(next_output_declarations)
 
     ##################
     # Initialization #
@@ -291,7 +580,7 @@ def iteration_variable_to_c_code(graph: IterationVariable, output: Output, kerne
             while_criteria = [f'{graph.index_variable} < {graph.index_variable}_dim']
         else:
             while_criteria = [f'{leaf.layer_pointer()} < {leaf.layer_pointer()}_end' for leaf in sparse_subnode_leaves]
-        source.append(f'while({" && ".join(while_criteria)}) {{')
+        source.append(f'while ({" && ".join(while_criteria)}) {{')
 
         with source.indented():
             ##########################
@@ -317,6 +606,8 @@ def iteration_variable_to_c_code(graph: IterationVariable, output: Output, kerne
                     source.append(f'int32_t {pointer} = {graph.index_variable};')
                 else:
                     source.append(f'int32_t {pointer} = {previous_pointer} * {dimension_name(graph.index_variable)};')
+            if len(dense_subnode_leaves) > 0:
+                source.append('')
 
             ###############
             # Subsubnodes #
@@ -325,12 +616,18 @@ def iteration_variable_to_c_code(graph: IterationVariable, output: Output, kerne
             for i, subsubnode in enumerate(subsubnodes):
                 sparse_subsubnode_leaves = subsubnode.lattice.sparse_leaves()
 
+                ###################################
+                # Allocate space for pos and vals #
+                ###################################
+                if kernel_type.is_assembly() and graph.is_sparse_output():
+                    source.include(write_pos_allocation(graph.output))
+
                 ############################
                 # Branch on sparse matches #
                 ############################
                 if len(sparse_subsubnode_leaves) == 0:
                     # Elide branch if there are no sparse layers
-                    source.include(iteration_graph_to_c_code(subsubnode.next, output, kernel_type))
+                    source.include(iteration_graph_to_c_code(subsubnode.next, next_output, kernel_type))
                 else:
                     equalities = [f'{leaf.value_from_crd()} == {graph.index_variable}'
                                   for leaf in sparse_subsubnode_leaves]
@@ -350,16 +647,10 @@ def iteration_variable_to_c_code(graph: IterationVariable, output: Output, kerne
                             next_pointer = graph.next.output.layer_pointer()
                             source.append(f'int32_t {next_pointer}_begin = {next_pointer};')
 
-                        ###################################
-                        # Allocate space for pos and vals #
-                        ###################################
-                        if kernel_type.is_assembly() and graph.is_sparse_output():
-                            source.include(write_pos_allocation(graph.output))
-
                         #####################
                         # Invoke next layer #
                         #####################
-                        source.include(iteration_graph_to_c_code(subsubnode.next, output, kernel_type))
+                        source.include(iteration_graph_to_c_code(subsubnode.next, next_output, kernel_type))
 
                         ##########################
                         # Advance output pointer #
@@ -369,10 +660,10 @@ def iteration_variable_to_c_code(graph: IterationVariable, output: Output, kerne
                                 next_pointer = graph.next.output.layer_pointer()
                                 source.append(f'if ({next_pointer} > {next_pointer}_begin) {{')
                                 with source.indented():
-                                    source.include(write_crd_assembly(graph.output, graph.index_variable))
+                                    source.include(write_crd_assembly(graph.output))
                                 source.append('}')
                             else:
-                                source.include(write_crd_assembly(graph.output, graph.index_variable))
+                                source.include(write_crd_assembly(graph.output))
                         elif graph.is_sparse_output() \
                                 and (not isinstance(graph.next, IterationVariable) or graph.next.output is None):
                             source.append(f'{graph.output.layer_pointer()}++;')
@@ -394,78 +685,7 @@ def iteration_variable_to_c_code(graph: IterationVariable, output: Output, kerne
     # Write output position #
     #########################
     if kernel_type.is_assembly() and graph.is_sparse_output():
-        pointer = graph.output.layer_pointer()
-        pos = graph.output.pos_name()
-        previous_pointer = graph.output.previous_layer_pointer()
-
-        if previous_pointer == '0':
-            end_index = '1'
-        else:
-            end_index = f'{previous_pointer}+1'
-
-        source.append(f'{pos}[{end_index}] = {pointer};')
-
-    return source
-
-
-@iteration_graph_to_c_code.register(Scratch)
-def scratch_node_to_code(graph: Scratch, output: Output, kernel_type: KernelType):
-    source = SourceBuilder()
-
-    new_output = ScratchOutput(graph.layers)
-    source.include(new_output.write_declarations())
-
-    if kernel_type.is_assembly():
-        source.append(f'int32_t {new_output.head_name()} = -2;')
-        source.append(f'int32_t {new_output.nnz_name()} = 0;')
-        source.append('')
-
-    source.include(iteration_graph_to_c_code(graph.next, new_output, kernel_type))
-
-    source.append('')
-
-    if kernel_type.is_assembly():
-        source.append(f'while (1) {{')
-        with source.indented():
-            source.append(f'if ({new_output.head_name()} < 0) {{')
-            with source.indented():
-                source.append('break;')
-            source.append('}')
-            source.append('else {')
-            with source.indented():
-                indexes = [layer.layer_pointer() for layer in new_output.layers]
-                source.include(new_output.unravel_indexes(new_output.sums_position_name(), indexes))
-                for layer, index in zip(graph.layers, indexes):
-                    source.append(f'{layer.crd_name()}[{layer.layer_pointer()}] = {index};')
-
-                # Reset scratch space
-                source.append(f'int32_t {new_output.old_head_name()} = {new_output.head_name()};')
-                source.append(f'{new_output.head_name()} = {new_output.next_name()}[{new_output.old_head_name()}];')
-                source.append(f'{new_output.next_name()}[{new_output.old_head_name()}] = -1;')
-
-            source.append('}')
-        source.append('}')
-
-    # Sort indexes
-
-    if len(graph.layers) > 1:
-        raise NotImplementedError('Scratch space larger than 1 dimension is not fully supported')
-
-    # Compress indexes
-    # TODO: All but the top level need to be compressed
-
-    # Write vals
-    # TODO: ravel indexes to properly clear higher dimensional scratch space
-    only_layer = graph.layers[0]
-    source.include(write_sparse_initialization(only_layer))
-    source.append(f'while ({only_layer.layer_pointer()} < {only_layer.layer_pointer()}_end) {{')
-    with source.indented():
-        source.include(output.write_assignment(f'{new_output.sums_name()}[{new_output.head_name()}]'))
-
-        # Reset scratch space
-        source.append(f'{new_output.sums_name()}[{only_layer.layer_pointer()}] = 0.0;')
-        source.append(f'{only_layer.layer_pointer()}++;')
-    source.append('}')
+        source.include(write_pos_assembly(graph.output))
 
     return source
 
@@ -487,59 +707,22 @@ def add_node_to_c_code(graph: Add, output: Output, kernel_type: KernelType):
     return source
 
 
-@iteration_graph_to_c_code.register(Contract)
-def iteration_variable_to_c_code(graph: Contract, output: Output, kernel_type: KernelType):
-    new_output = AccumulatorOutput('output')
-    source = SourceBuilder()
-    source.include(new_output.write_declarations())
-    source.include(iteration_graph_to_c_code(graph.next, new_output, kernel_type))
-    source.include(output.write_assignment('output'))
-    return source
-
-
 @iteration_graph_to_c_code.register(TerminalExpression)
 def to_c_code_terminal_expression(graph: TerminalExpression, output: Output, kernel_type: KernelType):
     source = SourceBuilder()
 
-    source.include(output.write_assignment(to_c_code(graph.expression)))
+    source.include(output.write_assignment(to_c_code(graph.expression), kernel_type))
     return source
 
 
-def dimension_name(index_variable: str):
-    return f'{index_variable}_dim'
-
-
-def pos_name(tensor: str, layer: int):
-    return f'{tensor}_{layer}_pos'
-
-
-def crd_name(tensor: str, layer: int):
-    return f'{tensor}_{layer}_crd'
-
-
-def vals_name(tensor: str):
-    return f'{tensor}_vals'
-
-
-def crd_capacity_name(tensor: str, layer: int):
-    return f'{tensor}_{layer}_crd_capacity'
-
-
-def pos_capacity_name(tensor: str, layer: int):
-    return f'{tensor}_{layer}_pos_capacity'
-
-
-def vals_capacity_name(tensor: str):
-    return f'{tensor}_vals_capacity'
-
-
 def generate_c_code(problem: Problem, graph: IterationGraph, kernel_type: KernelType):
+    source = SourceBuilder()
+
     target_name = problem.assignment.target.name
 
     tensor_names = [target_name] + list(problem.input_formats.keys())
 
-    # Emit headers
-    source = SourceBuilder()
+    # Function declaration
     source.append(f"int evaluate({', '.join(f'taco_tensor_t *{name}' for name in tensor_names)}) {{")
 
     with source.indented():
@@ -561,57 +744,18 @@ def generate_c_code(problem: Problem, graph: IterationGraph, kernel_type: Kernel
 
         source.append('')
 
-        # Allocate memory for target
-        if kernel_type.is_assembly():
-            all_dense = True
-            for i, mode in enumerate(problem.output_format.modes):
-                if mode == Mode.dense:
-                    pass
-                elif mode == Mode.compressed:
-                    # How pos is handled depends on what the previous modes were
-                    if all_dense:
-                        # If the previous dimensions were all dense, then the size of pos in this dimension is fixed
-                        if i == 0:
-                            nnz_string = '1'
-                        else:
-                            nnz_string = " * ".join(f"{target_name}->dimensions[{i_prev}]" for i_prev in range(i))
+        output = AppendOutput(problem.assignment.target, 0)
+        source.include(output.write_declarations(kernel_type))
+        source.append('')
 
-                        capacity = f'({nnz_string} + 1)'
-                    else:
-                        capacity = pos_capacity_name(target_name, i)
-                        source.append(f'int32_t {capacity} = 1048576;')
-                    source.append(f'{pos_name(target_name, i)} = (int32_t*)malloc(sizeof(int32_t) * {capacity});')
-                    source.append(f'{target_name}->indices[{i}][0] = (unit8_t*){pos_name(target_name, i)};')
-                    source.append(f'{pos_name(target_name, i)}[0] = 0;')
-
-                    capacity = crd_capacity_name(target_name, i)
-                    source.append(f'int32_t {capacity} = 1048576;')
-                    source.append(f'{crd_name(target_name, i)} = (int32_t*)malloc(sizeof(int32_t) * {capacity}')
-                    source.append(f'{target_name}->indices[{i}][1] = (unit8_t*){crd_name(target_name, i)};')
-                    source.append(f'int32_t {layer_pointer(problem.assignment.target.variable, i)} = 0;')
-
-                    all_dense = False
-                else:
-                    raise NotImplementedError
-
-            if all_dense:
-                vals_size = ' * '.join(f'{target_name}->dimensions[{i}]' for i in range(problem.output_format.order))
-            else:
-                vals_size = vals_capacity_name(target_name)
-                source.append(f'int32_t {vals_size} = 1048576;')
-            source.append(f'{target_name}_vals = (double*)malloc(sizeof(double) * {vals_size});')
-            source.append(f'{target_name}->vals = (uint8_t*){target_name}_vals;')
-
-            source.append('')
-
-        output = TensorOutput(LatticeLeaf(problem.assignment.target, problem.output_format.order - 1))
-        source.include(output.write_declarations())
         source.include(iteration_graph_to_c_code(graph, output, kernel_type))
+        source.append('')
 
+        source.include(output.write_cleanup(kernel_type))
         source.append('')
 
         source.append('return 0;')
 
-    source.append('}')
+    source.append('}')  # end function
 
     return source

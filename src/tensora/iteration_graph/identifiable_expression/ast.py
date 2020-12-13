@@ -59,6 +59,10 @@ class Tensor(Variable):
     indexes: Tuple[str, ...]
     modes: Tuple[Mode, ...]
 
+    @property
+    def order(self):
+        return len(self.indexes)
+
 
 @dataclass(frozen=True)
 class Add(Expression):

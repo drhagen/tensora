@@ -140,6 +140,13 @@ class LatticeLeaf(Lattice):
         elif self.mode == Mode.compressed:
             return []
 
+    def next_layer(self) -> Optional[LatticeLeaf]:
+        next_layer = self.layer + 1
+        if next_layer == len(self.tensor.modes):
+            return None
+        else:
+            return LatticeLeaf(self.tensor, next_layer)
+
 
 @dataclass(frozen=True)
 class LatticeConjuction(Lattice):

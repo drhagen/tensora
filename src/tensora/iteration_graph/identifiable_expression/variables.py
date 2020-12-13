@@ -29,7 +29,7 @@ def to_c_code_variable(self: Scalar):
 
 @to_c_code.register(Tensor)
 def to_c_code_variable(self: Tensor):
-    from .tensor_leaf import layer_pointer
+    from ..names import layer_pointer
     return f'{self.variable.name}_vals[{layer_pointer(self.variable, len(self.indexes) - 1)}]'
 
 

@@ -2,7 +2,8 @@ from __future__ import annotations
 
 __all__ = ['SourceBuilder']
 
-from typing import List
+from itertools import chain
+from typing import List, Dict
 
 
 class SourceIndented:
@@ -20,6 +21,7 @@ class SourceIndented:
 class SourceBuilder:
     def __init__(self):
         self.lines: List[str] = []
+        self.dependencies: Dict[str, str] = {}
         self.indent = 0
 
     def append(self, line: str):
@@ -30,11 +32,17 @@ class SourceBuilder:
             self.append(line)
 
     def include(self, source: SourceBuilder):
+        for name, dependency in source.dependencies.items():
+            self.dependencies[name] = dependency
+
         for line in source.lines:
             self.append(line)
+
+    def add_dependency(self, name: str, source: str):
+        self.dependencies[name] = source
 
     def indented(self, n: int = 2):
         return SourceIndented(self, n)
 
     def source(self):
-        return '\n'.join(self.lines)
+        return '\n'.join(chain(self.dependencies.values(), self.lines))

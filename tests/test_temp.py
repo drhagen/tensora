@@ -3,7 +3,7 @@ from tensora.format import parse_format
 from tensora.iteration_graph.iteration_graph import *
 from tensora.iteration_graph.merge_lattice import *
 from tensora.iteration_graph.identifiable_expression import ast
-from tensora.iteration_graph.iteration_graph_to_c_code import iteration_graph_to_c_code, TensorOutput, generate_c_code, \
+from tensora.iteration_graph.iteration_graph_to_c_code import iteration_graph_to_c_code, AppendOutput, generate_c_code, \
     KernelType
 
 # def test_temp():
@@ -284,10 +284,7 @@ def test_scratch():
     algo = IterationVariable(
         index_variable='i',
         output=LatticeLeaf(a, 0),
-        lattice=LatticeDisjunction(
-            LatticeLeaf(b, 0),
-            LatticeLeaf(c, 0),
-        ),
+        lattice=LatticeLeaf(b, 0),
         next=Scratch(
             layers=[LatticeLeaf(a, 1)],
             next=IterationVariable(
@@ -304,6 +301,41 @@ def test_scratch():
                     next=TerminalExpression(expression),
                 ),
             )
+        )
+    )
+
+    print(generate_c_code(problem, algo, KernelType.evaluate).source())
+
+
+def test_hash():
+    # a(i,k) = b(i,j) * c(j,k); a=ds, b=ds, c=ds
+    a = ast.Tensor(TensorLeaf('a', 0), ('i', 'k'), (Mode.dense, Mode.compressed))
+    b = ast.Tensor(TensorLeaf('b', 0), ('i', 'j'), (Mode.dense, Mode.compressed))
+    c = ast.Tensor(TensorLeaf('c', 0), ('j', 'k'), (Mode.dense, Mode.compressed))
+
+    expression = ast.Multiply(b, c)
+    assignment = ast.Assignment(a, expression)
+
+    format = Format((Mode.dense, Mode.compressed), (0, 1))
+    problem = Problem(assignment, {'b': format, 'c': format}, format)
+
+    algo = IterationVariable(
+        index_variable='i',
+        output=LatticeLeaf(a, 0),
+        lattice=LatticeLeaf(b, 0),
+        next=IterationVariable(
+            index_variable='j',
+            output=None,
+            lattice=LatticeDisjunction(
+                LatticeLeaf(b, 1),
+                LatticeLeaf(c, 0),
+            ),
+            next=IterationVariable(
+                index_variable='k',
+                output=LatticeLeaf(a, 1),
+                lattice=LatticeLeaf(c, 1),
+                next=TerminalExpression(expression),
+            ),
         )
     )
 
