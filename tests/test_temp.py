@@ -1,5 +1,7 @@
 from tensora import Mode, Format
+from tensora.codegen.ast_to_c import ast_to_c
 from tensora.format import parse_format
+from tensora.ir.peephole import peephole
 from tensora.iteration_graph.iteration_graph import *
 from tensora.iteration_graph.merge_lattice import *
 from tensora.iteration_graph.identifiable_expression import ast
@@ -33,7 +35,7 @@ def pf(text: str):
 #     from tensora import evaluate
 #     c = evaluate('out = a * b', 'ss', a=a, b=b)
 
-def test_multiply():
+def test_multiply_matrix():
     # a(i,j) = b(i,j) * c(i,j); a=ss, b=ss, c=ss
     a = ast.Tensor(TensorLeaf('a', 0), ('i', 'j'), (Mode.compressed, Mode.compressed))
     b = ast.Tensor(TensorLeaf('b', 0), ('i', 'j'), (Mode.compressed, Mode.compressed))
@@ -63,7 +65,7 @@ def test_multiply():
         )
     )
 
-    print(generate_c_code(problem, algo, KernelType.evaluate).source())
+    print(ast_to_c(peephole(generate_c_code(problem, algo, KernelType.evaluate).finalize())))
 
 
 def test_matrix_vector_product():
@@ -76,29 +78,77 @@ def test_matrix_vector_product():
     assignment = ast.Assignment(a, expression)
 
     format = Format(a.modes, (0,))
-    problem = Problem(assignment, {'b': format, 'c': format}, format)
+    problem = Problem(assignment, {'b': format, 'c': Format(b.modes, (0, 1))}, format)
 
     algo = IterationVariable(
         index_variable='i',
         output=LatticeLeaf(a, 0),
         lattice=LatticeLeaf(b, 0),
-        next=Contract(
-            next=IterationVariable(
-                index_variable='j',
-                output=None,
-                lattice=LatticeDisjunction(
-                    LatticeLeaf(b, 1),
-                    LatticeLeaf(c, 0),
-                ),
-                next=TerminalExpression(expression),
-            )
+        next=IterationVariable(
+            index_variable='j',
+            output=None,
+            lattice=LatticeDisjunction(
+                LatticeLeaf(b, 1),
+                LatticeLeaf(c, 0),
+            ),
+            next=TerminalExpression(expression),
         )
     )
 
-    print(generate_c_code(problem, algo, KernelType.evaluate).source())
+    print(ast_to_c(peephole(generate_c_code(problem, algo, KernelType.evaluate).finalize())))
 
 
-def test_add():
+def test_add_dense_vector():
+    # a(i) = b(i) + c(i); a=d, b=d, c=d
+    a = ast.Tensor(TensorLeaf('a', 0), ('i',), (Mode.dense,))
+    b = ast.Tensor(TensorLeaf('b', 0), ('i',), (Mode.dense,))
+    c = ast.Tensor(TensorLeaf('c', 0), ('i',), (Mode.dense,))
+
+    expression = ast.Add(b, c)
+    assignment = ast.Assignment(a, expression)
+
+    format = Format((Mode.dense,), (0,))
+    problem = Problem(assignment, {'b': format, 'c': format}, format)
+
+    algo = IterationVariable(
+        index_variable='i',
+        output=LatticeLeaf(a, 0),
+        lattice=LatticeConjuction(
+            LatticeLeaf(b, 0),
+            LatticeLeaf(c, 0),
+        ),
+        next=TerminalExpression(expression),
+    )
+
+    print(ast_to_c(peephole(generate_c_code(problem, algo, KernelType.evaluate).finalize())))
+
+
+def test_add_sparse_vector():
+    # a(i) = b(i) + c(i); a=s, b=s, c=s
+    a = ast.Tensor(TensorLeaf('a', 0), ('i',), (Mode.compressed,))
+    b = ast.Tensor(TensorLeaf('b', 0), ('i',), (Mode.compressed,))
+    c = ast.Tensor(TensorLeaf('c', 0), ('i',), (Mode.compressed,))
+
+    expression = ast.Add(b, c)
+    assignment = ast.Assignment(a, expression)
+
+    format = Format((Mode.compressed,), (0,))
+    problem = Problem(assignment, {'b': format, 'c': format}, format)
+
+    algo = IterationVariable(
+        index_variable='i',
+        output=LatticeLeaf(a, 0),
+        lattice=LatticeConjuction(
+            LatticeLeaf(b, 0),
+            LatticeLeaf(c, 0),
+        ),
+        next=TerminalExpression(expression),
+    )
+
+    print(ast_to_c(peephole(generate_c_code(problem, algo, KernelType.evaluate).finalize())))
+
+
+def test_add_sparse_matrix():
     # a(i,j) = b(i,j) + c(i,j); a=ss, b=ss, c=ss
     a = ast.Tensor(TensorLeaf('a', 0), ('i', 'j'), (Mode.compressed, Mode.compressed))
     b = ast.Tensor(TensorLeaf('b', 0), ('i', 'j'), (Mode.compressed, Mode.compressed))
@@ -128,7 +178,7 @@ def test_add():
         )
     )
 
-    print(generate_c_code(problem, algo, KernelType.evaluate).source())
+    print(ast_to_c(peephole(generate_c_code(problem, algo, KernelType.evaluate).finalize())))
 
 
 def test_contract():
@@ -150,60 +200,59 @@ def test_contract():
             LatticeLeaf(b, 0),
             LatticeLeaf(c, 0),
         ),
-        next=Contract(
-            next=IterationVariable(
-                index_variable='j',
-                output=None,
-                lattice=LatticeConjuction(
-                    LatticeLeaf(b, 1),
-                    LatticeLeaf(c, 1),
-                ),
-                next=TerminalExpression(expression),
-            )
+        next=IterationVariable(
+            index_variable='j',
+            output=None,
+            lattice=LatticeConjuction(
+                LatticeLeaf(b, 1),
+                LatticeLeaf(c, 1),
+            ),
+            next=TerminalExpression(expression),
         )
     )
 
-    print(generate_c_code(problem, algo, KernelType.evaluate).source())
+    print(ast_to_c(peephole(generate_c_code(problem, algo, KernelType.evaluate).finalize())))
 
 
 def test_add_multiply():
-    # f(i) = A0(i) + A1(i,j) * x(j); f=d, A0=d, A1=ds, x=d
-    f = ast.Tensor(TensorLeaf('f', 0), ('i',), (Mode.dense,))
-    A0 = ast.Tensor(TensorLeaf('A0', 0), ('i',), (Mode.dense,))
-    A1 = ast.Tensor(TensorLeaf('A1', 0), ('i', 'j'), (Mode.dense, Mode.compressed))
+    # y(i) = A(i,j) * x(j) + b(i); y=d, A=ds, x=d, b=d
+    y = ast.Tensor(TensorLeaf('y', 0), ('i',), (Mode.dense,))
+    A = ast.Tensor(TensorLeaf('A', 0), ('i', 'j'), (Mode.dense, Mode.compressed))
     x = ast.Tensor(TensorLeaf('x', 0), ('j',), (Mode.dense,))
+    b = ast.Tensor(TensorLeaf('b', 0), ('i',), (Mode.dense,))
 
-    expression = ast.Add(A0, ast.Multiply(A1, x))
-    assignment = ast.Assignment(f, expression)
+    expression = ast.Add(ast.Multiply(A, x), b)
+    assignment = ast.Assignment(y, expression)
 
-    format = Format(f.modes, tuple(range(len(f.modes))))
-    problem = Problem(assignment, {'A0': format, 'A1': format, 'x': format}, format)
+    format = Format(y.modes, tuple(range(len(y.modes))))
+    A_format = Format((Mode.compressed, Mode.compressed), (0, 1))
+    problem = Problem(assignment, {'A': A_format, 'x': format, 'b': format}, format)
 
     algo = IterationVariable(
         index_variable='i',
-        output=LatticeLeaf(f, 0),
+        output=LatticeLeaf(y, 0),
         lattice=LatticeConjuction(
-            LatticeLeaf(A0, 0),
-            LatticeLeaf(A1, 0),
+            LatticeLeaf(A, 0),
+            LatticeLeaf(b, 0),
         ),
         next=Add(
             name='output',
             terms=[
-                TerminalExpression(A0),
                 IterationVariable(
                     index_variable='j',
                     output=None,
                     lattice=LatticeDisjunction(
-                        LatticeLeaf(A1, 1),
+                        LatticeLeaf(A, 1),
                         LatticeLeaf(x, 0),
                     ),
-                    next=TerminalExpression(ast.Multiply(A1, x)),
+                    next=TerminalExpression(ast.Multiply(A, x)),
                 ),
+                TerminalExpression(b),
             ]
         )
     )
 
-    print(generate_c_code(problem, algo, KernelType.evaluate).source())
+    print(ast_to_c(peephole(generate_c_code(problem, algo, KernelType.evaluate).finalize())))
 
 
 def test_rhs():
@@ -266,7 +315,7 @@ def test_rhs():
         )
     )
 
-    print(generate_c_code(problem, algo, KernelType.compute).source())
+    print(ast_to_c(peephole(generate_c_code(problem, algo, KernelType.compute).finalize())))
 
 
 def test_scratch():

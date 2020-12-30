@@ -1,61 +1,71 @@
-from typing import Union, List
+from typing import List
 
 from .identifiable_expression import TensorLeaf
+from ..ir.ast import Variable, IntegerLiteral, Expression
 
 
-def dimension_name(index_variable: str):
-    return f'{index_variable}_dim'
+def dimension_name(index_variable: str) -> Variable:
+    return Variable(f'{index_variable}_dim')
 
 
-def pos_name(tensor: str, layer: int):
-    return f'{tensor}_{layer}_pos'
+def pos_name(tensor: str, layer: int) -> Variable:
+    return Variable(f'{tensor}_{layer}_pos')
 
 
-def crd_name(tensor: str, layer: int):
-    return f'{tensor}_{layer}_crd'
+def crd_name(tensor: str, layer: int) -> Variable:
+    return Variable(f'{tensor}_{layer}_crd')
 
 
-def vals_name(tensor: str):
-    return f'{tensor}_vals'
+def vals_name(tensor: str) -> Variable:
+    return Variable(f'{tensor}_vals')
 
 
-def crd_capacity_name(tensor: str, layer: int):
-    return f'{tensor}_{layer}_crd_capacity'
+def pos_capacity_name(tensor: str, layer: int) -> Variable:
+    return Variable(f'{tensor}_{layer}_pos_capacity')
 
 
-def pos_capacity_name(tensor: str, layer: int):
-    return f'{tensor}_{layer}_pos_capacity'
+def crd_capacity_name(tensor: str, layer: int) -> Variable:
+    return Variable(f'{tensor}_{layer}_crd_capacity')
 
 
-def vals_capacity_name(tensor: str):
-    return f'{tensor}_vals_capacity'
+def vals_capacity_name(tensor: str) -> Variable:
+    return Variable(f'{tensor}_vals_capacity')
 
 
-def tensor_to_string(tensor: Union[TensorLeaf, str]):
-    if isinstance(tensor, str):
-        return tensor
+def tensor_to_string(tensor: TensorLeaf):
+    return f'{tensor.name}_{tensor.instance}'
+
+
+def layer_pointer(tensor: TensorLeaf, layer: int) -> Variable:
+    return Variable(f'p_{tensor_to_string(tensor)}_{layer}')
+
+
+def previous_layer_pointer(tensor: TensorLeaf, layer: int) -> Expression:
+    if layer == 0:
+        return IntegerLiteral(0)
     else:
-        return f'{tensor.name}_{tensor.instance}'
+        return layer_pointer(tensor, layer - 1)
 
 
-def layer_pointer(tensor: Union[TensorLeaf, str], layer: int):
-    return f'p_{tensor_to_string(tensor)}_{layer}'
+def sparse_end_name(tensor: TensorLeaf, layer: int) -> Variable:
+    return Variable(f'p_{tensor_to_string(tensor)}_{layer}_end')
 
 
-def value_from_crd(tensor: Union[TensorLeaf, str], layer: int):
-    return f'i_{tensor_to_string(tensor)}_{layer}'
+def layer_begin_name(tensor: TensorLeaf, layer: int) -> Variable:
+    return Variable(f'p_{tensor_to_string(tensor)}_{layer}_begin')
 
 
-def tensor_to_pos(tensor: Union[TensorLeaf, str], layer: int):
-    if isinstance(tensor, str):
-        return f'{tensor}_{layer}_pos'
-    else:
-        return f'{tensor.name}_{layer}_pos'
+def value_from_crd(tensor: TensorLeaf, layer: int) -> Variable:
+    return Variable(f'i_{tensor_to_string(tensor)}_{layer}')
 
 
-def hash_table_name(tensor: Union[TensorLeaf, str], starting_layer: int):
-    return f'hash_table_{tensor_to_string(tensor)}_{starting_layer}'
+def hash_table_name(tensor: TensorLeaf, starting_layer: int) -> Variable:
+    return Variable(f'hash_table_{tensor_to_string(tensor)}_{starting_layer}')
 
 
-def bucket_name(tensor: Union[TensorLeaf, str], indexes: List[int]):
-    return f'bucket_{tensor_to_string(tensor)}{"".join(f"_{x}" for x in indexes)}'
+def bucket_name(tensor: TensorLeaf, indexes: List[int]) -> Variable:
+    return Variable(f'bucket_{tensor_to_string(tensor)}{"".join(f"_{x}" for x in indexes)}')
+
+
+def bucket_loop_name(tensor: TensorLeaf, indexes: List[int]):
+    return Variable(f'i_bucket_{tensor_to_string(tensor)}{"".join(f"_{x}" for x in indexes)}')

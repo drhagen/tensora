@@ -39,6 +39,10 @@ class Variable(Expression):
     def name(self):
         return self.variable.name
 
+    @property
+    def order(self):
+        return len(self.indexes)
+
 
 @dataclass(frozen=True)
 class Scalar(Variable):
@@ -58,10 +62,6 @@ class Tensor(Variable):
     variable: TensorLeaf
     indexes: Tuple[str, ...]
     modes: Tuple[Mode, ...]
-
-    @property
-    def order(self):
-        return len(self.indexes)
 
 
 @dataclass(frozen=True)

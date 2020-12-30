@@ -8,8 +8,12 @@ from enum import Enum, auto
 from typing import Optional, AbstractSet, List
 
 from tensora import Mode
+from tensora.ir.ast import Variable, Expression
 from tensora.iteration_graph.identifiable_expression import TensorLeaf
 from tensora.iteration_graph.identifiable_expression.ast import Tensor
+from tensora.iteration_graph.names import sparse_end_name, layer_begin_name, layer_pointer, previous_layer_pointer, \
+    pos_name, crd_name, vals_name, pos_capacity_name, crd_capacity_name, vals_capacity_name, dimension_name, \
+    value_from_crd
 from tensora.stable_frozen_set import StableFrozenSet
 
 
@@ -62,38 +66,41 @@ class LatticeLeaf(Lattice):
     def mode(self):
         return self.tensor.modes[self.layer]
 
-    def layer_pointer(self):
-        return f'p_{self.tensor.variable.to_string()}_{self.layer}'
+    def layer_pointer(self) -> Variable:
+        return layer_pointer(self.tensor.variable, self.layer)
 
-    def previous_layer_pointer(self):
-        if self.layer == 0:
-            return '0'
-        else:
-            return LatticeLeaf(self.tensor, self.layer - 1).layer_pointer()
+    def sparse_end_name(self) -> Variable:
+        return sparse_end_name(self.tensor.variable, self.layer)
 
-    def value_from_crd(self):
-        return f'i_{self.tensor.variable.to_string()}_{self.layer}'
+    def layer_begin_name(self) -> Variable:
+        return layer_begin_name(self.tensor.variable, self.layer)
 
-    def pos_name(self):
-        return f'{self.tensor.variable.name}_{self.layer}_pos'
+    def previous_layer_pointer(self) -> Expression:
+        return previous_layer_pointer(self.tensor.variable, self.layer)
 
-    def crd_name(self):
-        return f'{self.tensor.variable.name}_{self.layer}_crd'
+    def value_from_crd(self) -> Variable:
+        return value_from_crd(self.tensor.variable, self.layer)
 
-    def vals_name(self):
-        return f'{self.tensor.variable.name}_vals'
+    def pos_name(self) -> Variable:
+        return pos_name(self.tensor.variable.name, self.layer)
 
-    def pos_capacity_name(self):
-        return f'{self.tensor.variable.name}_{self.layer}_pos_capacity'
+    def crd_name(self) -> Variable:
+        return crd_name(self.tensor.variable.name, self.layer)
 
-    def crd_capacity_name(self):
-        return f'{self.tensor.variable.name}_{self.layer}_crd_capacity'
+    def vals_name(self) -> Variable:
+        return vals_name(self.tensor.variable.name)
 
-    def vals_capacity_name(self):
-        return f'{self.tensor.variable.name}_vals_capacity'
+    def pos_capacity_name(self) -> Variable:
+        return pos_capacity_name(self.tensor.variable.name, self.layer)
 
-    def dimension_name(self):
-        return f'{self.tensor.indexes[self.layer]}_dim'
+    def crd_capacity_name(self) -> Variable:
+        return crd_capacity_name(self.tensor.variable.name, self.layer)
+
+    def vals_capacity_name(self) -> Variable:
+        return vals_capacity_name(self.tensor.variable.name)
+
+    def dimension_name(self) -> Variable:
+        return dimension_name(self.tensor.indexes[self.layer])
 
     def is_dense(self) -> bool:
         return self.mode == Mode.dense
@@ -121,7 +128,7 @@ class LatticeLeaf(Lattice):
 
     def sparse_tensors(self) -> AbstractSet[TensorLeaf]:
         if self.mode == Mode.compressed:
-            return StableFrozenSet(self.tensor)
+            return StableFrozenSet(self.tensor.variable)
         else:
             return StableFrozenSet()
 
