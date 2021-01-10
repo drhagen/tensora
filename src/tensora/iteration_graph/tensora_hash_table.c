@@ -148,6 +148,10 @@ double[] hash_get_bucket(hash_table_t *hash_table, uint32_t *key) {
     }
 }
 
+void hash_destruct(hash_table_t *hash_table) {
+    free(hash_table->keys);
+    free(hash_table->values);
+}
 
 int hash_comparator(uint32_t *left, uint32_t *right, hash_table_t *hash_table) {
     // Keys cannot be equal so that case can be ignored

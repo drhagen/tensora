@@ -388,7 +388,7 @@ def test_hash():
         )
     )
 
-    print(generate_c_code(problem, algo, KernelType.evaluate).source())
+    print(ast_to_c(peephole(generate_c_code(problem, algo, KernelType.compute).finalize())))
 
 # def test_dense():
 #     # a(i,j) = b(i,j) + c(i,j); a=ss, b=dd, c=dd

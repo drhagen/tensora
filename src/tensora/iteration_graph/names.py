@@ -57,15 +57,3 @@ def layer_begin_name(tensor: TensorLeaf, layer: int) -> Variable:
 
 def value_from_crd(tensor: TensorLeaf, layer: int) -> Variable:
     return Variable(f'i_{tensor_to_string(tensor)}_{layer}')
-
-
-def hash_table_name(tensor: TensorLeaf, starting_layer: int) -> Variable:
-    return Variable(f'hash_table_{tensor_to_string(tensor)}_{starting_layer}')
-
-
-def bucket_name(tensor: TensorLeaf, indexes: List[int]) -> Variable:
-    return Variable(f'bucket_{tensor_to_string(tensor)}{"".join(f"_{x}" for x in indexes)}')
-
-
-def bucket_loop_name(tensor: TensorLeaf, indexes: List[int]):
-    return Variable(f'i_bucket_{tensor_to_string(tensor)}{"".join(f"_{x}" for x in indexes)}')

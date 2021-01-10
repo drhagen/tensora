@@ -4,7 +4,6 @@ from abc import abstractmethod
 from dataclasses import dataclass, replace
 from enum import Enum, auto
 from functools import singledispatch
-from pathlib import Path
 from typing import List, Optional, Set, Tuple
 
 from .identifiable_expression import ast as ie_ast
@@ -12,11 +11,11 @@ from .identifiable_expression.to_ir import to_ir
 from .iteration_graph import IterationGraph, IterationVariable, TerminalExpression, Add as GraphAdd
 from .merge_lattice import LatticeLeaf
 from .names import dimension_name, pos_name, crd_name, vals_name, crd_capacity_name, pos_capacity_name, \
-    vals_capacity_name, layer_pointer, value_from_crd, bucket_name, previous_layer_pointer, \
-    bucket_loop_name
+    vals_capacity_name, layer_pointer, value_from_crd, previous_layer_pointer, tensor_to_string
 from ..format import Mode
 from ..ir.ast import Variable, Multiply, IntegerLiteral, ArrayAllocate, Expression, Return, GreaterThanOrEqual, \
-    ArrayReallocate, Max, LessThan, And, Min, BooleanToInteger, Equal, Block, GreaterThan, Branch, Add
+    ArrayReallocate, Max, LessThan, And, Min, BooleanToInteger, Equal, Block, GreaterThan, Branch, Add, ArrayLiteral, \
+    ModeLiteral, FunctionCall, Address, Free, NotEqual, Break
 from .problem import Problem
 from ..ir.builder import SourceBuilder
 from ..ir import types
@@ -39,7 +38,8 @@ class Output:
         raise NotImplementedError()
 
     @abstractmethod
-    def next_output(self, iteration_output: Optional[LatticeLeaf]) -> Tuple[Output, SourceBuilder]:
+    def next_output(self, iteration_output: Optional[LatticeLeaf], kernel_type: KernelType
+                    ) -> Tuple[Output, SourceBuilder, SourceBuilder]:
         raise NotImplementedError()
 
 
@@ -130,9 +130,10 @@ class AppendOutput(Output):
 
         return source
 
-    def next_output(self, iteration_output: Optional[LatticeLeaf]) -> Tuple[Output, SourceBuilder]:
+    def next_output(self, iteration_output: Optional[LatticeLeaf], kernel_type: KernelType
+                    ) -> Tuple[Output, SourceBuilder, SourceBuilder]:
         if iteration_output is not None and self.next_layer == iteration_output.layer:
-            return AppendOutput(self.output, self.next_layer + 1), SourceBuilder()
+            return AppendOutput(self.output, self.next_layer + 1), SourceBuilder(), SourceBuilder()
         else:
             # No layer or wrong layer was encountered
             dense_only_remaining = all(mode == Mode.dense for mode in self.output.modes[self.next_layer:])
@@ -140,10 +141,10 @@ class AppendOutput(Output):
                 next_output = BucketOutput(self.output, list(range(self.next_layer, len(self.output.modes))))
                 dense_product = Multiply.join(next_output.dimension_names())
                 bucket = vals_name(self.output.variable.name).plus(self.vals_pointer().times(dense_product))
-                return next_output, next_output.write_declarations(bucket)
+                return next_output, next_output.write_declarations(bucket), SourceBuilder()
             else:
                 next_output = HashOutput(self.output, self.next_layer)
-                return next_output, next_output.write_declarations()
+                return next_output, next_output.write_declarations(), next_output.write_cleanup(kernel_type)
 
 
 @dataclass(frozen=True)
@@ -170,21 +171,34 @@ class HashOutput(Output):
 
         return final_dense_index
 
+    def key_number(self, layer: int):
+        number = 0
+        for i in range(self.starting_layer, self.output.order):
+            if layer == i:
+                return number
+            if self.output.modes[i] == Mode.compressed:
+                number += 1
+        return number
+
     def write_declarations(self) -> SourceBuilder:
-        source = SourceBuilder()
+        source = SourceBuilder('Hash table initialization')
 
-        modes = self.output.modes[self.starting_layer:]
-        dim_names = [dimension_name(variable) for variable in self.output.indexes[self.starting_layer:]]
+        modes = [ModeLiteral(mode) for mode in self.output.modes[self.starting_layer:]]
+        dims = [dimension_name(variable) for variable in self.output.indexes[self.starting_layer:]]
 
-        source.add_dependency('hash', Path(__file__).parent.joinpath('tensora_hash_table.c').read_text())
+        source.add_dependency('hash')
 
-        source.append(f'hash_table_t {self.name()};')
-        source.append(f'taco_mode_t[{len(modes)}] {self.name()}_modes = {{{", ".join(mode.name for mode in modes)}}};')
-        source.append(f'uint32_t[{len(modes)}] {self.name()}_dims = {{{", ".join(dim_names)}}};')
-        source.append(f'hash_construct(&{self.name()}, {len(modes)}, '
-                      f'{self.final_dense_index() - self.starting_layer}, &{self.name()}_modes, '
-                      f'&{self.name()}_dims);')
-        source.append('')
+        # Construct hash table
+        source.append(self.name().declare(types.hash_table))
+        source.append(self.modes_name().declare(types.Array(types.mode)).assign(ArrayLiteral(modes)))
+        source.append(self.dims_name().declare(types.Array(types.integer)).assign(ArrayLiteral(dims)))
+        source.append(FunctionCall(Variable('hash_construct'), [
+            Address(self.name()),
+            IntegerLiteral(len(modes)),
+            IntegerLiteral(self.final_dense_index() - self.starting_layer),
+            self.modes_name(),
+            self.dims_name(),
+        ]))
 
         return source
 
@@ -192,23 +206,35 @@ class HashOutput(Output):
         raise RuntimeError()
 
     def write_cleanup(self, kernel_type: KernelType) -> SourceBuilder:
-        source = SourceBuilder()
+        source = SourceBuilder('Hash table cleanup')
+
+        order_name = self.order_name()
+        loop_name = self.sort_index_name()
 
         # Argsort the elements by key
-        source.append(f'uint32_t[] {self.name()}_order = malloc(sizeof(uint32_t) * {self.name()}->count);')
-        source.append(f'for (uint32_t i = 0; i < {self.name()}->count; i++) {{')
-        with source.indented():
-            source.append(f'{self.name()}_order[i] = i;')
-        source.append('}')
-        source.append(f'qsort_r({self.name()}_order, {self.name()}->count, sizeof(uint32_t), hash_comparator, '
-                      f'&{self.name()});')
+        source.append(self.order_name().declare(types.Pointer(types.integer))
+                      .assign(ArrayAllocate(types.integer, self.name().attr('count'))))
+        source.append(loop_name.declare(types.integer).assign(0))
+        with source.loop(LessThan(loop_name, self.name().attr('count'))):
+            source.append(self.order_name().idx(loop_name).assign(loop_name))
+            source.append(loop_name.increment())
+        source.append(FunctionCall(Variable('qsort_r'), [
+            self.order_name(),
+            self.name().attr('count'),
+            Variable('sizeof(uint32_t)'),  # Temporary hack
+            Variable('hash_comparator'),
+            Address(self.name()),
+        ]))
 
         # Extract indexes recursively
-        source.append('i_order = 0;')
-        source.include(self.write_layer_cleanup(self.starting_layer, kernel_type))
+        source.append(self.extract_index_name().declare(types.integer).assign(0))
+        source.append(self.write_layer_cleanup(self.starting_layer, kernel_type))
 
         # Free temporaries
-        source.append(f'free({self.name()}_order);')
+        source.append(Free(order_name))
+
+        # Free hash table
+        source.append(FunctionCall(Variable('hash_destruct'), [Address(self.name())]))
 
         return source
 
@@ -216,91 +242,84 @@ class HashOutput(Output):
         source = SourceBuilder()
 
         if layer < self.final_dense_index():
-            layer_index = value_from_crd(self.output.variable, layer)
+            key_number = self.key_number(layer)
+            layer_index = Variable(self.output.indexes[layer])
             dimension_size = dimension_name(self.output.indexes[layer])
             position = layer_pointer(self.output.variable, layer)
-            if layer == 0:
-                previous_position = '0'
-            else:
-                previous_position = layer_pointer(self.output.variable, layer - 1)
-            end_position = {self.end_position(layer)}
-            next_end_position = {self.end_position(layer + 1)}
+            previous_position = previous_layer_pointer(self.output.variable, layer)
+            end_position = self.end_position(key_number)
+            next_end_position = self.end_position(key_number + 1)
 
             # Reusable search code
+            # This is not applicable for the final key, which has no next key
             search_source = SourceBuilder()
-            search_source.append(f'uint32_t {next_end_position} = 0;')
-            search_source.append(f'while ({next_end_position} < {end_position}) {{')
-            with search_source.indented():
-                search_source.append(f'if ({self.name()}->keys[{self.name()}_order[i_order]][{layer}] '
-                                     f'!= {layer_index}) {{')
-                with search_source.indented():
-                    search_source.append('break;')
-                search_source.append('}')
-                search_source.append(f'{next_end_position}++;')
-            search_source.append('}')
+            search_source.append(next_end_position.declare(types.integer).assign(self.extract_index_name()))
+            with search_source.loop(LessThan(next_end_position, end_position)):
+                with search_source.branch(NotEqual(
+                        self.name().attr('keys').idx(self.order_name().idx(next_end_position)).idx(key_number),
+                        layer_index,
+                )):
+                    search_source.append(Break())
+                search_source.append(next_end_position.increment())
 
             # Keys phase
             if self.output.modes[layer] == Mode.dense:
-                source.append(f'for (uint32_t {layer_index} = 0; {layer_index} < {dimension_size}; {layer_index}++)')
-                with source.indented():
-                    source.append(f'uint32_t {position} = {previous_position} + {layer_index};')
-                    source.include(search_source)
-                    source.include(self.write_layer_cleanup(layer + 1, kernel_type))
+                source.append(layer_index.declare(types.integer).assign(0))
+                with source.loop(LessThan(layer_index, dimension_size)):
+                    source.append(position.declare(types.integer).assign(previous_position.plus(layer_index)))
+                    source.append(search_source)
+                    source.append(self.write_layer_cleanup(layer + 1, kernel_type))
+                    source.append(layer_index.increment())
+
+                    if layer == self.final_dense_index() - 1:
+                        source.append(self.extract_index_name().increment())
 
             elif self.output.modes[layer] == Mode.compressed:
-                source.append(f'while (i_order < {end_position}) {{')
-                with source.indented():
-                    source.append(f'uint23_t {layer_index} = '
-                                  f'{self.name()}->keys[{self.name()}_order[i_order]][{layer}];')
-                    source.include(search_source)
-                    source.include(self.write_layer_cleanup(layer + 1, kernel_type))
+                with source.loop(LessThan(self.extract_index_name(), end_position)):
+                    source.append(layer_index.declare(types.integer).assign(
+                        self.name().attr('keys').idx(self.order_name().idx(self.extract_index_name())).idx(key_number))
+                    )
+                    source.append(search_source)
+                    source.append(self.write_layer_cleanup(layer + 1, kernel_type))
 
-                if kernel_type.is_assembly():
-                    source.include(write_crd_assembly(LatticeLeaf(self.output, layer)))
+                    if kernel_type.is_assembly():
+                        source.append(write_crd_assembly(LatticeLeaf(self.output, layer)))
+                    source.append(position.increment())
+
+                    if layer == self.final_dense_index() - 1:
+                        source.append(self.extract_index_name().increment())
 
             if kernel_type.is_assembly():
-                source.include(write_pos_assembly(LatticeLeaf(self.output, layer)))
-
-            if layer == self.final_dense_index() - 1:
-                with source.indented():
-                    source.append(f'i_order++')
-            source.append('}')  # end loop
+                source.append(write_pos_assembly(LatticeLeaf(self.output, layer)))
         elif layer < self.output.order:
             # Bucket phase
-            layer_index = value_from_crd(self.output.variable, layer)
+            layer_index = Variable(self.output.indexes[layer])
             dimension_size = dimension_name(self.output.indexes[layer])
             position = layer_pointer(self.output.variable, layer)
-            bucket_position = f'{position}_bucket'
-            if layer == 0:
-                previous_position = '0'
-                previous_bucket_position = '0'
-            else:
-                previous_position = layer_pointer(self.output.variable, layer - 1)
-                previous_bucket_position = f'{previous_position}_bucket'
+            previous_position = previous_layer_pointer(self.output.variable, layer)
+            bucket_position = self.bucket_position(layer)
+            previous_bucket_position = self.previous_bucket_position(layer)
 
-            source.append(f'for (uint32_t {layer_index} = 0; {layer_index} < {dimension_size}; {layer_index}++) {{')
-            with source.indented():
-                source.append(f'uint32_t {position} = {previous_position} + {layer_index};')
-                source.append(f'uint32_t {bucket_position} = {previous_bucket_position} + {layer_index};')
-                source.include(self.write_layer_cleanup(layer + 1, kernel_type))
-            source.append('}')
+            source.append(layer_index.declare(types.integer).assign(0))
+            with source.loop(LessThan(layer_index, dimension_size)):
+                source.append(position.declare(types.integer).assign(previous_position.plus(layer_index)))
+                source.append(bucket_position.declare(types.integer).assign(previous_bucket_position.plus(layer_index)))
+                source.append(self.write_layer_cleanup(layer + 1, kernel_type))
+                source.append(layer_index.increment())
         elif layer == self.output.order:
             # Final phase
             vals = vals_name(self.output.variable.name)
-            if layer == 0:
-                previous_position = '0'
-                previous_bucket_position = '0'
-            else:
-                previous_position = layer_pointer(self.output.variable, layer - 1)
-                previous_bucket_position = f'{previous_position}_bucket'
-            bucket = f'{self.name()}_bucket'
-            source.append(f'{vals}[{previous_position}] = {bucket}[{previous_bucket_position}];')
+            previous_position = previous_layer_pointer(self.output.variable, layer)
+            previous_bucket_position = self.previous_bucket_position(layer)
+            bucket = BucketOutput(self.output, list(range(self.final_dense_index(), self.output.order)))
+            source.append(vals.idx(previous_position).assign(bucket.name().idx(previous_bucket_position)))
 
         return source
 
-    def next_output(self, iteration_output: Optional[LatticeLeaf]) -> Tuple[Output, SourceBuilder]:
+    def next_output(self, iteration_output: Optional[LatticeLeaf], kernel_type: KernelType
+                    ) -> Tuple[Output, SourceBuilder, SourceBuilder]:
         if iteration_output is None:
-            return self, SourceBuilder()
+            return self, SourceBuilder(), SourceBuilder()
         else:
             next_unfulfilled = self.unfulfilled - {iteration_output.layer}
             if len(next_unfulfilled) == 0:
@@ -311,31 +330,55 @@ class HashOutput(Output):
                 # Write declaration of bucket
                 source = SourceBuilder()
 
-                key_names = [value_from_crd(self.output.variable, layer)
+                key_names = [Variable(self.output.indexes[layer])
                              for layer in range(self.starting_layer, final_dense_index)]
+                key_name = self.key_name()
 
-                source.append(f'uint32_t[] {self.name()}_key = {{{", ".join(key_names)}}};')
-                source.include(next_output.write_declarations(f'hash_get_bucket(&{self.name()}, &{self.name()}_key)'))
-                source.append('')
+                source.append(key_name.declare(types.Array(types.integer)).assign(ArrayLiteral(key_names)))
+                source.append(next_output.write_declarations(FunctionCall(Variable('hash_get_bucket'), [
+                    Address(self.name()),
+                    key_name,
+                ])))
 
-                return next_output, source
+                return next_output, source, SourceBuilder()
             else:
-                return replace(self, unfulfilled=next_unfulfilled), SourceBuilder()
+                return replace(self, unfulfilled=next_unfulfilled), SourceBuilder(), SourceBuilder()
 
-    def name(self):
-        return f'hash_table_{layer_pointer(self.output.variable, self.starting_layer)}'
+    def name(self) -> Variable:
+        return Variable(f'hash_table')
 
-    def start_position(self, layer: int):
-        if layer < 0:
-            return '0'
+    def modes_name(self) -> Variable:
+        return Variable(f'i_{self.name().name}_modes')
+
+    def dims_name(self) -> Variable:
+        return Variable(f'i_{self.name().name}_dims')
+
+    def key_name(self) -> Variable:
+        return Variable(f'i_{self.name().name}_key')
+
+    def order_name(self) -> Variable:
+        return Variable(f'{self.name().name}_order')
+
+    def sort_index_name(self) -> Variable:
+        return Variable(f'i_{self.name().name}_argsort')
+
+    def extract_index_name(self) -> Variable:
+        return Variable(f'p_{self.name().name}_order')
+
+    def end_position(self, key_number: int) -> Expression:
+        if key_number == 0:
+            return self.name().attr('count')
         else:
-            return f'p_{self.name()}_{layer}_start'
+            return Variable(f'p_{self.name().name}_order_{key_number}_end')
 
-    def end_position(self, layer: int):
-        if layer < 0:
-            return f'{self.name()}->count'
+    def bucket_position(self, layer: int):
+        return Variable(layer_pointer(self.output.variable, layer).name + '_bucket')
+
+    def previous_bucket_position(self, layer: int):
+        if layer == 0:
+            return IntegerLiteral(0)
         else:
-            return f'p_{self.name()}_{layer}_start'
+            return self.bucket_position(layer - 1)
 
 
 @dataclass(frozen=True)
@@ -356,19 +399,20 @@ class BucketOutput(Output):
     def write_declarations(self, right_hand_side: Expression) -> SourceBuilder:
         source = SourceBuilder('Bucket initialization')
         source.append(self.name().declare(types.Pointer(types.float)).assign(right_hand_side))
-        bucket_loop_index = bucket_loop_name(self.output.variable, self.layers)
+        bucket_loop_index = self.loop_name()
         source.append(bucket_loop_index.declare(types.integer).assign(0))
         with source.loop(LessThan(bucket_loop_index, Multiply.join(self.dimension_names()))):
             source.append(self.name().idx(bucket_loop_index).assign(0))
             source.append(bucket_loop_index.increment())
         return source
 
-    def next_output(self, iteration_output: Optional[LatticeLeaf]) -> Tuple[Output, SourceBuilder]:
+    def next_output(self, iteration_output: Optional[LatticeLeaf], kernel_type: KernelType
+                    ) -> Tuple[Output, SourceBuilder, SourceBuilder]:
         if iteration_output is None:
-            return self, SourceBuilder()
+            return self, SourceBuilder(), SourceBuilder()
         else:
             next_unfulfilled = self.unfulfilled - {iteration_output.layer}
-            return replace(self, unfulfilled=next_unfulfilled), SourceBuilder()
+            return replace(self, unfulfilled=next_unfulfilled), SourceBuilder(), SourceBuilder()
 
     def write_assignment(self, right_hand_side: Expression, kernel_type: KernelType):
         source = SourceBuilder()
@@ -388,11 +432,11 @@ class BucketOutput(Output):
 
         return Add.join(terms)
 
-    def write_cleanup(self, kernel_type: KernelType):
-        return SourceBuilder()
-
     def name(self) -> Variable:
-        return bucket_name(self.output.variable, self.layers)
+        return Variable(f'bucket_{tensor_to_string(self.output.variable)}{"".join(f"_{x}" for x in self.layers)}')
+
+    def loop_name(self) -> Variable:
+        return Variable(f'i_bucket_{tensor_to_string(self.output.variable)}{"".join(f"_{x}" for x in self.layers)}')
 
     def dimension_names(self):
         return [dimension_name(self.output.indexes[layer]) for layer in self.layers]
@@ -532,7 +576,7 @@ def iteration_variable_to_c_code(graph: IterationVariable, output: Output, kerne
     is_dense = graph.lattice.is_dense()
 
     # Compute the next output
-    next_output, next_output_declarations = output.next_output(graph.output)
+    next_output, next_output_declarations, next_output_cleanup = output.next_output(graph.output, kernel_type)
     source.append(next_output_declarations)
 
     ##################
@@ -579,7 +623,8 @@ def iteration_variable_to_c_code(graph: IterationVariable, output: Output, kerne
             #########################
             # Compute dense indexes #
             #########################
-            maybe_dense_output = [graph.output] if graph.output is not None else []
+            maybe_dense_output = [graph.output] \
+                if graph.output is not None and isinstance(next_output, AppendOutput) else []
             for leaf in maybe_dense_output + dense_subnode_leaves:
                 pointer = leaf.layer_pointer()
                 previous_pointer = leaf.previous_layer_pointer()
@@ -602,7 +647,7 @@ def iteration_variable_to_c_code(graph: IterationVariable, output: Output, kerne
                 ###################################
                 # Allocate space for pos and vals #
                 ###################################
-                if kernel_type.is_assembly() and graph.is_sparse_output():
+                if kernel_type.is_assembly() and graph.is_sparse_output() and isinstance(next_output, AppendOutput):
                     block.append(write_pos_allocation(graph.output))
 
                 ################################
@@ -622,7 +667,7 @@ def iteration_variable_to_c_code(graph: IterationVariable, output: Output, kerne
                 ########################################################
                 # Write sparse output index and advance output pointer #
                 ########################################################
-                if graph.is_sparse_output():
+                if graph.is_sparse_output() and isinstance(next_output, AppendOutput):
                     if graph.next.is_sparse_output():
                         next_pointer = graph.next.output.layer_pointer()
                         next_pointer_begin = graph.next.output.layer_begin_name()
@@ -652,8 +697,10 @@ def iteration_variable_to_c_code(graph: IterationVariable, output: Output, kerne
     ################################
     # Write sparse output position #
     ################################
-    if kernel_type.is_assembly() and graph.is_sparse_output():
+    if kernel_type.is_assembly() and graph.is_sparse_output() and isinstance(next_output, AppendOutput):
         source.append(write_pos_assembly(graph.output))
+
+    source.append(next_output_cleanup)
 
     return source
 
@@ -662,7 +709,7 @@ def iteration_variable_to_c_code(graph: IterationVariable, output: Output, kerne
 def add_node_to_c_code(graph: GraphAdd, output: Output, kernel_type: KernelType):
     source = SourceBuilder('*** Add ***')
 
-    next_output, next_output_declarations = output.next_output(None)
+    next_output, next_output_declarations, next_output_cleanup = output.next_output(None, kernel_type)
     source.append(next_output_declarations)
 
     for term in graph.terms:

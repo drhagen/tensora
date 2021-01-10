@@ -10,7 +10,7 @@ from typing import Optional, AbstractSet, List
 from tensora import Mode
 from tensora.ir.ast import Variable, Expression
 from tensora.iteration_graph.identifiable_expression import TensorLeaf
-from tensora.iteration_graph.identifiable_expression.ast import Tensor
+from ..identifiable_expression import ast as ie_ast
 from tensora.iteration_graph.names import sparse_end_name, layer_begin_name, layer_pointer, previous_layer_pointer, \
     pos_name, crd_name, vals_name, pos_capacity_name, crd_capacity_name, vals_capacity_name, dimension_name, \
     value_from_crd
@@ -59,7 +59,7 @@ class Lattice:
 
 @dataclass(frozen=True)
 class LatticeLeaf(Lattice):
-    tensor: Tensor
+    tensor: ie_ast.Variable
     layer: int
 
     @property

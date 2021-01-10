@@ -10,6 +10,7 @@ __all__ = [
     "IntegerLiteral",
     "FloatLiteral",
     "BooleanLiteral",
+    "ModeLiteral",
     "ArrayLiteral",
     "Add",
     "Subtract",
@@ -25,16 +26,19 @@ __all__ = [
     "FunctionCall",
     "Max",
     "Min",
+    "Address",
     "BooleanToInteger",
     "Allocate",
     "ArrayAllocate",
     "ArrayReallocate",
+    "Free",
     "Declaration",
     "Assignment",
     "DeclarationAssignment",
     "Block",
     "Branch",
     "Loop",
+    "Break",
     "Return",
     "FunctionDefinition",
 ]
@@ -44,6 +48,7 @@ from functools import reduce
 from typing import List, Optional, Union, Tuple
 
 from .types import Type
+from ..format import Mode
 
 
 class Statement:
@@ -120,6 +125,11 @@ class FloatLiteral(Expression):
 class BooleanLiteral(Expression):
     __slots__ = ("value",)
     value: bool
+
+
+@dataclass(frozen=True)
+class ModeLiteral(Expression):
+    value: Mode
 
 
 @dataclass(frozen=True)
@@ -257,6 +267,12 @@ class Min(Expression):
 
 
 @dataclass(frozen=True)
+class Address(Expression):
+    __slots__ = ("target",)
+    target: Variable
+
+
+@dataclass(frozen=True)
 class BooleanToInteger(Expression):
     __slots__ = ("expression",)
     expression: Expression
@@ -281,6 +297,12 @@ class ArrayReallocate(Expression):
     old: Assignable
     type: Type
     n_elements: Expression
+
+
+@dataclass(frozen=True)
+class Free(Statement):
+    __slots__ = ("target",)
+    target: Assignable
 
 
 @dataclass(frozen=True)
@@ -337,6 +359,11 @@ class Loop(Statement):
     __slots__ = ("condition", "body")
     condition: Expression
     body: Statement
+
+
+@dataclass(frozen=True)
+class Break(Statement):
+    __slots__ = ()
 
 
 @dataclass(frozen=True)

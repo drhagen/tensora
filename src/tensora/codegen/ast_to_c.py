@@ -3,6 +3,7 @@ __all__ = ["ast_to_c"]
 from functools import singledispatch
 from typing import Union
 
+from ..format import Mode
 from ..ir.ast import *
 from .type_to_c import type_to_c
 
@@ -55,6 +56,16 @@ def ast_to_c_float_literal(code: FloatLiteral):
 @ast_to_c_expression.register(BooleanLiteral)
 def ast_to_c_boolean_literal(code: BooleanLiteral):
     return str(int(code.value))
+
+
+@ast_to_c_expression.register(ModeLiteral)
+def ast_to_c_mode_literal(code: ModeLiteral):
+    if code.value == Mode.dense:
+        return "taco_mode_dense"
+    elif code.value == Mode.compressed:
+        return "taco_mode_sparse"
+    else:
+        raise NotImplementedError()
 
 
 @ast_to_c_expression.register(ArrayLiteral)
@@ -134,6 +145,11 @@ def ast_to_c_min(code: Min):
     return f"TACO_MIN({ast_to_c_expression(code.left)}, {ast_to_c_expression(code.right)})"
 
 
+@ast_to_c_expression.register(Address)
+def ast_to_c_address(code: Address):
+    return f"&{ast_to_c_expression(code.target)}"
+
+
 @ast_to_c_expression.register(BooleanToInteger)
 def ast_to_c_boolean_to_integer(code: BooleanToInteger):
     return f"(int32_t)({ast_to_c_expression(code.expression)})"
@@ -168,6 +184,11 @@ def ast_to_c_statement(code: Statement) -> list[str]:
 def convert_expression_to_statement(code: Expression):
     # Every expression can also be a statement; convert it here
     return [ast_to_c_expression(code) + ";"]
+
+
+@ast_to_c_statement.register(Free)
+def ast_to_c_free(code: Free):
+    return [f"free({ast_to_c_expression(code.target)});"]
 
 
 @ast_to_c_statement.register(Declaration)
@@ -256,6 +277,11 @@ def ast_to_c_loop(code: Loop):
         *indent_lines(ast_to_c_statement(code.body)),
         "}",
     ]
+
+
+@ast_to_c_statement.register(Break)
+def ast_to_c_break(code: Break):
+    return ["break;"]
 
 
 @ast_to_c_statement.register(Return)

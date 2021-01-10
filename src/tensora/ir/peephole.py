@@ -61,13 +61,15 @@ def peephole_array_index(code: ArrayIndex):
 @peephole_expression.register(IntegerLiteral)
 @peephole_expression.register(FloatLiteral)
 @peephole_expression.register(BooleanLiteral)
+@peephole_expression.register(ModeLiteral)
+@peephole_expression.register(Address)
 @peephole_expression.register(Allocate)
 def peephole_noop(code: Expression):
     return code
 
 
 @peephole_expression.register(ArrayLiteral)
-def peephole_noop(code: ArrayLiteral):
+def peephole_array_literal(code: ArrayLiteral):
     return ArrayLiteral([peephole_expression(element) for element in code.elements])
 
 
@@ -216,6 +218,11 @@ def peephole_declaration(code: Declaration):
     return code
 
 
+@peephole.register(Free)
+def peephole_free(code: Free):
+    return Free(peephole_assignable(code.target))
+
+
 @peephole.register(Assignment)
 def peephole_assignment(code: Assignment):
     target = peephole_assignable(code.target)
@@ -269,6 +276,11 @@ def peephole_loop(code: Loop):
         return Block([])
     else:
         return Loop(condition, body)
+
+
+@peephole.register(Break)
+def peephole_break(code: Break):
+    return code
 
 
 @peephole.register(Return)
