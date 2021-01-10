@@ -90,3 +90,11 @@ def test_matrix_multiply_add(dense1, dense2, dense3, format1, format2, format3, 
                          in1=(dense1, format1),
                          in2=(dense2, format2),
                          in3=(dense3, format3))
+
+@pytest.mark.parametrize('dense1', [[[[0, 2, 4], [0, -1, 0]], [[0, 0, 0], [0, 0, 0]]], [[[0, 2, 4], [0, -1, 0]], [[0, 0, 0], [0, 0, 0]]]])
+@pytest.mark.parametrize('format1', ['sss'])
+@pytest.mark.parametrize('format_out', ['ss'])
+def test_inner_contract(dense1, format1, format_out):
+    assert_same_as_dense('out(i,k) = in1(i,j,k) * in2(i,j,k)', format_out,
+                         in1=(dense1, format1),
+                         in2=(dense1, format1))
