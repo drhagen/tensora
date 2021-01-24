@@ -250,6 +250,24 @@ class Tensor:
         cffi_vals = tensor_cdefs.cast('double*', self.cffi_tensor.vals)
         return cffi_vals[0]
 
+    def __getstate__(self):
+        return {
+            'dimensions': self.dimensions,
+            'mode_types': tuple(mode.c_int for mode in self.format.modes),
+            'mode_ordering': self.format.ordering,
+            'indices': self.taco_indices,
+            'vals': self.taco_vals,
+        }
+
+    def __setstate__(self, state):
+        self.cffi_tensor = taco_structure_to_cffi(
+            indices=state["indices"],
+            vals=state["vals"],
+            mode_types=state["mode_types"],
+            dimensions=state["dimensions"],
+            mode_ordering=state["mode_ordering"],
+        )
+
     def __eq__(self, other):
         if isinstance(other, Tensor):
             return self.to_dok() == other.to_dok()

@@ -1,3 +1,5 @@
+import pickle
+
 import pytest
 
 from tensora import Mode, Format, Tensor
@@ -349,6 +351,22 @@ def test_equality():
     assert Tensor.from_lol([0, 2, 0], format='d') == Tensor.from_lol([0, 2, 0], format='s')
     assert Tensor.from_lol([0, 1, 0], format='d') != Tensor.from_lol([0, 2, 0], format='s')
     assert Tensor.from_lol([0, 1, 0], format='d') != 1
+
+
+@pytest.mark.parametrize('tensor', [
+    Tensor.from_dok({}, dimensions=()),
+    Tensor.from_dok({(2, 3): 2.0, (0, 1): 0.0, (1, 2): -1.0, (0, 3): 0.0}, dimensions=(2, 4)),
+    Tensor.from_dok({(0, 0, 0): 4.5, (1, 0, 1): 3.2, (1, 1, 2): -3.0, (0, 1, 1): 5.0}, dimensions=(3, 3, 3)),
+])
+def test_pickle(tensor):
+    # Ensure that not only are the tensors equal, but that they also have the same format and explicit zeros, neither of
+    # which affects equality
+    data = pickle.dumps(tensor)
+    reconstituted = pickle.loads(data)
+
+    assert tensor == reconstituted
+    assert tensor.format == reconstituted.format
+    assert tensor.to_dok(explicit_zeros=True) == reconstituted.to_dok(explicit_zeros=True)
 
 
 def test_str_repr():
