@@ -1,5 +1,6 @@
 import subprocess
 from pathlib import Path
+import platform
 
 from distutils.command.build import build
 from setuptools import setup, find_packages
@@ -14,11 +15,19 @@ taco_install_dir = project_dir.joinpath('src/tensora/taco/')
 class TensoraBuild(build):
     def run(self):
         # Build taco
+        OS = platform.system()
+        if OS == "Linux":
+            install_path = r'-DCMAKE_INSTALL_RPATH=\$ORIGIN/../lib'
+        elif OS == "Darwin":
+            install_path = r'-DCMAKE_INSTALL_RPATH=@loader_path/../lib'
+        else:
+            raise NotImplementedError
+
         taco_build_dir.mkdir(parents=True, exist_ok=True)
         subprocess.check_call(['cmake', str(taco_source_dir),
                                '-DCMAKE_BUILD_TYPE=Release',
                                f'-DCMAKE_INSTALL_PREFIX={taco_install_dir}',
-                               r'-DCMAKE_INSTALL_RPATH=\$ORIGIN/../lib'],  # TODO: Will only work on Linux
+                               install_path],  # TODO: Will only work on Linux
                               cwd=taco_build_dir)
         subprocess.check_call(['make', '-j8'], cwd=taco_build_dir)
         subprocess.check_call(['make', 'install'], cwd=taco_build_dir)
