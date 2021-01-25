@@ -59,7 +59,7 @@ setup(
 
     package_dir={'': 'src'},
     packages=find_packages('src'),
-    package_data={'tensora': ['taco/bin/taco', 'taco/lib/libtaco.so']},
+    package_data={'tensora': ['taco/bin/taco', 'taco/lib/libtaco.*']},
 
     install_requires=Path('requirements.txt').read_text(encoding='utf-8').splitlines(),
 
