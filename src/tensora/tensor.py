@@ -261,11 +261,11 @@ class Tensor:
 
     def __setstate__(self, state):
         self.cffi_tensor = taco_structure_to_cffi(
-            indices=state["indices"],
-            vals=state["vals"],
-            mode_types=state["mode_types"],
-            dimensions=state["dimensions"],
-            mode_ordering=state["mode_ordering"],
+            indices=state['indices'],
+            vals=state['vals'],
+            mode_types=state['mode_types'],
+            dimensions=state['dimensions'],
+            mode_ordering=state['mode_ordering'],
         )
 
     def __eq__(self, other):
