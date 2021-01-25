@@ -45,7 +45,7 @@ class TensoraBdistWheel(bdist_wheel):
 
 setup(
     name='tensora',
-    version='0.0.3',
+    version='0.0.4',
 
     description='Library for dense and sparse tensors built on the tensor algebra compiler.',
     long_description=Path('README.md').read_text(encoding='utf-8'),
