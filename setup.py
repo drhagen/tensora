@@ -1,6 +1,6 @@
+import platform
 import subprocess
 from pathlib import Path
-import platform
 
 from distutils.command.build import build
 from setuptools import setup, find_packages
