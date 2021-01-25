@@ -21,7 +21,7 @@ class TensoraBuild(build):
         elif OS == "Darwin":
             install_path = r'-DCMAKE_INSTALL_RPATH=@loader_path/../lib'
         else:
-            raise NotImplementedError
+            raise NotImplementedError(f'Tensora cannot be installed on {OS}')
 
         taco_build_dir.mkdir(parents=True, exist_ok=True)
         subprocess.check_call(['cmake', str(taco_source_dir),
