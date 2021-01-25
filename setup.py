@@ -27,7 +27,7 @@ class TensoraBuild(build):
         subprocess.check_call(['cmake', str(taco_source_dir),
                                '-DCMAKE_BUILD_TYPE=Release',
                                f'-DCMAKE_INSTALL_PREFIX={taco_install_dir}',
-                               install_path],  # TODO: Will only work on Linux
+                               install_path],
                               cwd=taco_build_dir)
         subprocess.check_call(['make', '-j8'], cwd=taco_build_dir)
         subprocess.check_call(['make', 'install'], cwd=taco_build_dir)
