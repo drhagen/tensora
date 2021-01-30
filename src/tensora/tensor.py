@@ -217,6 +217,16 @@ class Tensor:
         else:
             return {key: value for key, value in self.items() if value != 0.0}
 
+    def to_numpy(self):
+        import numpy
+
+        array = numpy.zeros(self.dimensions, dtype=float)
+
+        for index, value in self.items():
+            array[index] = value
+
+        return array
+
     def __add__(self, other) -> 'Tensor':
         return evaluate_binary_operator(self, other, '+')
 
