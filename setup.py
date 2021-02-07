@@ -62,6 +62,7 @@ setup(
     package_data={'tensora': ['taco/bin/taco', 'taco/lib/libtaco.*']},
 
     install_requires=Path('requirements.txt').read_text(encoding='utf-8').splitlines(),
+    extras_require={'numpy': ['numpy'], 'scipy': ['scipy']},
 
     classifiers=[
         'Development Status :: 3 - Alpha',
