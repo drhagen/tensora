@@ -1,5 +1,6 @@
 import pytest
-
+from itertools import repeat
+from multiprocessing.pool import ThreadPool
 from tensora import Tensor, tensor_method, evaluate
 
 
@@ -92,3 +93,27 @@ def test_csr_matrix_plus_csr_matrix():
     actual = evaluate('C(i,j) = A(i,j) * B(i,j)', 'ds', A=A, B=B)
 
     assert actual == expected
+
+
+def test_multithread_evaluation():
+    # simply check if this is run. without lock we will have a race condition
+    def run_eval(args):
+        A, x = args
+        return evaluate('y(i) = A(i,j) * x(j)', 'd', A=A, x=x)
+
+    A = Tensor.from_aos(
+        [[1, 0], [0, 1], [1, 2]],
+        [2.0, -2.0, 4.0],
+        dimensions=(2, 3), format='ds'
+    )
+
+    x = Tensor.from_aos(
+        [[0], [1], [2]],
+        [3.0, 2.5, 2.0],
+        dimensions=(3,), format='d'
+    )
+
+    all_inputs = zip(repeat(A, 2), repeat(x, 2))
+
+    with ThreadPool(2) as p:
+        p.map(run_eval, all_inputs)
