@@ -1,5 +1,6 @@
+from random import randrange
+
 import pytest
-from itertools import repeat
 from multiprocessing.pool import ThreadPool
 from tensora import Tensor, tensor_method, evaluate
 
@@ -96,11 +97,8 @@ def test_csr_matrix_plus_csr_matrix():
 
 
 def test_multithread_evaluation():
-    # simply check if this is run. without lock we will have a race condition
-    def run_eval(args):
-        A, x = args
-        return evaluate('y(i) = A(i,j) * x(j)', 'd', A=A, x=x)
-
+    # As of version 1.14.4 of cffi, the FFI.compile method is not thread safe. This tests that evaluation of different
+    # kernels is thread safe.
     A = Tensor.from_aos(
         [[1, 0], [0, 1], [1, 2]],
         [2.0, -2.0, 4.0],
@@ -113,7 +111,15 @@ def test_multithread_evaluation():
         dimensions=(3,), format='d'
     )
 
-    all_inputs = zip(repeat(A, 2), repeat(x, 2))
+    def run_eval():
+        # Generate a random expression so that the cache cannot be hit
+        return evaluate(f'y{randrange(1024)}(i) = A(i,j) * x(j)', 'd', A=A, x=x)
 
-    with ThreadPool(2) as p:
-        p.map(run_eval, all_inputs)
+    n = 4
+    with ThreadPool(n) as p:
+        results = p.starmap(run_eval, [()] * n)
+
+    expected = run_eval()
+
+    for actual in results:
+        assert actual == expected
