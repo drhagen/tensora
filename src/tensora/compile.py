@@ -10,6 +10,10 @@ from weakref import WeakKeyDictionary
 
 from cffi import FFI
 
+import threading
+
+lock = threading.Lock()
+
 taco_binary = Path(__file__).parent.joinpath('taco/bin/taco')
 
 global_weakkeydict = WeakKeyDictionary()
@@ -131,8 +135,10 @@ def taco_kernel(expression: str, formats: FrozenSet[Tuple[str, str]]) -> Tuple[L
     ffibuilder.set_source('taco_kernel', taco_define_header + taco_type_header + source)
 
     with tempfile.TemporaryDirectory() as temp_dir:
-        # Create shared object in temporary directory
-        lib_path = ffibuilder.compile(tmpdir=temp_dir)
+        # Lock because FFI.compile is not thread safe: https://foss.heptapod.net/pypy/cffi/-/issues/490
+        with lock:
+            # Create shared object in temporary directory
+            lib_path = ffibuilder.compile(tmpdir=temp_dir)
 
         # Load the shared object
         lib = ffibuilder.dlopen(lib_path)
