@@ -132,7 +132,8 @@ def taco_kernel(expression: str, formats: FrozenSet[Tuple[str, str]]) -> Tuple[L
     ffibuilder = FFI()
     ffibuilder.include(tensor_cdefs)
     ffibuilder.cdef(signature + ';')
-    ffibuilder.set_source('taco_kernel', taco_define_header + taco_type_header + source)
+    ffibuilder.set_source('taco_kernel', taco_define_header + taco_type_header + source,
+                          extra_compile_args=["-Wno-unused-variable"])
 
     with tempfile.TemporaryDirectory() as temp_dir:
         # Lock because FFI.compile is not thread safe: https://foss.heptapod.net/pypy/cffi/-/issues/490
@@ -283,7 +284,7 @@ def taco_structure_to_cffi(indices: List[List[List[int]]], vals: List[float], *,
                 raise ValueError(f'The crd array of level {i_level} (indices[{i_level}][1]) must have length '
                                  f"{pos[-1]}, the last element of this level's pos array, not length {len(crd)}: {crd}")
             if not all(0 <= x < dimensions[mode_ordering[i_level]] for x in crd):
-                raise ValueError(f'All values in the crd array of level {i_level } (indices[{i_level}][1]) must be '
+                raise ValueError(f'All values in the crd array of level {i_level} (indices[{i_level}][1]) must be '
                                  f'nonnegative and less than the size of this dimension: {crd}')
             nnz = len(crd)
 
