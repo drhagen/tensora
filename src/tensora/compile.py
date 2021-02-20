@@ -133,7 +133,7 @@ def taco_kernel(expression: str, formats: FrozenSet[Tuple[str, str]]) -> Tuple[L
     ffibuilder.include(tensor_cdefs)
     ffibuilder.cdef(signature + ';')
     ffibuilder.set_source('taco_kernel', taco_define_header + taco_type_header + source,
-                          extra_compile_args=["-Wno-unused-variable"])
+                          extra_compile_args=['-Wno-unused-variable', '-Wno-unknown-pragmas'])
 
     with tempfile.TemporaryDirectory() as temp_dir:
         # Lock because FFI.compile is not thread safe: https://foss.heptapod.net/pypy/cffi/-/issues/490
