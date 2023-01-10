@@ -11,10 +11,10 @@ Current optimization implemented:
 * and_false: expr & false or false & expr => false
 * or_true: expr | true or true | expr => true
 * or_false: expr | false or false | expr => expr
-* boolean_cast_constant: cast(False) => 0 or cast(True) => 1
+* boolean_cast_constant: cast(false) => 0 or cast(true) => 1
 * branch_true: if (true) then block1 else block2 => block1
 * branch_false: if (false) then block1 else block2 => block2
-* loop_false: while(true) block => {}
+* loop_false: while(false) block => {}
 * empty_block: empty blocks get deleted in blocks, branches, and loops
 """
 

@@ -318,44 +318,6 @@ def test_rhs():
     print(ast_to_c(peephole(generate_c_code(problem, algo, KernelType.compute).finalize())))
 
 
-def test_scratch():
-    # a(i,k) = b(i,j) * c(j,k); a=ds, b=ds, c=ds
-    a = ast.Tensor(TensorLeaf('a', 0), ('i', 'k'), (Mode.dense, Mode.compressed))
-    b = ast.Tensor(TensorLeaf('b', 0), ('i', 'j'), (Mode.dense, Mode.compressed))
-    c = ast.Tensor(TensorLeaf('c', 0), ('j', 'k'), (Mode.dense, Mode.compressed))
-
-    expression = ast.Multiply(b, c)
-    assignment = ast.Assignment(a, expression)
-
-    format = Format((Mode.dense, Mode.compressed), (0, 1))
-    problem = Problem(assignment, {'b': format, 'c': format}, format)
-
-    algo = IterationVariable(
-        index_variable='i',
-        output=LatticeLeaf(a, 0),
-        lattice=LatticeLeaf(b, 0),
-        next=Scratch(
-            layers=[LatticeLeaf(a, 1)],
-            next=IterationVariable(
-                index_variable='j',
-                output=None,
-                lattice=LatticeDisjunction(
-                    LatticeLeaf(b, 1),
-                    LatticeLeaf(c, 0),
-                ),
-                next=IterationVariable(
-                    index_variable='k',
-                    output=None,
-                    lattice=LatticeLeaf(c, 1),
-                    next=TerminalExpression(expression),
-                ),
-            )
-        )
-    )
-
-    print(generate_c_code(problem, algo, KernelType.evaluate).source())
-
-
 def test_hash():
     # a(i,k) = b(i,j) * c(j,k); a=ds, b=ds, c=ds
     a = ast.Tensor(TensorLeaf('a', 0), ('i', 'k'), (Mode.dense, Mode.compressed))
