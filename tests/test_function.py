@@ -1,6 +1,5 @@
 from random import randrange
 
-import pytest
 from multiprocessing.pool import ThreadPool
 from tensora import Tensor, tensor_method, evaluate
 
@@ -65,7 +64,6 @@ def test_csc_matrix_vector_product():
     assert actual == expected
 
 
-@pytest.mark.skip('taco fails on sparse outputs')
 def test_csr_matrix_plus_csr_matrix():
     A = Tensor.from_aos(
         [[1, 0], [0, 1], [1, 2]],
@@ -91,7 +89,7 @@ def test_csr_matrix_plus_csr_matrix():
 
     assert actual == expected
 
-    actual = evaluate('C(i,j) = A(i,j) * B(i,j)', 'ds', A=A, B=B)
+    actual = evaluate('C(i,j) = A(i,j) + B(i,j)', 'ds', A=A, B=B)
 
     assert actual == expected
 
