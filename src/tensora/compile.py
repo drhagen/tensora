@@ -1,5 +1,5 @@
 __all__ = ['taco_kernel', 'allocate_taco_structure', 'taco_structure_to_cffi', 'take_ownership_of_arrays',
-           'tensor_cdefs']
+           'tensor_cdefs', 'take_ownership_of_tensor_members']
 
 import re
 import subprocess
@@ -9,6 +9,10 @@ from typing import List, Tuple, FrozenSet, Any
 from weakref import WeakKeyDictionary
 
 from cffi import FFI
+
+import threading
+
+lock = threading.Lock()
 
 taco_binary = Path(__file__).parent.joinpath('taco/bin/taco')
 
@@ -128,11 +132,14 @@ def taco_kernel(expression: str, formats: FrozenSet[Tuple[str, str]]) -> Tuple[L
     ffibuilder = FFI()
     ffibuilder.include(tensor_cdefs)
     ffibuilder.cdef(signature + ';')
-    ffibuilder.set_source('taco_kernel', taco_define_header + taco_type_header + source)
+    ffibuilder.set_source('taco_kernel', taco_define_header + taco_type_header + source,
+                          extra_compile_args=['-Wno-unused-variable', '-Wno-unknown-pragmas'])
 
     with tempfile.TemporaryDirectory() as temp_dir:
-        # Create shared object in temporary directory
-        lib_path = ffibuilder.compile(tmpdir=temp_dir)
+        # Lock because FFI.compile is not thread safe: https://foss.heptapod.net/pypy/cffi/-/issues/490
+        with lock:
+            # Create shared object in temporary directory
+            lib_path = ffibuilder.compile(tmpdir=temp_dir)
 
         # Load the shared object
         lib = ffibuilder.dlopen(lib_path)
@@ -204,7 +211,6 @@ def allocate_taco_structure(mode_types: Tuple[int, ...], dimensions: Tuple[int, 
     memory_holder_levels = []
     memory_holder_levels_arrays = []
     for mode in mode_types:
-        converted_arrays = []
         if mode == tensor_lib.taco_mode_dense:
             converted_arrays = []
         elif mode == tensor_lib.taco_mode_sparse:
@@ -277,7 +283,7 @@ def taco_structure_to_cffi(indices: List[List[List[int]]], vals: List[float], *,
                 raise ValueError(f'The crd array of level {i_level} (indices[{i_level}][1]) must have length '
                                  f"{pos[-1]}, the last element of this level's pos array, not length {len(crd)}: {crd}")
             if not all(0 <= x < dimensions[mode_ordering[i_level]] for x in crd):
-                raise ValueError(f'All values in the crd array of level {i_level } (indices[{i_level}][1]) must be '
+                raise ValueError(f'All values in the crd array of level {i_level} (indices[{i_level}][1]) must be '
                                  f'nonnegative and less than the size of this dimension: {crd}')
             nnz = len(crd)
 
@@ -318,7 +324,7 @@ def take_ownership_of_arrays(cffi_tensor) -> None:
     be called on the output tensor of any evaluated taco kernel.
 
     Args:
-        cffi_tensor: A cffi taco_tensor_t*.
+        cffi_tensor: A cffi taco_tensor_t or taco_tensor_t*.
     """
 
     memory_holder = global_weakkeydict[cffi_tensor]
@@ -336,6 +342,67 @@ def take_ownership_of_arrays(cffi_tensor) -> None:
             memory_holder['**indices'][i_dimension][1] = tensor_cdefs.gc(cffi_levels[i_dimension][1], tensor_lib.free)
 
     memory_holder['vals'] = tensor_cdefs.gc(cffi_tensor.vals, tensor_lib.free)
+
+
+def take_ownership_of_tensor_members(cffi_tensor) -> None:
+    """Take ownership of taco tensor whose members were allocated elsewhere.
+
+    This is not needed by pure Tensora. But some low-level programs might
+    allocate members of a tensor and return it to Python. If the taco_tensor_t
+    will be owned by Python, then this function can be used to take ownership of
+    all the memory of all members of the taco_tensor_t so that it is freed when
+    the cffi object is freed.
+
+    Args:
+        cffi_tensor: A cffi taco_tensor_t or taco_tensor_t*.
+    """
+    # This mayor may not have been called by take_ownership_of_tensor first, so
+    # an entry in global_weakkeydict may or may not already exist.
+    memory_holder = global_weakkeydict.get(cffi_tensor, {})
+
+    # First, take ownership of everything that is owned after taco_structure_to_cffi
+    order = cffi_tensor.order
+
+    memory_holder['dimensions'] = tensor_cdefs.gc(cffi_tensor.dimensions, tensor_lib.free)
+
+    memory_holder['mode_ordering'] = tensor_cdefs.gc(cffi_tensor.mode_ordering, tensor_lib.free)
+
+    memory_holder['mode_types'] = tensor_cdefs.gc(cffi_tensor.mode_types, tensor_lib.free)
+
+    memory_holder_levels = []
+    memory_holder_levels_arrays = []
+    for i_dimension, mode in enumerate(cffi_tensor.mode_types[0:order]):
+        memory_holder_levels.append(tensor_cdefs.gc(cffi_tensor.indices[i_dimension], tensor_lib.free))
+        if mode == tensor_lib.taco_mode_dense:
+            memory_holder_levels_arrays.append([])
+        elif mode == tensor_lib.taco_mode_sparse:
+            # It does not matter what the values are here. They will be overwritten in take_ownership_of_arrays.
+            memory_holder_levels_arrays.append([tensor_cdefs.NULL, tensor_cdefs.NULL])
+    memory_holder['indices'] = tensor_cdefs.gc(cffi_tensor.indices, tensor_lib.free)
+    memory_holder['*indices'] = memory_holder_levels
+    memory_holder['**indices'] = memory_holder_levels_arrays
+
+    global_weakkeydict[cffi_tensor] = memory_holder
+
+    # Second, defer to take_ownership_of_arrays to take ownership of everything else
+    # This function assumes that the memory holder has already been assigned to
+    # the weak key dictionary.
+    take_ownership_of_arrays(cffi_tensor)
+
+
+def take_ownership_of_tensor(cffi_tensor) -> None:
+    """Take ownership of taco tensor that was allocated elsewhere entirely.
+
+    This is not needed by pure Tensora. But some low-level programs might
+    allocate a taco tensor and return it to Python. If the taco_tensor_t will be
+    owned by Python, then this function can be used to take ownership of all the
+    memory so that it is freed when the cffi object is freed.
+
+    Args:
+        cffi_tensor: A cffi taco_tensor_t*.
+    """
+    global_weakkeydict[cffi_tensor] = {'tensor': tensor_cdefs.gc(cffi_tensor, tensor_lib.free)}
+    take_ownership_of_tensor_members(cffi_tensor)
 
 
 def weakly_increasing(list: List[int]):

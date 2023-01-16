@@ -1,5 +1,6 @@
-import pytest
+from random import randrange
 
+from multiprocessing.pool import ThreadPool
 from tensora import Tensor, tensor_method, evaluate
 
 
@@ -63,7 +64,6 @@ def test_csc_matrix_vector_product():
     assert actual == expected
 
 
-@pytest.mark.skip('taco fails on sparse outputs')
 def test_csr_matrix_plus_csr_matrix():
     A = Tensor.from_aos(
         [[1, 0], [0, 1], [1, 2]],
@@ -89,6 +89,35 @@ def test_csr_matrix_plus_csr_matrix():
 
     assert actual == expected
 
-    actual = evaluate('C(i,j) = A(i,j) * B(i,j)', 'ds', A=A, B=B)
+    actual = evaluate('C(i,j) = A(i,j) + B(i,j)', 'ds', A=A, B=B)
 
     assert actual == expected
+
+
+def test_multithread_evaluation():
+    # As of version 1.14.4 of cffi, the FFI.compile method is not thread safe. This tests that evaluation of different
+    # kernels is thread safe.
+    A = Tensor.from_aos(
+        [[1, 0], [0, 1], [1, 2]],
+        [2.0, -2.0, 4.0],
+        dimensions=(2, 3), format='ds'
+    )
+
+    x = Tensor.from_aos(
+        [[0], [1], [2]],
+        [3.0, 2.5, 2.0],
+        dimensions=(3,), format='d'
+    )
+
+    def run_eval():
+        # Generate a random expression so that the cache cannot be hit
+        return evaluate(f'y{randrange(1024)}(i) = A(i,j) * x(j)', 'd', A=A, x=x)
+
+    n = 4
+    with ThreadPool(n) as p:
+        results = p.starmap(run_eval, [()] * n)
+
+    expected = run_eval()
+
+    for actual in results:
+        assert actual == expected

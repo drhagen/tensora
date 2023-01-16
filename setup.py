@@ -1,3 +1,4 @@
+import platform
 import subprocess
 from pathlib import Path
 
@@ -14,11 +15,19 @@ taco_install_dir = project_dir.joinpath('src/tensora/taco/')
 class TensoraBuild(build):
     def run(self):
         # Build taco
+        OS = platform.system()
+        if OS == "Linux":
+            install_path = r'-DCMAKE_INSTALL_RPATH=\$ORIGIN/../lib'
+        elif OS == "Darwin":
+            install_path = r'-DCMAKE_INSTALL_RPATH=@loader_path/../lib'
+        else:
+            raise NotImplementedError(f'Tensora cannot be installed on {OS}')
+
         taco_build_dir.mkdir(parents=True, exist_ok=True)
         subprocess.check_call(['cmake', str(taco_source_dir),
                                '-DCMAKE_BUILD_TYPE=Release',
                                f'-DCMAKE_INSTALL_PREFIX={taco_install_dir}',
-                               r'-DCMAKE_INSTALL_RPATH=\$ORIGIN/../lib'],  # TODO: Will only work on Linux
+                               install_path],
                               cwd=taco_build_dir)
         subprocess.check_call(['make', '-j8'], cwd=taco_build_dir)
         subprocess.check_call(['make', 'install'], cwd=taco_build_dir)
@@ -36,7 +45,7 @@ class TensoraBdistWheel(bdist_wheel):
 
 setup(
     name='tensora',
-    version='0.0.3',
+    version='0.0.6',
 
     description='Library for dense and sparse tensors built on the tensor algebra compiler.',
     long_description=Path('README.md').read_text(encoding='utf-8'),
@@ -50,9 +59,10 @@ setup(
 
     package_dir={'': 'src'},
     packages=find_packages('src'),
-    package_data={'tensora': ['taco/bin/taco', 'taco/lib/libtaco.so']},
+    package_data={'tensora': ['taco/bin/taco', 'taco/lib/libtaco.*']},
 
     install_requires=Path('requirements.txt').read_text(encoding='utf-8').splitlines(),
+    extras_require={'numpy': ['numpy'], 'scipy': ['scipy']},
 
     classifiers=[
         'Development Status :: 3 - Alpha',
@@ -66,6 +76,8 @@ setup(
         'Programming Language :: Python :: 3 :: Only',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
     ],
 
     cmdclass={

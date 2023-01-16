@@ -71,10 +71,8 @@ def test_matrix_dot(dense1, dense2, format1, format2, format_out):
 @pytest.mark.parametrize('dense2', [[-1, 3.5, 0], [0, 0, 0]])
 @pytest.mark.parametrize('format1', ['ss', 'dd', 'sd', 'ds', 's1s0', 'd1d0', 's1d0', 'd1s0'])
 @pytest.mark.parametrize('format2', ['s', 'd'])
-@pytest.mark.parametrize('format_out', ['s', 'd'])
+@pytest.mark.parametrize('format_out', ['d'])
 def test_matrix_vector_product(dense1, dense2, format1, format2, format_out):
-    if format_out == 's':
-        pytest.skip('taco fails when output is sparse')
     assert_same_as_dense('out(i) = in1(i,j) * in2(j)', format_out, in1=(dense1, format1), in2=(dense2, format2))
 
 

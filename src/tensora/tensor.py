@@ -217,6 +217,16 @@ class Tensor:
         else:
             return {key: value for key, value in self.items() if value != 0.0}
 
+    def to_numpy(self):
+        import numpy
+
+        array = numpy.zeros(self.dimensions, dtype=float)
+
+        for index, value in self.items():
+            array[index] = value
+
+        return array
+
     def __add__(self, other) -> 'Tensor':
         return evaluate_binary_operator(self, other, '+')
 
@@ -249,6 +259,24 @@ class Tensor:
 
         cffi_vals = tensor_cdefs.cast('double*', self.cffi_tensor.vals)
         return cffi_vals[0]
+
+    def __getstate__(self):
+        return {
+            'dimensions': self.dimensions,
+            'mode_types': tuple(mode.c_int for mode in self.format.modes),
+            'mode_ordering': self.format.ordering,
+            'indices': self.taco_indices,
+            'vals': self.taco_vals,
+        }
+
+    def __setstate__(self, state):
+        self.cffi_tensor = taco_structure_to_cffi(
+            indices=state['indices'],
+            vals=state['vals'],
+            mode_types=state['mode_types'],
+            dimensions=state['dimensions'],
+            mode_ordering=state['mode_ordering'],
+        )
 
     def __eq__(self, other):
         if isinstance(other, Tensor):
