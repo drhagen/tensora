@@ -2,7 +2,7 @@ __all__ = ['parse_assignment']
 
 from functools import reduce
 
-from parsita import TextParsers, lit, reg, rep, rep1sep, Result
+from parsita import ParserContext, lit, reg, rep, rep1sep, Result
 from parsita.util import splat
 
 from .ast import Assignment, Add, Subtract, Multiply, Tensor, Scalar, Integer, Float
@@ -18,7 +18,7 @@ def make_expression(first, rest):
     return value
 
 
-class TensorExpressionParsers(TextParsers):
+class TensorExpressionParsers(ParserContext, whitespace=r'[ ]*'):
     name = reg(r'[A-Za-z][A-Za-z0-9]*')
 
     # taco does not support negatives or exponents

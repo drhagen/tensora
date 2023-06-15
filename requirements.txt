@@ -1,2 +1,2 @@
 cffi >= 1.11.0
-parsita >= 1.2.0
+parsita == 1.8.0b2

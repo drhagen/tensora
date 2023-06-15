@@ -122,11 +122,11 @@ def tensor_method(assignment: str, input_formats: Dict[str, str], output_format:
 def cachable_tensor_method(assignment: str, input_formats: Tuple[Tuple[str, str], ...], output_format: str
                            ) -> PureTensorMethod:
     from .expression.parser import parse_assignment
-    parsed_assignment = parse_assignment(assignment).or_die()
+    parsed_assignment = parse_assignment(assignment).unwrap()
 
-    parsed_input_formats = {name: parse_format(format).or_die() for name, format in input_formats}
+    parsed_input_formats = {name: parse_format(format).unwrap() for name, format in input_formats}
 
-    parsed_output = parse_format(output_format).or_die()
+    parsed_output = parse_format(output_format).unwrap()
 
     if parsed_assignment.is_mutating():
         raise NotImplementedError(f'Mutating tensor assignments like {assignment} not implemented yet.')

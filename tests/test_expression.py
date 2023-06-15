@@ -23,7 +23,7 @@ assignment_strings = [
 
 @pytest.mark.parametrize('string,assignment', assignment_strings)
 def test_assignment_parsing(string, assignment):
-    actual = parse_assignment(string).or_die()
+    actual = parse_assignment(string).unwrap()
     assert actual == assignment
 
 
@@ -34,7 +34,7 @@ def test_assignment_deparsing(string, assignment):
 
 
 def parse(string):
-    return parse_assignment(string).or_die()
+    return parse_assignment(string).unwrap()
 
 
 def test_assignment_to_string():
