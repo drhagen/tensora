@@ -1,3 +1,5 @@
+__all__ = ["DesugaredExpression", "Literal", "Integer", "Float", "Variable", "Scalar", "Tensor", "Add", "Subtract", "Multiply", "Contract", "Assignment"]
+
 from dataclasses import dataclass
 from typing import List
 
