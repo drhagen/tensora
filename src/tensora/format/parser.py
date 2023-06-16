@@ -1,6 +1,6 @@
 __all__ = ['parse_format']
 
-from parsita import TextParsers, reg, lit, rep, eof, Result, Success, Failure
+from parsita import ParserContext, reg, lit, rep, eof, Result, Success, Failure, ParseError, StringReader
 from parsita.util import constant
 
 from .format import Mode, Format
@@ -15,7 +15,7 @@ def make_format_with_orderings(dims):
     return Format(tuple(modes), tuple(orderings))
 
 
-class FormatTextParsers(TextParsers, whitespace=None):
+class FormatTextParsers(ParserContext):
     integer = reg(r'[0-9]+') > int
     dense = lit('d') > constant(Mode.dense)
     compressed = lit('s') > constant(Mode.compressed)
@@ -33,9 +33,11 @@ def parse_format(format: str) -> Result[Format]:
     if isinstance(parse_result, Failure):
         return parse_result
     elif isinstance(parse_result, Success):
-        parse_value = parse_result.value
+        parse_value = parse_result.unwrap()
         if set(range(parse_value.order)) != set(parse_value.ordering):
-            return Failure(f'Format ordering must be some order of the set {set(range(parse_value.order))} not '
-                           f'{parse_value.ordering}')
+            return Failure(ParseError(
+                StringReader(format),
+                f'format ordering as some order of the set {set(range(parse_value.order))}'
+            ))
         else:
             return parse_result
