@@ -36,8 +36,8 @@ def parse_format(format: str) -> Result[Format]:
         parse_value = parse_result.unwrap()
         if set(range(parse_value.order)) != set(parse_value.ordering):
             return Failure(ParseError(
-                    StringReader(format),
-                    f'format ordering as some order of the set {set(range(parse_value.order))}'
-                ))
+                StringReader(format),
+                f'format ordering as some order of the set {set(range(parse_value.order))}'
+            ))
         else:
             return parse_result
