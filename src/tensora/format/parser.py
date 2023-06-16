@@ -1,6 +1,6 @@
 __all__ = ['parse_format']
 
-from parsita import ParserContext, reg, lit, rep, eof, Result, Success, Failure, ParseError
+from parsita import ParserContext, reg, lit, rep, eof, Result, Success, Failure, ParseError, StringReader
 from parsita.util import constant
 
 from .format import Mode, Format
@@ -35,7 +35,9 @@ def parse_format(format: str) -> Result[Format]:
     elif isinstance(parse_result, Success):
         parse_value = parse_result.unwrap()
         if set(range(parse_value.order)) != set(parse_value.ordering):
-            return Failure(ParseError(f'Format ordering must be some order of the set {set(range(parse_value.order))} '
-                                      f'not {parse_value.ordering}'))
+            return Failure(ParseError(
+                    StringReader(format),
+                    f'format ordering as some order of the set {set(range(parse_value.order))}'
+                ))
         else:
             return parse_result
