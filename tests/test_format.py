@@ -17,7 +17,7 @@ format_strings = [
 
 @pytest.mark.parametrize('string,format', format_strings)
 def test_parse_format(string, format):
-    actual = parse_format(string).or_die()
+    actual = parse_format(string).unwrap()
     assert actual == format
 
 

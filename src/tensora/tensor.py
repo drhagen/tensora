@@ -50,7 +50,7 @@ class Tensor:
             coordinates = list(coordinates)
             format = default_format_given_nnz(dimensions, len(coordinates))
         elif isinstance(format, str):
-            format = parse_format(format).or_die()
+            format = parse_format(format).unwrap()
 
         # Reorder with first level first, etc.
         level_dimensions = tuple(dimensions[i] for i in format.ordering)
