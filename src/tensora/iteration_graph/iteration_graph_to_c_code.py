@@ -444,7 +444,7 @@ class BucketOutput(Output):
 
 @singledispatch
 def iteration_graph_to_c_code(graph: IterationGraph, output: Output, kernel_type: KernelType) -> SourceBuilder:
-    raise NotImplementedError()
+    raise NotImplementedError(f"iteration_graph_to_c_code not implemented for type {type(graph)}: {graph}")
 
 
 def generate_subgraphs(graph: IterationVariable) -> List[IterationVariable]:

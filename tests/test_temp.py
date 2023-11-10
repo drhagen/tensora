@@ -1,5 +1,9 @@
 from tensora import Mode, Format
 from tensora.codegen.ast_to_c import ast_to_c
+from tensora.desugar.to_identifiable import to_identifiable
+from tensora.desugar.to_iteration_graph import to_iteration_graph
+from tensora.desugar.desugar_expression import desugar_assignment
+from tensora.expression.parser import parse_assignment
 from tensora.format import parse_format
 from tensora.ir.peephole import peephole
 from tensora.iteration_graph.iteration_graph import *
@@ -12,11 +16,37 @@ from tensora.iteration_graph.iteration_graph_to_c_code import iteration_graph_to
 #     method = tensor_method('A(i,j) = B(i,k) * C(k,j)', dict(B='ds', C='ds'), 'dd')
 #
 from tensora.iteration_graph.problem import Problem
+from tensora.native_generator import assignment_to_c_code
 
 
 def pf(text: str):
-    return parse_format(text).or_die()
+    return parse_format(text).unwrap()
 
+
+def test_native():
+    string = "f(i) = A0(i) + A1(i,j) * x(j) + A2(i,k,l) * x(k) * x(l)"
+    input_formats = {"f": pf("d"), "A0": pf("d"), "A1": pf("ds"), "A2": pf("dss"), "x": pf("d")}
+    output_format = pf("d")
+    print(string)
+    assignment = parse_assignment(string).unwrap()
+    print(repr(assignment))
+    desugar = desugar_assignment(assignment)
+    print(desugar)
+    identifiable_assignment = to_identifiable(desugar, input_formats)
+    graph = to_iteration_graph(desugar, input_formats)
+    print(graph)
+    problem = Problem(identifiable_assignment, input_formats, output_format)
+    ir = generate_c_code(problem, graph, KernelType.compute).finalize()
+    print(ir)
+    code = ast_to_c(peephole(ir))
+    print(code)
+
+def test_native_codegen():
+    assignment = "f(i) = A0(i) + A1(i,j) * x(j) + A2(i,k,l) * x(k) * x(l)"
+    input_formats = {"A0": "d", "A1": "ds", "A2": "dss", "x": "d"}
+    output_format = "d"
+    kernel_type = KernelType.compute
+    print(assignment_to_c_code(assignment, input_formats, output_format, kernel_type))
 
 # def test_code():
 #     assignment = parse_assignment('a(i,j) = b(i,j) * c(i,j)').or_die()

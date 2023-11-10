@@ -1,4 +1,4 @@
-__all__ = ["DesugaredExpression", "Literal", "Integer", "Float", "Variable", "Scalar", "Tensor", "Add", "Subtract", "Multiply", "Contract", "Assignment"]
+__all__ = ["DesugaredExpression", "Literal", "Integer", "Float", "Variable", "Scalar", "Tensor", "Add", "Multiply", "Contract", "Assignment"]
 
 from dataclasses import dataclass
 from typing import List
@@ -46,12 +46,6 @@ class Tensor(Variable):
 
 @dataclass(frozen=True)
 class Add(DesugaredExpression):
-    left: DesugaredExpression
-    right: DesugaredExpression
-
-
-@dataclass(frozen=True)
-class Subtract(DesugaredExpression):
     left: DesugaredExpression
     right: DesugaredExpression
 

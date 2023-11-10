@@ -163,6 +163,12 @@ class Multiply(Expression):
     left: Expression
     right: Expression
 
+    def __init__(self, left: Expression, right: Expression):
+        if left is None:
+            assert left is not None
+        object.__setattr__(self, "left", left)
+        object.__setattr__(self, "right", right)
+
     @staticmethod
     def join(factors: List[Union[Expression, int, str]]):
         factors = map(to_expression, factors)

@@ -51,6 +51,7 @@ class Add(IterationGraph):
 
 @dataclass(frozen=True)
 class Multiply(IterationGraph):
+    name: str
     factors: List[IterationGraph]
 
 

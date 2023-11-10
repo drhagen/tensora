@@ -8,7 +8,7 @@ from ...ir import ast as ir
 
 @singledispatch
 def to_ir(self: Expression) -> ir.Expression:
-    pass
+    raise NotImplementedError(f"to_ir not implemented for {type(self)}: {self}")
 
 
 @to_ir.register(Integer)
