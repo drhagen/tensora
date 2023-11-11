@@ -1,6 +1,6 @@
+__all__ = ["Id"]
+
 from dataclasses import dataclass
-
-
 
 
 @dataclass(frozen=True)

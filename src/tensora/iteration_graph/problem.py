@@ -1,10 +1,10 @@
+__all__ = ["Problem"]
+
 from dataclasses import dataclass
 from typing import Dict
 
-from tensora import Format
-from tensora.iteration_graph.identifiable_expression import Assignment
-from tensora.iteration_graph.identifiable_expression.index_dimension import index_dimension
-from tensora.iteration_graph.identifiable_expression.index_dimensions import index_dimensions
+from ..format import Format
+from .identifiable_expression import Assignment, index_dimension, index_dimensions
 
 
 @dataclass(frozen=True)

@@ -7,7 +7,7 @@ from functools import singledispatch
 from typing import List, Optional, Set, Tuple
 
 from .identifiable_expression import ast as ie_ast
-from .identifiable_expression.to_ir import to_ir
+from .identifiable_expression import to_ir
 from .iteration_graph import IterationGraph, IterationVariable, TerminalExpression, Add as GraphAdd
 from .merge_lattice import LatticeLeaf
 from .names import dimension_name, pos_name, crd_name, vals_name, crd_capacity_name, pos_capacity_name, \

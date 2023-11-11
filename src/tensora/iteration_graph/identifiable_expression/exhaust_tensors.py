@@ -1,8 +1,7 @@
 from functools import singledispatch
 
 from .ast import *
-
-from tensora.iteration_graph.identifiable_expression import TensorLeaf
+from .tensor_leaf import TensorLeaf
 
 
 @singledispatch

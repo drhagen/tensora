@@ -6,8 +6,8 @@ from abc import abstractmethod
 from contextlib import contextmanager
 from typing import List, Dict, Optional, Union
 
-from tensora.ir.ast import Statement, FunctionDefinition, Variable, Declaration, Block, Expression, Branch, Loop
-from tensora.ir.types import Type
+from .ast import Statement, FunctionDefinition, Variable, Declaration, Block, Expression, Branch, Loop
+from .types import Type
 
 
 class Builder:

@@ -43,18 +43,12 @@ def type_to_c_pointer(type: Pointer, variable: Optional[str] = None):
 
 @type_to_c.register(Array)
 def type_to_c_array(type: Array, variable: Optional[str] = None):
-    if variable is None:
-        return f"{type_to_c(type.element)}[]"
-    else:
-        return f"{type_to_c(type.element)} {variable}[]"
+    return f"{type_to_c(type.element, variable)}[]"
 
 
 @type_to_c.register(FixedArray)
 def type_to_c_fixed_array(type: FixedArray, variable: Optional[str] = None):
-    if variable is None:
-        return f"{type_to_c(type.element)}[{type.n}]"
-    else:
-        return f"{type_to_c(type.element)} {variable}[{type.n}]"
+    return f"{type_to_c(type.element, variable)}[{type.n}]"
 
 
 def space_variable(variable: Optional[str] = None):

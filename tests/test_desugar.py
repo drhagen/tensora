@@ -1,9 +1,8 @@
 import pytest
 
-from tensora.desugar.desugar_expression import desugar_assignment
+from tensora.desugar import desugar_assignment, Id
 from tensora.expression import ast as sugar
 from tensora.desugar import ast as desugar
-from tensora.desugar.id import Id
 
 
 @pytest.mark.parametrize(

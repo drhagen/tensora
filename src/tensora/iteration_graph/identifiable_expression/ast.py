@@ -4,8 +4,8 @@ __all__ = ['Expression', 'Literal', 'Integer', 'Float', 'Variable', 'Scalar', 'T
 from dataclasses import dataclass
 from typing import Tuple
 
-from tensora import Mode
-from tensora.iteration_graph.identifiable_expression.tensor_leaf import TensorLeaf
+from ...format import Mode
+from .tensor_leaf import TensorLeaf
 
 
 class Node:

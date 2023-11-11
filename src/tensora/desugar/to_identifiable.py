@@ -2,9 +2,9 @@ __all__ = ["to_identifiable"]
 
 from functools import singledispatch
 
-from tensora.format.format import Format
-from ..iteration_graph.identifiable_expression import ast as id
 from . import ast as desugar
+from ..format import Format
+from ..iteration_graph.identifiable_expression import ast as id
 
 
 def to_identifiable(assignment: desugar.Assignment, input_formats: dict[str, Format], output_format: Format) -> id.Assignment:

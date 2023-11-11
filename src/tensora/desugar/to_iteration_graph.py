@@ -3,16 +3,13 @@ __all__ = ["to_iteration_graph"]
 from dataclasses import replace
 from functools import singledispatch
 from itertools import count
-from typing import Dict, Iterator, Tuple
-from .collect_lattices import collect_lattices
-from tensora.format.format import Format, Mode
-from tensora.iteration_graph.identifiable_expression.tensor_leaf import TensorLeaf
-
-from tensora.iteration_graph.merge_lattice.merge_lattice import Lattice, LatticeLeaf
+from typing import Dict, Iterator
 
 from . import ast
-from ..iteration_graph import iteration_graph as graph
+from .collect_lattices import collect_lattices
+from ..iteration_graph import Lattice, LatticeLeaf, iteration_graph as graph
 from ..iteration_graph.identifiable_expression import ast as id
+from ..format import Format
 
 
 def to_iteration_graph(assignment: ast.Assignment, formats: dict[str, Format], output_format: Format) -> graph.IterationGraph:
