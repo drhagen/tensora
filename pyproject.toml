@@ -1,0 +1,22 @@
+[tool.coverage.run]
+branch = true
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "pass",
+    "raise NotImplementedError",
+    "def __str__",
+    "def __repr__",
+]
+
+[tool.coverage.paths]
+source = [
+    "src/",
+    ".nox/test*/lib/python*/site-packages/",
+    ".nox/test*/Lib/site-packages/",
+]
+
+[build-system]
+requires = ["setuptools >= 68.2.2", "wheel >= 0.41.3"]
+build-backend = "setuptools.build_meta"
