@@ -15,13 +15,13 @@ taco_install_dir = project_dir.joinpath('src/tensora/taco/')
 class TensoraBuild(build):
     def run(self):
         # Build taco
-        OS = platform.system()
-        if OS == "Linux":
+        os = platform.system()
+        if os == "Linux":
             install_path = r'-DCMAKE_INSTALL_RPATH=\$ORIGIN/../lib'
-        elif OS == "Darwin":
+        elif os == "Darwin":
             install_path = r'-DCMAKE_INSTALL_RPATH=@loader_path/../lib'
         else:
-            raise NotImplementedError(f'Tensora cannot be installed on {OS}')
+            raise NotImplementedError(f'Tensora cannot be installed on {os}')
 
         taco_build_dir.mkdir(parents=True, exist_ok=True)
         subprocess.check_call(['cmake', str(taco_source_dir),

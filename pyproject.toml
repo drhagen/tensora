@@ -17,6 +17,20 @@ source = [
     ".nox/test*/Lib/site-packages/",
 ]
 
+[tool.ruff]
+src = ["src"]
+line-length = 120
+
+extend-exclude = ["src/taco/**"]
+
+extend-select = [
+    "N", # pep8-naming
+]
+
+[tool.ruff.per-file-ignores]
+# Allow glob imports and uppercase identifiers in tests
+"tests/*" = ["F403", "F405", "N802", "N806"]
+
 [build-system]
 requires = ["setuptools >= 68.2.2", "wheel >= 0.41.3"]
 build-backend = "setuptools.build_meta"
