@@ -1,0 +1,76 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+
+env:
+  python-version: "3.10"
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11"]
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+      - name: Install Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+      - name: Install environment
+        run: pip install -r requirements.txt -r dev-requirements.txt
+      - name: Test with nox
+        run: >-
+          nox -s 
+          test-${{ matrix.python-version }}
+          test_numpy-${{ matrix.python-version }}
+      - name: Store coverage
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage
+          path: .coverage.*
+  coverage:
+    needs: test
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+      - name: Install Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.python-version }}
+          cache: pip
+      - name: Install environment
+        run: pip install -r requirements.txt -r dev-requirements.txt
+      - name: Fetch coverage
+        uses: actions/download-artifact@v3
+        with:
+          name: coverage
+      - name: Combine coverage and generate report
+        run: nox -s coverage
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          fail_ci_if_error: true
+  lint:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+      - name: Install Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.python-version }}
+          cache: pip
+      - name: Install environment
+        run: pip install -r requirements.txt -r dev-requirements.txt
+      - name: Run code quality checks
+        run: nox -s lint
