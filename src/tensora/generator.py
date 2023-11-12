@@ -1,4 +1,4 @@
-from typing import Dict, Optional
+from typing import Dict
 
 from tensora import Format, Mode
 from tensora.expression import Assignment
@@ -12,7 +12,7 @@ int evaluate({{#each declaration}}taco_tensor_t *{{this}}{{#unless @last}}, {{/u
 {{#if dense}}
   {{target.name}}_vals_capacity *= {{target.name}}{{@index}}_dimension;
 {{#else}}
-  int32_t 
+  int32_t
 {{/if}}
 {{/each}}
   {{target.name}}_vals = (double*)malloc(sizeof(double) * {{target.name}}_capacity);
@@ -41,8 +41,6 @@ def generate_c_code(assignment: Assignment, input_formats: Dict[str, Format], ou
             return [flatten_multiplication(node)]
         else:
             raise NotImplementedError
-
-    terms = flatten_addition(assignment.expression)
 
     target_name = assignment.target.name
 

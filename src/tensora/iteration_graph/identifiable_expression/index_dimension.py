@@ -3,7 +3,7 @@ __all__ = ['index_dimension']
 from functools import singledispatch
 from typing import Optional, Union, Tuple
 
-from .ast import *
+from .ast import Node, Literal, Integer, Float, Scalar, Tensor, Add, Subtract, Multiply, Assignment
 
 
 @singledispatch

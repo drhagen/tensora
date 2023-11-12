@@ -23,7 +23,12 @@ __all__ = ["peephole"]
 from dataclasses import replace
 from functools import singledispatch
 
-from .ast import *
+from .ast import Statement, Expression, Assignable, Variable, AttributeAccess, ArrayIndex, \
+    IntegerLiteral, FloatLiteral, BooleanLiteral, ModeLiteral, Address, Allocate, ArrayLiteral, \
+    Add, Subtract, Multiply, Equal, NotEqual, GreaterThan, GreaterThanOrEqual, LessThanOrEqual, \
+    LessThan, And, Or, FunctionCall, Max, Min, BooleanToInteger, ArrayAllocate, ArrayReallocate, \
+    Free, Declaration, Assignment, DeclarationAssignment, Block, Branch, Loop, Break, Return, \
+    FunctionDefinition
 
 
 @singledispatch

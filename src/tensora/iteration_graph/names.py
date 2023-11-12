@@ -1,5 +1,3 @@
-from typing import List
-
 from .identifiable_expression import TensorLeaf
 from ..ir.ast import Variable, IntegerLiteral, Expression
 

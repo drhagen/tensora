@@ -2,7 +2,7 @@ __all__ = ['to_ir']
 
 from functools import singledispatch
 
-from .ast import *
+from .ast import Expression, Integer, Float, Scalar, Tensor, Add, Subtract, Multiply
 from ...ir import ast as ir
 
 
@@ -24,12 +24,12 @@ def to_c_code_float(self: Float):
 
 
 @to_ir.register(Scalar)
-def to_c_code_variable(self: Scalar):
+def to_c_code_scalar(self: Scalar):
     return ir.Variable(self.variable.name)
 
 
 @to_ir.register(Tensor)
-def to_c_code_variable(self: Tensor):
+def to_c_code_tensor(self: Tensor):
     from ..names import vals_name, previous_layer_pointer
     return vals_name(self.variable.name).idx(previous_layer_pointer(self.variable, self.order))
 

@@ -92,7 +92,10 @@ def desugar_subtract(
 
     output = desugar.Add(
         desugar_expression(expression.left, left_indexes - intersection_indexes, ids),
-        desugar.Multiply(desugar.Integer(-1), desugar_expression(expression.right, right_indexes - intersection_indexes, ids)),
+        desugar.Multiply(
+            desugar.Integer(-1),
+            desugar_expression(expression.right, right_indexes - intersection_indexes, ids),
+        ),
     )
 
     for index in intersection_indexes:

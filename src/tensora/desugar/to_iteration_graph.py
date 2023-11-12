@@ -12,7 +12,11 @@ from ..iteration_graph.identifiable_expression import ast as id
 from ..format import Format
 
 
-def to_iteration_graph(assignment: ast.Assignment, formats: dict[str, Format], output_format: Format) -> graph.IterationGraph:
+def to_iteration_graph(
+        assignment: ast.Assignment,
+        formats: dict[str, Format],
+        output_format: Format,
+) -> graph.IterationGraph:
     lattices = collect_lattices(assignment.expression, formats)
 
     tree = to_iteration_graph_expression(assignment.expression, lattices, formats, count(1))
@@ -26,39 +30,71 @@ def to_iteration_graph(assignment: ast.Assignment, formats: dict[str, Format], o
 
 
 @singledispatch
-def to_iteration_graph_expression(expression: ast.DesugaredExpression, lattices: Dict[str, Lattice], formats: dict[str, Format], ids: Iterator[int]) -> graph.IterationGraph:
-    raise NotImplementedError(f"to_iteration_graph_expression not implemented for type {type(expression)}: {expression}")
+def to_iteration_graph_expression(
+    expression: ast.DesugaredExpression,
+    lattices: Dict[str, Lattice],
+    formats: dict[str, Format],
+    ids: Iterator[int],
+):
+    raise NotImplementedError(
+        f"to_iteration_graph_expression not implemented for type {type(expression)}: {expression}"
+    )
 
 
 @to_iteration_graph_expression.register(ast.Integer)
-def to_iteration_graph_integer(expression: ast.Integer, lattices: Dict[str, Lattice], formats: dict[str, Format], ids: Iterator[int]):
+def to_iteration_graph_integer(
+    expression: ast.Integer,
+    lattices: Dict[str, Lattice],
+    formats: dict[str, Format],
+    ids: Iterator[int],
+):
     return graph.TerminalExpression(id.Integer(expression.value))
 
 
 @to_iteration_graph_expression.register(ast.Float)
-def to_iteration_graph_float(expression: ast.Float, lattices: Dict[str, Lattice], formats: dict[str, Format], ids: Iterator[int]):
+def to_iteration_graph_float(
+    expression: ast.Float,
+    lattices: Dict[str, Lattice],
+    formats: dict[str, Format],
+    ids: Iterator[int],
+):
     return graph.TerminalExpression(id.Float(expression.value))
 
 
 @to_iteration_graph_expression.register(ast.Scalar)
-def to_iteration_graph_scalar(expression: ast.Scalar, lattices: Dict[str, Lattice], formats: dict[str, Format], ids: Iterator[int]):
+def to_iteration_graph_scalar(
+    expression: ast.Scalar,
+    lattices: Dict[str, Lattice],
+    formats: dict[str, Format],
+    ids: Iterator[int],
+):
     target_leaf = expression.variable.to_tensor_leaf()
     return graph.TerminalExpression(id.Scalar(target_leaf))
 
 
 @to_iteration_graph_expression.register(ast.Tensor)
-def to_iteration_graph_variable(expression: ast.Tensor, lattices: Dict[str, Lattice], formats: dict[str, Format], ids: Iterator[int]):
+def to_iteration_graph_tensor(
+    expression: ast.Tensor,
+    lattices: Dict[str, Lattice],
+    formats: dict[str, Format],
+    ids: Iterator[int],
+):
     target_leaf = expression.variable.to_tensor_leaf()
     variable = id.Tensor(target_leaf, expression.indexes, formats[expression.variable.name].modes)
     return graph.TerminalExpression(variable)
 
 
 @to_iteration_graph_expression.register(ast.Add)
-def to_iteration_graph_variable(expression: ast.Add, lattices: Dict[str, Lattice], formats: dict[str, Format], ids: Iterator[int]):
+def to_iteration_graph_add(
+    expression: ast.Add,
+    lattices: Dict[str, Lattice],
+    formats: dict[str, Format],
+    ids: Iterator[int],
+):
     left = to_iteration_graph_expression(expression.left, lattices, formats, ids)
     right = to_iteration_graph_expression(expression.right, lattices, formats, ids)
     match (left, right):
-        case (graph.TerminalExpression(),graph.TerminalExpression()):
+        case (graph.TerminalExpression(), graph.TerminalExpression()):
             return graph.TerminalExpression(id.Add(left.expression, right.expression))
         case (graph.Add(name=name, terms=left_terms), graph.Add(terms=right_terms)):
             return graph.Add(name, left_terms + right_terms)
@@ -71,7 +107,12 @@ def to_iteration_graph_variable(expression: ast.Add, lattices: Dict[str, Lattice
 
 
 @to_iteration_graph_expression.register(ast.Multiply)
-def to_iteration_graph_variable(expression: ast.Multiply, lattices: Dict[str, Lattice], formats: dict[str, Format], ids: Iterator[int]):
+def to_iteration_graph_multiply(
+    expression: ast.Multiply,
+    lattices: Dict[str, Lattice],
+    formats: dict[str, Format],
+    ids: Iterator[int],
+):
     left = to_iteration_graph_expression(expression.left, lattices, formats, ids)
     right = to_iteration_graph_expression(expression.right, lattices, formats, ids)
     assert left is not None
@@ -95,5 +136,15 @@ def to_iteration_graph_variable(expression: ast.Multiply, lattices: Dict[str, La
 
 
 @to_iteration_graph_expression.register(ast.Contract)
-def to_iteration_graph_variable(expression: ast.Contract, lattices: Dict[str, Lattice], formats: dict[str, Format], ids: Iterator[int]):
-    return graph.IterationVariable(expression.index, None, lattices[expression.index], to_iteration_graph_expression(expression.expression, lattices, formats, ids))
+def to_iteration_graph_contract(
+    expression: ast.Contract,
+    lattices: Dict[str, Lattice],
+    formats: dict[str, Format],
+    ids: Iterator[int],
+):
+    return graph.IterationVariable(
+        expression.index,
+        None,
+        lattices[expression.index],
+        to_iteration_graph_expression(expression.expression, lattices, formats, ids)
+    )

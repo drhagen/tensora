@@ -7,12 +7,25 @@ from ..format import Format
 from ..iteration_graph.identifiable_expression import ast as id
 
 
-def to_identifiable(assignment: desugar.Assignment, input_formats: dict[str, Format], output_format: Format) -> id.Assignment:
-    return id.Assignment(to_identifiable_expression(assignment.target, {assignment.target.variable.name: output_format}), to_identifiable_expression(assignment.expression, input_formats))
+def to_identifiable(
+        assignment: desugar.Assignment,
+        input_formats: dict[str, Format],
+        output_format: Format,
+) -> id.Assignment:
+    return id.Assignment(
+        to_identifiable_expression(
+            assignment.target,
+            {assignment.target.variable.name: output_format},
+        ),
+        to_identifiable_expression(assignment.expression, input_formats),
+    )
 
 
 @singledispatch
-def to_identifiable_expression(expression: desugar.DesugaredExpression, formats: dict[str, Format]) -> id.Expression:
+def to_identifiable_expression(
+    expression: desugar.DesugaredExpression,
+    formats: dict[str, Format],
+) -> id.Expression:
     raise NotImplementedError(f"to_identifiable_expression not implemented for type {type(expression)}: {expression}")
 
 
@@ -33,17 +46,26 @@ def to_identifiable_scalar(expression: desugar.Scalar, formats: dict[str, Format
 
 @to_identifiable_expression.register(desugar.Tensor)
 def to_identifiable_tensor(expression: desugar.Tensor, formats: dict[str, Format]):
-    return id.Tensor(expression.variable.to_tensor_leaf(), expression.indexes, formats[expression.variable.name].modes)
+    return id.Tensor(
+        expression.variable.to_tensor_leaf(),
+        expression.indexes, formats[expression.variable.name].modes,
+    )
 
 
 @to_identifiable_expression.register(desugar.Add)
 def to_identifiable_add(expression: desugar.Add, formats: dict[str, Format]):
-    return id.Add(to_identifiable_expression(expression.left, formats), to_identifiable_expression(expression.right, formats))
+    return id.Add(
+        to_identifiable_expression(expression.left, formats),
+        to_identifiable_expression(expression.right, formats),
+    )
 
 
 @to_identifiable_expression.register(desugar.Multiply)
 def to_identifiable_multiply(expression: desugar.Multiply, formats: dict[str, Format]):
-    return id.Multiply(to_identifiable_expression(expression.left, formats), to_identifiable_expression(expression.right, formats))
+    return id.Multiply(
+        to_identifiable_expression(expression.left, formats),
+        to_identifiable_expression(expression.right, formats),
+    )
 
 
 @to_identifiable_expression.register(desugar.Contract)

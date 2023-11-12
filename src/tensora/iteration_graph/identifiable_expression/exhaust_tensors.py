@@ -1,6 +1,6 @@
 from functools import singledispatch
 
-from .ast import *
+from .ast import Expression, Literal, Scalar, Tensor, Add, Subtract, Multiply
 from .tensor_leaf import TensorLeaf
 
 
@@ -15,7 +15,7 @@ def exhaust_tensor_literal(self: Literal, tensor: TensorLeaf):
 
 
 @exhaust_tensor.register(Scalar)
-def exhaust_tensor_literal(self: Scalar, tensor: TensorLeaf):
+def exhaust_tensor_scalar(self: Scalar, tensor: TensorLeaf):
     return self
 
 

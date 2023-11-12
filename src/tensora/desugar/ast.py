@@ -1,4 +1,16 @@
-__all__ = ["DesugaredExpression", "Literal", "Integer", "Float", "Variable", "Scalar", "Tensor", "Add", "Multiply", "Contract", "Assignment"]
+__all__ = [
+    "DesugaredExpression",
+    "Literal",
+    "Integer",
+    "Float",
+    "Variable",
+    "Scalar",
+    "Tensor",
+    "Add",
+    "Multiply",
+    "Contract",
+    "Assignment",
+]
 
 from dataclasses import dataclass
 from typing import List

@@ -4,7 +4,12 @@ from functools import singledispatch
 from typing import Union
 
 from ..format import Mode
-from ..ir.ast import *
+from ..ir.ast import Variable, Multiply, IntegerLiteral, ArrayAllocate, Expression, Statement, \
+    Return, GreaterThanOrEqual, \
+    ArrayReallocate, Max, LessThan, And, Min, BooleanToInteger, Equal, Block, GreaterThan, LessThanOrEqual, \
+    Branch, Add, Or, Subtract, ArrayLiteral, AttributeAccess, ArrayIndex, FloatLiteral, BooleanLiteral, \
+    ModeLiteral, FunctionCall, Address, Free, NotEqual, Break, Allocate, Declaration, Assignment, \
+    DeclarationAssignment, Loop, FunctionDefinition
 from .type_to_c import type_to_c
 
 
@@ -216,7 +221,7 @@ def ast_to_c_assignment(code: Assignment):
 
 
 @ast_to_c_statement.register(DeclarationAssignment)
-def ast_to_c_assignment(code: DeclarationAssignment):
+def ast_to_c_declaration_assignment(code: DeclarationAssignment):
     return [f"{ast_to_c_declaration(code.target)} = {ast_to_c_expression(code.value)};"]
 
 

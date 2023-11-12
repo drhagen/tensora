@@ -183,7 +183,7 @@ multiple_lines = [
         ),
         """
         // comment
-        
+
         // inner comment
         int32_t x = 0;
 

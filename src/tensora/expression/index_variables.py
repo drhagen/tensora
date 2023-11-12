@@ -3,7 +3,7 @@ __all__ = ['index_variables']
 from functools import singledispatch
 from typing import List
 
-from .ast import *
+from .ast import Node, Literal, Variable, Add, Subtract, Multiply, Assignment
 
 
 @singledispatch

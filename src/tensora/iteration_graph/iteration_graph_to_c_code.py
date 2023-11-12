@@ -11,7 +11,7 @@ from .identifiable_expression import to_ir
 from .iteration_graph import IterationGraph, IterationVariable, TerminalExpression, Add as GraphAdd
 from .merge_lattice import LatticeLeaf
 from .names import dimension_name, pos_name, crd_name, vals_name, crd_capacity_name, pos_capacity_name, \
-    vals_capacity_name, layer_pointer, value_from_crd, previous_layer_pointer, tensor_to_string
+    vals_capacity_name, layer_pointer, previous_layer_pointer, tensor_to_string
 from ..format import Mode
 from ..ir.ast import Variable, Multiply, IntegerLiteral, ArrayAllocate, Expression, Return, GreaterThanOrEqual, \
     ArrayReallocate, Max, LessThan, And, Min, BooleanToInteger, Equal, Block, GreaterThan, Branch, Add, ArrayLiteral, \
@@ -345,7 +345,7 @@ class HashOutput(Output):
                 return replace(self, unfulfilled=next_unfulfilled), SourceBuilder(), SourceBuilder()
 
     def name(self) -> Variable:
-        return Variable(f'hash_table')
+        return Variable('hash_table')
 
     def modes_name(self) -> Variable:
         return Variable(f'i_{self.name().name}_modes')
