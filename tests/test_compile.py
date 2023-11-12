@@ -3,7 +3,7 @@ import tempfile
 from cffi import FFI
 
 from tensora import Tensor
-from tensora.compile import tensor_cdefs, taco_define_header, taco_type_header, lock,\
+from tensora.compile import tensor_cdefs, taco_define_header, taco_type_header, lock, \
     take_ownership_of_tensor_members, take_ownership_of_tensor
 
 source = """
