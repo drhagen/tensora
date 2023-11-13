@@ -1,3 +1,12 @@
+# Build
 cmake >= 3.13.3
+
+# Environment
+nox >= 2023.4.22
+
+# Test
 pytest >= 4.4.1
 pytest-cov >= 2.6.1
+
+# Lint
+ruff >= 0.1.5
