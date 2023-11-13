@@ -26,4 +26,4 @@ def coverage(s: Session):
 
 @session(venv_backend="none")
 def lint(s: Session) -> None:
-    s.run("flake8", "src/tensora", "tests")
+    s.run("ruff", "check", ".")
