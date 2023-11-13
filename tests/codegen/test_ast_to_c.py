@@ -2,7 +2,7 @@ from textwrap import dedent
 
 import pytest
 
-from tensora.codegen.ast_to_c import ast_to_c
+from tensora.codegen.ir_to_c import ir_to_c
 from tensora.ir.ast import *
 from tensora.ir.types import *
 
@@ -64,6 +64,9 @@ single_lines = [
     (Min(Variable("x"), Variable("y")), "TACO_MIN(x, y)"),
     (Max(Max(Variable("x"), Variable("y")), Variable("z")), "TACO_MAX(TACO_MAX(x, y), z)"),
     (Min(Min(Variable("x"), Variable("y")), Variable("z")), "TACO_MIN(TACO_MIN(x, y), z)"),
+    # Address
+    (Address(Variable("x")), "&x"),
+    (Address(ArrayIndex(Variable("x"), Variable("i"))), "&x[i]"),
     # Cast
     (BooleanToInteger(Equal(Variable("x"), Variable("y"))), "(int32_t)(x == y)"),
     # Allocate
@@ -81,6 +84,8 @@ single_lines = [
         ArrayReallocate(Variable("old"), float, Add(Variable("previous"), Variable("new"))),
         "realloc(old, sizeof(double) * (previous + new))",
     ),
+    # Free
+    (Free(Variable("x")), "free(x)"),
     # Declaration and types
     (Declaration(Variable("x"), integer), "int32_t x"),
     (Declaration(Variable("x"), float), "double x"),
@@ -100,6 +105,8 @@ single_lines = [
     (Assignment(Variable("x"), Subtract(Variable("x"), IntegerLiteral(2))), "x -= 2"),
     (Assignment(Variable("x"), Multiply(Variable("x"), IntegerLiteral(2))), "x *= 2"),
     (DeclarationAssignment(Declaration(Variable("x"), integer), Variable("y")), "int32_t x = y"),
+    # Break
+    (Break(), "break"),
     # Return
     (Return(IntegerLiteral(0)), "return 0"),
 ]
@@ -107,7 +114,7 @@ single_lines = [
 
 @pytest.mark.parametrize("ast,code", single_lines)
 def test_single_lines(ast: Expression, code: str):
-    assert ast_to_c(ast) == code + ";"
+    assert ir_to_c(ast) == code + ";"
 
 
 multiple_lines = [
@@ -317,4 +324,4 @@ multiple_lines = [
 
 @pytest.mark.parametrize("ast,code", multiple_lines)
 def test_multiple_lines(ast: Expression, code: str):
-    assert ast_to_c(ast) == clean(code)
+    assert ir_to_c(ast) == clean(code)

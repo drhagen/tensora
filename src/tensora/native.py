@@ -2,7 +2,7 @@ __all__ = ["generate_code", "KernelType"]
 
 from typing import Dict
 
-from .codegen import ast_to_c
+from .codegen import ir_to_c
 from .desugar import desugar_assignment, to_identifiable, to_iteration_graph
 from .expression import parse_assignment
 from .format import parse_format
@@ -28,4 +28,4 @@ def generate_code(
 
     ir = generate_c_code(problem, graph, kernel_type).finalize()
 
-    return ast_to_c(peephole(ir))
+    return ir_to_c(peephole(ir))

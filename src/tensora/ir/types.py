@@ -16,17 +16,13 @@ __all__ = [
 ]
 
 from dataclasses import dataclass
-from typing import Generic, TypeVar
 
 
 class Type:
     pass
 
 
-T = TypeVar("T", bound=Type)
-
-
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Integer(Type):
     pass
 
@@ -34,7 +30,7 @@ class Integer(Type):
 integer = Integer()
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Float(Type):
     pass
 
@@ -42,7 +38,7 @@ class Float(Type):
 float = Float()
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Tensor(Type):
     pass
 
@@ -50,7 +46,7 @@ class Tensor(Type):
 tensor = Tensor()
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Mode(Type):
     pass
 
@@ -58,7 +54,7 @@ class Mode(Type):
 mode = Mode()
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class HashTable(Type):
     pass
 
@@ -66,17 +62,17 @@ class HashTable(Type):
 hash_table = HashTable()
 
 
-@dataclass(frozen=True)
-class Pointer(Type, Generic[T]):
+@dataclass(frozen=True, slots=True)
+class Pointer(Type):
     target: Type
 
 
-@dataclass(frozen=True)
-class Array(Type, Generic[T]):
+@dataclass(frozen=True, slots=True)
+class Array(Type):
     element: Type
 
 
-@dataclass(frozen=True)
-class FixedArray(Type, Generic[T]):
+@dataclass(frozen=True, slots=True)
+class FixedArray(Type):
     element: Type
     n: int

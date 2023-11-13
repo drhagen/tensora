@@ -4,8 +4,8 @@ __all__ = ["SourceBuilder"]
 
 from abc import abstractmethod
 from contextlib import contextmanager
-from typing import Dict, List, Optional, Union
 
+from ..stable_set import StableSet
 from .ast import (
     Block,
     Branch,
@@ -21,7 +21,7 @@ from .types import Type
 
 class Builder:
     def __init__(self):
-        self.lines = []
+        self.lines: list[Statement] = []
 
     @abstractmethod
     def finalize(self):
@@ -29,92 +29,98 @@ class Builder:
 
 
 class BlockBuilder(Builder):
-    def __init__(self, comment: Optional[str] = None):
+    def __init__(self, comment: str | None = None):
         super().__init__()
-        self.comment = comment
+        self._comment = comment
 
     def finalize(self):
-        return Block(self.lines, self.comment)
+        return Block(self.lines, self._comment)
 
 
 class BranchBuilder(Builder):
     def __init__(self, condition: Expression):
         super().__init__()
-        self.condition = condition
+        self._condition = condition
 
     def finalize(self):
-        return Branch(self.condition, Block(self.lines), Block([]))
+        return Branch(self._condition, Block(self.lines), Block([]))
 
 
 class LoopBuilder(Builder):
     def __init__(self, condition: Expression):
         super().__init__()
-        self.condition = condition
+        self._condition = condition
 
     def finalize(self):
-        return Loop(self.condition, Block(self.lines))
+        return Loop(self._condition, Block(self.lines))
 
 
 class FunctionDefinitionBuilder(Builder):
-    def __init__(self, name: str, parameters: Dict[str, Type], return_type: Type):
+    def __init__(self, name: str, parameters: dict[str, Type], return_type: Type):
         super().__init__()
-        self.name = name
-        self.parameters = parameters
-        self.return_type = return_type
+        self._name = name
+        self._parameters = parameters
+        self._return_type = return_type
 
     def finalize(self):
         return FunctionDefinition(
-            Variable(self.name),
-            [Declaration(Variable(name), type) for name, type in self.parameters.items()],
-            self.return_type,
+            Variable(self._name),
+            [Declaration(Variable(name), type) for name, type in self._parameters.items()],
+            self._return_type,
             Block(self.lines),
         )
 
 
 class SourceBuilder:
-    def __init__(self, comment: Optional[str] = None):
-        self.dependencies: Dict[str, ()] = {}
-        self.stack: List[Builder] = [BlockBuilder(comment)]
+    def __init__(self, comment: str | None = None):
+        self._dependencies: StableSet[str] = StableSet()
+        self._stack: list[Builder] = [BlockBuilder(comment)]
 
-    def append(self, statement: Union[Statement, SourceBuilder]):
-        if isinstance(statement, SourceBuilder):
-            for dependency in statement.dependencies:
-                self.add_dependency(dependency)
-            statement = statement.finalize()
-            if statement.comment is not None:
-                self.stack[-1].lines.append(statement)
-            else:
-                self.stack[-1].lines.extend(statement.statements)
-        else:
-            self.stack[-1].lines.append(statement)
+    def append(self, statement: Statement | SourceBuilder):
+        match statement:
+            case Statement():
+                self._stack[-1].lines.append(statement)
+            case SourceBuilder():
+                for dependency in statement._dependencies:
+                    self.add_dependency(dependency)
+                statement = statement.finalize()
+                if statement.comment is not None:
+                    self._stack[-1].lines.append(statement)
+                else:
+                    # This is not simplified by peephole, which only simplifies empty blocks;
+                    # it does not inline not blocks with no comments. This is because blocks
+                    # with no comments still get newlines between them. This means that
+                    # appending a SourceBuilder appends the lines, but appending a block
+                    # appends the block itself.
+                    self._stack[-1].lines.extend(statement.statements)
 
     def add_dependency(self, name: str):
-        self.dependencies[name] = ()
+        self._dependencies[name] = None
 
     @contextmanager
-    def block(self, comment: Optional[str] = None):
-        self.stack.append(BlockBuilder(comment))
+    def block(self, comment: str | None = None):
+        self._stack.append(BlockBuilder(comment))
         yield None
-        self.append(self.stack.pop().finalize())
+        self.append(self._stack.pop().finalize())
 
     @contextmanager
     def branch(self, condition: Expression):
-        self.stack.append(BranchBuilder(condition))
+        self._stack.append(BranchBuilder(condition))
         yield None
-        self.append(self.stack.pop().finalize())
+        self.append(self._stack.pop().finalize())
 
     @contextmanager
     def loop(self, condition: Expression):
-        self.stack.append(LoopBuilder(condition))
+        self._stack.append(LoopBuilder(condition))
         yield None
-        self.append(self.stack.pop().finalize())
+        self.append(self._stack.pop().finalize())
 
     @contextmanager
-    def function_definition(self, name: str, parameters: Dict[str, Type], return_type: Type):
-        self.stack.append(FunctionDefinitionBuilder(name, parameters, return_type))
+    def function_definition(self, name: str, parameters: dict[str, Type], return_type: Type):
+        self._stack.append(FunctionDefinitionBuilder(name, parameters, return_type))
         yield None
-        self.append(self.stack.pop().finalize())
+        self.append(self._stack.pop().finalize())
 
     def finalize(self) -> Block:
-        assert len(self.stack) == 1
-        return self.stack[0].finalize()
+        assert len(self._stack) == 1
+        return self._stack[0].finalize()

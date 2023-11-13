@@ -92,6 +92,10 @@ changed = [
         ArrayReallocate(Variable("x"), float, Variable("y")),
     ),
     (
+        Free(ArrayIndex(Variable("x"), Add(IntegerLiteral(0), Variable("y")))),
+        Free(ArrayIndex(Variable("x"), Variable("y"))),
+    ),
+    (
         Assignment(Variable("x"), Add(IntegerLiteral(0), Variable("y"))),
         Assignment(Variable("x"), Variable("y")),
     ),
@@ -206,6 +210,8 @@ unchanged = [
     FunctionDefinition(
         Variable("f"), [Declaration(Variable("x"), tensor)], integer, Return(IntegerLiteral(0))
     ),
+    Break(),
+    Declaration(Variable("x"), float),
 ]
 
 

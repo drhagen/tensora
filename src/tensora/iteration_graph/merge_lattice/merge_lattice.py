@@ -9,7 +9,7 @@ from typing import AbstractSet, List, Optional
 
 from ...format import Mode
 from ...ir.ast import Expression, Variable
-from ...stable_frozen_set import StableFrozenSet
+from ...stable_set import StableFrozenSet
 from ..identifiable_expression import TensorLeaf
 from ..identifiable_expression import ast as ie_ast
 from ..names import (

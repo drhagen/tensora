@@ -45,10 +45,19 @@ __all__ = [
 
 from dataclasses import dataclass
 from functools import reduce
-from typing import List, Optional, Tuple, Union
 
 from ..format import Mode
 from .types import Type
+
+
+def to_expression(expression: Expression | int | str) -> Expression:
+    match expression:
+        case Expression():
+            return expression
+        case int():
+            return IntegerLiteral(expression)
+        case str():
+            return Variable(expression)
 
 
 class Statement:
@@ -56,304 +65,267 @@ class Statement:
 
 
 class Expression(Statement):
-    def plus(self, term: Union[Expression, int, str]):
+    def plus(self, term: Expression | int | str) -> Expression:
         term = to_expression(term)
         return Add(self, term)
 
-    def minus(self, term: Union[Expression, int, str]):
+    def minus(self, term: Expression | int | str) -> Expression:
         term = to_expression(term)
         return Subtract(self, term)
 
-    def times(self, factor: Union[Expression, int, str]):
+    def times(self, factor: Expression | int | str) -> Expression:
         factor = to_expression(factor)
         return Multiply(self, factor)
 
 
 class Assignable(Expression):
-    def attr(self, attribute: str):
+    def attr(self, attribute: str) -> Assignable:
         return AttributeAccess(self, attribute)
 
-    def idx(self, index: Union[Expression, int, str]):
+    def idx(self, index: Expression | int | str) -> Assignable:
         index = to_expression(index)
         return ArrayIndex(self, index)
 
-    def assign(self, value: Union[Expression, int, str]):
+    def assign(self, value: Expression | int | str) -> Statement:
         value = to_expression(value)
         return Assignment(self, value)
 
-    def increment(self, amount: Union[Expression, int, str] = 1):
+    def increment(self, amount: Expression | int | str = 1) -> Statement:
         amount = to_expression(amount)
         return self.assign(self.plus(amount))
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Variable(Assignable):
-    __slots__ = ("name",)
     name: str
 
-    def declare(self, type: Type):
+    def declare(self, type: Type) -> Declaration:
         return Declaration(self, type)
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class AttributeAccess(Assignable):
-    __slots__ = ("target", "attribute")
     target: Assignable
     attribute: str
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class ArrayIndex(Assignable):
-    __slots__ = ("target", "index")
     target: Assignable
     index: Expression
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class IntegerLiteral(Expression):
-    __slots__ = ("value",)
     value: int
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class FloatLiteral(Expression):
-    __slots__ = ("value",)
     value: float
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class BooleanLiteral(Expression):
-    __slots__ = ("value",)
     value: bool
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class ModeLiteral(Expression):
     value: Mode
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class ArrayLiteral(Expression):
-    __slots__ = ("value",)
     elements: list[Expression]
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Add(Expression):
-    __slots__ = ("left", "right")
     left: Expression
     right: Expression
 
     @staticmethod
-    def join(terms: List[Union[Expression, int, str]]):
+    def join(terms: list[Expression | int | str]) -> Expression:
         terms = map(to_expression, terms)
         return reduce(And, terms, IntegerLiteral(0))
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Subtract(Expression):
-    __slots__ = ("left", "right")
     left: Expression
     right: Expression
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Multiply(Expression):
-    __slots__ = ("left", "right")
     left: Expression
     right: Expression
-
-    def __init__(self, left: Expression, right: Expression):
-        if left is None:
-            assert left is not None
-        object.__setattr__(self, "left", left)
-        object.__setattr__(self, "right", right)
 
     @staticmethod
-    def join(factors: List[Union[Expression, int, str]]):
+    def join(factors: list[Expression | int | str]) -> Expression:
         factors = map(to_expression, factors)
         return reduce(Multiply, factors, IntegerLiteral(1))
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Equal(Expression):
-    __slots__ = ("left", "right")
     left: Expression
     right: Expression
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class NotEqual(Expression):
-    __slots__ = ("left", "right")
     left: Expression
     right: Expression
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class GreaterThan(Expression):
-    __slots__ = ("left", "right")
     left: Expression
     right: Expression
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class LessThan(Expression):
-    __slots__ = ("left", "right")
     left: Expression
     right: Expression
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class GreaterThanOrEqual(Expression):
-    __slots__ = ("left", "right")
     left: Expression
     right: Expression
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class LessThanOrEqual(Expression):
-    __slots__ = ("left", "right")
     left: Expression
     right: Expression
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class And(Expression):
-    __slots__ = ("left", "right")
     left: Expression
     right: Expression
 
     @staticmethod
-    def join(operands: List[Union[Expression, int, str]]):
+    def join(operands: list[Expression | int | str]) -> Expression:
         operands = map(to_expression, operands)
         return reduce(And, operands, BooleanLiteral(True))
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Or(Expression):
-    __slots__ = ("left", "right")
     left: Expression
     right: Expression
 
     @staticmethod
-    def join(operands: List[Union[Expression, int, str]]):
+    def join(operands: list[Expression | int | str]) -> Expression:
         operands = map(to_expression, operands)
         return reduce(Or, operands, BooleanLiteral(False))
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class FunctionCall(Expression):
-    __slots__ = ("name", "arguments")
     name: Variable
     arguments: list[Expression]
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Max(Expression):
-    __slots__ = ("left", "right")
     left: Expression
     right: Expression
 
     @staticmethod
-    def join(operands: List[Union[Expression, int, str]]):
+    def join(operands: list[Expression | int | str]) -> Expression:
         operands = map(to_expression, operands)
         return reduce(Max, operands)
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Min(Expression):
-    __slots__ = ("left", "right")
     left: Expression
     right: Expression
 
     @staticmethod
-    def join(operands: List[Union[Expression, int, str]]):
+    def join(operands: list[Expression | int | str]) -> Expression:
         operands = map(to_expression, operands)
         return reduce(Min, operands)
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Address(Expression):
-    __slots__ = ("target",)
     target: Variable
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class BooleanToInteger(Expression):
-    __slots__ = ("expression",)
     expression: Expression
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Allocate(Expression):
-    __slots__ = ("type",)
     type: Type
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class ArrayAllocate(Expression):
-    __slots__ = ("type", "n_elements")
     type: Type
     n_elements: Expression
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class ArrayReallocate(Expression):
-    __slots__ = ("old", "type", "m_elements")
     old: Assignable
     type: Type
     n_elements: Expression
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Free(Statement):
-    __slots__ = ("target",)
     target: Assignable
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Declaration(Statement):
-    __slots__ = ("name", "type")
     name: Variable
     type: Type
 
-    def assign(self, value: Union[Expression, int, str]):
+    def assign(self, value: Expression | int | str) -> Statement:
         value = to_expression(value)
         return DeclarationAssignment(self, value)
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Assignment(Statement):
-    __slots__ = ("target", "value")
     target: Assignable
     value: Expression
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class DeclarationAssignment(Statement):
-    __slots__ = ("target", "value")
     target: Declaration
     value: Expression
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Block(Statement):
     statements: list[Statement]
-    comment: Optional[str] = None
+    comment: str | None = None
 
     def is_empty(self):
         return len(self.statements) == 0
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Branch(Statement):
-    __slots__ = ("condition", "if_true", "if_false")
     condition: Expression
     if_true: Statement
     if_false: Statement
 
     @staticmethod
-    def join(leaves: List[Tuple[Union[Expression, int, str], Statement]]):
+    def join(leaves: list[tuple[Expression | int | str, Statement]]) -> Statement:
         # This is a fold right operation
         return reduce(
             lambda previous, leaf: Branch(to_expression(leaf[0]), leaf[1], previous),
@@ -362,36 +334,25 @@ class Branch(Statement):
         )
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Loop(Statement):
-    __slots__ = ("condition", "body")
     condition: Expression
     body: Statement
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Break(Statement):
-    __slots__ = ()
+    pass
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Return(Statement):
-    __slots__ = ("value",)
     value: Expression
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class FunctionDefinition(Statement):
-    __slots__ = ("name", "parameters", "return_type", "body")
     name: Variable
     parameters: list[Declaration]
     return_type: Type
     body: Statement
-
-
-def to_expression(expression: Union[Expression, int, str]) -> Expression:
-    if isinstance(expression, int):
-        expression = IntegerLiteral(expression)
-    elif isinstance(expression, str):
-        expression = Variable(expression)
-    return expression

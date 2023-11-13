@@ -68,35 +68,35 @@ from .ast import (
 
 
 @singledispatch
-def peephole(code: Statement) -> Statement:
-    raise NotImplementedError(f"No implementation of peephole_statement: {code}")
+def peephole(self: Statement) -> Statement:
+    raise NotImplementedError(f"No implementation of peephole_statement: {self}")
 
 
 @peephole.register(Expression)
 @singledispatch
-def peephole_expression(code: Expression) -> Expression:
-    raise NotImplementedError(f"No implementation of peephole_expression: {code}")
+def peephole_expression(self: Expression) -> Expression:
+    raise NotImplementedError(f"No implementation of peephole_expression: {self}")
 
 
 @peephole_expression.register(Assignable)
 @singledispatch
-def peephole_assignable(code: Assignable) -> Assignable:
-    raise NotImplementedError(f"No implementation of peephole_assignable: {code}")
+def peephole_assignable(self: Assignable) -> Assignable:
+    raise NotImplementedError(f"No implementation of peephole_assignable: {self}")
 
 
 @peephole_assignable.register(Variable)
-def peephole_variable(code: Variable):
-    return code
+def peephole_variable(self: Variable) -> Variable:
+    return self
 
 
 @peephole_assignable.register(AttributeAccess)
-def peephole_attribute_access(code: AttributeAccess):
-    return replace(code, target=peephole_assignable(code.target))
+def peephole_attribute_access(self: AttributeAccess) -> Assignable:
+    return replace(self, target=peephole_assignable(self.target))
 
 
 @peephole_assignable.register(ArrayIndex)
-def peephole_array_index(code: ArrayIndex):
-    return ArrayIndex(peephole_assignable(code.target), peephole_expression(code.index))
+def peephole_array_index(self: ArrayIndex) -> Assignable:
+    return ArrayIndex(peephole_assignable(self.target), peephole_expression(self.index))
 
 
 @peephole_expression.register(IntegerLiteral)
@@ -105,19 +105,19 @@ def peephole_array_index(code: ArrayIndex):
 @peephole_expression.register(ModeLiteral)
 @peephole_expression.register(Address)
 @peephole_expression.register(Allocate)
-def peephole_noop(code: Expression):
-    return code
+def peephole_noop(self: Expression) -> Expression:
+    return self
 
 
 @peephole_expression.register(ArrayLiteral)
-def peephole_array_literal(code: ArrayLiteral):
-    return ArrayLiteral([peephole_expression(element) for element in code.elements])
+def peephole_array_literal(self: ArrayLiteral) -> Expression:
+    return ArrayLiteral([peephole_expression(element) for element in self.elements])
 
 
 @peephole_expression.register(Add)
-def peephole_add(code: Add):
-    left = peephole_expression(code.left)
-    right = peephole_expression(code.right)
+def peephole_add(self: Add) -> Expression:
+    left = peephole_expression(self.left)
+    right = peephole_expression(self.right)
 
     if left == IntegerLiteral(0) or left == FloatLiteral(0.0):
         return right
@@ -128,9 +128,9 @@ def peephole_add(code: Add):
 
 
 @peephole_expression.register(Subtract)
-def peephole_subtract(code: Subtract):
-    left = peephole_expression(code.left)
-    right = peephole_expression(code.right)
+def peephole_subtract(self: Subtract) -> Expression:
+    left = peephole_expression(self.left)
+    right = peephole_expression(self.right)
 
     if right == IntegerLiteral(0) or right == FloatLiteral(0.0):
         return left
@@ -139,9 +139,9 @@ def peephole_subtract(code: Subtract):
 
 
 @peephole_expression.register(Multiply)
-def peephole_multiply(code: Multiply):
-    left = peephole_expression(code.left)
-    right = peephole_expression(code.right)
+def peephole_multiply(self: Multiply) -> Expression:
+    left = peephole_expression(self.left)
+    right = peephole_expression(self.right)
 
     if left == IntegerLiteral(0) or right == IntegerLiteral(0):
         return IntegerLiteral(0)
@@ -158,35 +158,35 @@ def peephole_multiply(code: Multiply):
 @peephole_expression.register(Equal)
 @peephole_expression.register(GreaterThanOrEqual)
 @peephole_expression.register(LessThanOrEqual)
-def peephole_equal(code: Equal):
-    left = peephole_expression(code.left)
-    right = peephole_expression(code.right)
+def peephole_equal(self: Equal) -> Expression:
+    left = peephole_expression(self.left)
+    right = peephole_expression(self.right)
 
     if left == right:
         return BooleanLiteral(True)
     else:
         # Use replace so the class is retained
-        return replace(code, left=left, right=right)
+        return replace(self, left=left, right=right)
 
 
 @peephole_expression.register(NotEqual)
 @peephole_expression.register(GreaterThan)
 @peephole_expression.register(LessThan)
-def peephole_not_equal(code: NotEqual):
-    left = peephole_expression(code.left)
-    right = peephole_expression(code.right)
+def peephole_not_equal(self: NotEqual) -> Expression:
+    left = peephole_expression(self.left)
+    right = peephole_expression(self.right)
 
     if left == right:
         return BooleanLiteral(False)
     else:
         # Use replace so the class is retained
-        return replace(code, left=left, right=right)
+        return replace(self, left=left, right=right)
 
 
 @peephole_expression.register(And)
-def peephole_and(code: And):
-    left = peephole_expression(code.left)
-    right = peephole_expression(code.right)
+def peephole_and(self: And) -> Expression:
+    left = peephole_expression(self.left)
+    right = peephole_expression(self.right)
 
     if left == BooleanLiteral(False) or right == BooleanLiteral(False):
         return BooleanLiteral(False)
@@ -199,9 +199,9 @@ def peephole_and(code: And):
 
 
 @peephole_expression.register(Or)
-def peephole_or(code: Or):
-    left = peephole_expression(code.left)
-    right = peephole_expression(code.right)
+def peephole_or(self: Or) -> Expression:
+    left = peephole_expression(self.left)
+    right = peephole_expression(self.right)
 
     if left == BooleanLiteral(True) or right == BooleanLiteral(True):
         return BooleanLiteral(True)
@@ -214,24 +214,24 @@ def peephole_or(code: Or):
 
 
 @peephole_expression.register(FunctionCall)
-def peephole_function_call(code: FunctionCall):
-    arguments = [peephole_expression(argument) for argument in code.arguments]
-    return replace(code, arguments=arguments)
+def peephole_function_call(self: FunctionCall) -> Expression:
+    arguments = [peephole_expression(argument) for argument in self.arguments]
+    return replace(self, arguments=arguments)
 
 
 @peephole_expression.register(Max)
 @peephole_expression.register(Min)
-def peephole_max_min(code: Max):
-    left = peephole_expression(code.left)
-    right = peephole_expression(code.right)
+def peephole_max_min(self: Max) -> Expression:
+    left = peephole_expression(self.left)
+    right = peephole_expression(self.right)
 
     # Use replace so the class is retained
-    return replace(code, left=left, right=right)
+    return replace(self, left=left, right=right)
 
 
 @peephole_expression.register(BooleanToInteger)
-def peephole_boolean_to_integer(code: BooleanToInteger):
-    expression = peephole_expression(code.expression)
+def peephole_boolean_to_integer(self: BooleanToInteger) -> Expression:
+    expression = peephole_expression(self.expression)
 
     if expression == BooleanLiteral(False):
         return IntegerLiteral(0)
@@ -242,59 +242,59 @@ def peephole_boolean_to_integer(code: BooleanToInteger):
 
 
 @peephole_expression.register(ArrayAllocate)
-def peephole_array_allocate(code: ArrayAllocate):
-    n_elements = peephole_expression(code.n_elements)
-    return replace(code, n_elements=n_elements)
+def peephole_array_allocate(self: ArrayAllocate) -> Expression:
+    n_elements = peephole_expression(self.n_elements)
+    return replace(self, n_elements=n_elements)
 
 
 @peephole_expression.register(ArrayReallocate)
-def peephole_array_reallocate(code: ArrayReallocate):
-    old = peephole_assignable(code.old)
-    n_elements = peephole_expression(code.n_elements)
-    return replace(code, old=old, n_elements=n_elements)
+def peephole_array_reallocate(self: ArrayReallocate) -> Expression:
+    old = peephole_assignable(self.old)
+    n_elements = peephole_expression(self.n_elements)
+    return replace(self, old=old, n_elements=n_elements)
 
 
 @peephole.register(Declaration)
-def peephole_declaration(code: Declaration):
-    return code
+def peephole_declaration(self: Declaration) -> Declaration:
+    return self
 
 
 @peephole.register(Free)
-def peephole_free(code: Free):
-    return Free(peephole_assignable(code.target))
+def peephole_free(self: Free) -> Statement:
+    return Free(peephole_assignable(self.target))
 
 
 @peephole.register(Assignment)
-def peephole_assignment(code: Assignment):
-    target = peephole_assignable(code.target)
-    value = peephole_expression(code.value)
+def peephole_assignment(self: Assignment) -> Statement:
+    target = peephole_assignable(self.target)
+    value = peephole_expression(self.value)
     return Assignment(target, value)
 
 
 @peephole.register(DeclarationAssignment)
-def peephole_declaration_assignment(code: DeclarationAssignment):
-    value = peephole_expression(code.value)
-    return replace(code, value=value)
+def peephole_declaration_assignment(self: DeclarationAssignment) -> Statement:
+    value = peephole_expression(self.value)
+    return replace(self, value=value)
 
 
 @peephole.register(Block)
-def peephole_block(code: Block):
+def peephole_block(self: Block) -> Statement:
     statements = []
-    for old_statement in code.statements:
+    for old_statement in self.statements:
         statement = peephole(old_statement)
         if isinstance(statement, Block) and statement.is_empty():
             pass
         else:
             statements.append(statement)
 
-    return replace(code, statements=statements)
+    return replace(self, statements=statements)
 
 
 @peephole.register(Branch)
-def peephole_branch(code: Branch):
-    condition = peephole_expression(code.condition)
-    if_true = peephole(code.if_true)
-    if_false = peephole(code.if_false)
+def peephole_branch(self: Branch) -> Statement:
+    condition = peephole_expression(self.condition)
+    if_true = peephole(self.if_true)
+    if_false = peephole(self.if_false)
 
     if condition == BooleanLiteral(True):
         return if_true
@@ -312,30 +312,30 @@ def peephole_branch(code: Branch):
 
 
 @peephole.register(Loop)
-def peephole_loop(code: Loop):
-    condition = peephole_expression(code.condition)
-    body = peephole(code.body)
+def peephole_loop(self: Loop) -> Statement:
+    condition = peephole_expression(self.condition)
+    body = peephole(self.body)
 
     if condition == BooleanLiteral(False):
         return Block([])
-    elif isinstance(code.body, Block) and code.body.is_empty():
+    elif isinstance(self.body, Block) and self.body.is_empty():
         return Block([])
     else:
         return Loop(condition, body)
 
 
 @peephole.register(Break)
-def peephole_break(code: Break):
-    return code
+def peephole_break(self: Break) -> Statement:
+    return self
 
 
 @peephole.register(Return)
-def peephole_return(code: Return):
-    value = peephole_expression(code.value)
+def peephole_return(self: Return) -> Statement:
+    value = peephole_expression(self.value)
     return Return(value)
 
 
 @peephole.register(FunctionDefinition)
-def peephole_function_definition(code: FunctionDefinition):
-    body = peephole(code.body)
-    return replace(code, body=body)
+def peephole_function_definition(self: FunctionDefinition) -> Statement:
+    body = peephole(self.body)
+    return replace(self, body=body)
