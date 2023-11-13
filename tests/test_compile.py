@@ -3,8 +3,14 @@ import tempfile
 from cffi import FFI
 
 from tensora import Tensor
-from tensora.compile import tensor_cdefs, taco_define_header, taco_type_header, lock, \
-    take_ownership_of_tensor_members, take_ownership_of_tensor
+from tensora.compile import (
+    lock,
+    taco_define_header,
+    taco_type_header,
+    take_ownership_of_tensor,
+    take_ownership_of_tensor_members,
+    tensor_cdefs,
+)
 
 source = """
 taco_tensor_t create_tensor() {
@@ -71,14 +77,19 @@ taco_tensor_t* create_pointer_to_tensor() {
 
 ffi = FFI()
 ffi.include(tensor_cdefs)
-ffi.cdef("""
+ffi.cdef(
+    """
 taco_tensor_t create_tensor();
 taco_tensor_t* create_pointer_to_tensor();
-""")
-ffi.set_source('taco_kernel', taco_define_header + taco_type_header + source,
-               extra_compile_args=['-Wno-unused-variable', '-Wno-unknown-pragmas'])
+"""
+)
+ffi.set_source(
+    "taco_kernel",
+    taco_define_header + taco_type_header + source,
+    extra_compile_args=["-Wno-unused-variable", "-Wno-unknown-pragmas"],
+)
 
-expected_tensor = Tensor.from_lol([[6, 0, 9, 8], [0, 0, 0, 0], [5, 0, 0, 7]], format='ds')
+expected_tensor = Tensor.from_lol([[6, 0, 9, 8], [0, 0, 0, 0], [5, 0, 0, 7]], format="ds")
 
 with tempfile.TemporaryDirectory() as temp_dir:
     # Lock because FFI.compile is not thread safe: https://foss.heptapod.net/pypy/cffi/-/issues/490
