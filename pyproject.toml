@@ -19,11 +19,12 @@ source = [
 
 [tool.ruff]
 src = ["src"]
-line-length = 120
+line-length = 99
 
 extend-exclude = ["src/taco/**"]
 
 extend-select = [
+    "I", # isort
     "N", # pep8-naming
 ]
 

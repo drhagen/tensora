@@ -1,4 +1,4 @@
-from nox import options, Session, session
+from nox import options, Session, session, parametrize
 
 options.sessions = ["test", "test_numpy", "coverage", "lint"]
 
@@ -25,5 +25,12 @@ def coverage(s: Session):
 
 
 @session(venv_backend="none")
-def lint(s: Session) -> None:
-    s.run("ruff", "check", ".")
+@parametrize("command", [["ruff", "check", "."], ["ruff", "format", "--check", "."]])
+def lint(s: Session, command: list[str]):
+    s.run(*command)
+
+
+@session(venv_backend="none")
+def format(s: Session) -> None:
+    s.run("ruff", "check", ".", "--select", "I", "--fix")
+    s.run("ruff", "format", ".")
