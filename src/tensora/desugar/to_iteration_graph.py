@@ -5,17 +5,18 @@ from functools import singledispatch
 from itertools import count
 from typing import Dict, Iterator
 
+from ..format import Format
+from ..iteration_graph import Lattice, LatticeLeaf
+from ..iteration_graph import iteration_graph as graph
+from ..iteration_graph.identifiable_expression import ast as id
 from . import ast
 from .collect_lattices import collect_lattices
-from ..iteration_graph import Lattice, LatticeLeaf, iteration_graph as graph
-from ..iteration_graph.identifiable_expression import ast as id
-from ..format import Format
 
 
 def to_iteration_graph(
-        assignment: ast.Assignment,
-        formats: dict[str, Format],
-        output_format: Format,
+    assignment: ast.Assignment,
+    formats: dict[str, Format],
+    output_format: Format,
 ) -> graph.IterationGraph:
     lattices = collect_lattices(assignment.expression, formats)
 
@@ -24,7 +25,9 @@ def to_iteration_graph(
     target_leaf = assignment.target.variable.to_tensor_leaf()
     variable = id.Tensor(target_leaf, assignment.target.indexes, output_format.modes)
     for i, index_name in enumerate(assignment.target.indexes):
-        tree = graph.IterationVariable(index_name, LatticeLeaf(variable, i), lattices[index_name], tree)
+        tree = graph.IterationVariable(
+            index_name, LatticeLeaf(variable, i), lattices[index_name], tree
+        )
 
     return tree
 
@@ -119,18 +122,31 @@ def to_iteration_graph_multiply(
     match (left, right):
         case (graph.TerminalExpression(), graph.TerminalExpression()):
             return graph.TerminalExpression(id.Multiply(left.expression, right.expression))
-        case (graph.Multiply(name=name, factors=left_factors), graph.Multiply(factors=right_factors)):
+        case (
+            graph.Multiply(name=name, factors=left_factors),
+            graph.Multiply(factors=right_factors),
+        ):
             return graph.Multiply(name, left_factors + right_factors)
         case (graph.Multiply(name=name, factors=left_factors), _):
             return graph.Multiply(name, [*left_factors, right])
         case (_, graph.Multiply(name=name, factors=right_factors)):
             return graph.Multiply(name, [left, *right_factors])
-        case (graph.IterationVariable(next=graph.TerminalExpression() as next), graph.TerminalExpression()):
+        case (
+            graph.IterationVariable(next=graph.TerminalExpression() as next),
+            graph.TerminalExpression(),
+        ):
             # It is unclear if this is actually more efficient, but it is cleaner code
-            return replace(left, next=graph.TerminalExpression(id.Multiply(next.expression, right.expression)))
-        case (graph.TerminalExpression(), graph.IterationVariable(next=graph.TerminalExpression() as next)):
+            return replace(
+                left, next=graph.TerminalExpression(id.Multiply(next.expression, right.expression))
+            )
+        case (
+            graph.TerminalExpression(),
+            graph.IterationVariable(next=graph.TerminalExpression() as next),
+        ):
             # It is unclear if this is actually more efficient, but it is cleaner code
-            return replace(right, next=graph.TerminalExpression(id.Multiply(left.expression, next.expression)))
+            return replace(
+                right, next=graph.TerminalExpression(id.Multiply(left.expression, next.expression))
+            )
         case (_, _):
             return graph.Multiply(f"product{next(ids)}", [left, right])
 
@@ -146,5 +162,5 @@ def to_iteration_graph_contract(
         expression.index,
         None,
         lattices[expression.index],
-        to_iteration_graph_expression(expression.expression, lattices, formats, ids)
+        to_iteration_graph_expression(expression.expression, lattices, formats, ids),
     )

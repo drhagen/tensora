@@ -1,20 +1,31 @@
 from __future__ import annotations
 
-__all__ = ['Lattice', 'LatticeLeaf', 'LatticeConjuction', 'LatticeDisjunction', 'IterationMode']
+__all__ = ["Lattice", "LatticeLeaf", "LatticeConjuction", "LatticeDisjunction", "IterationMode"]
 
 from abc import abstractmethod
 from dataclasses import dataclass
 from enum import Enum, auto
-from typing import Optional, AbstractSet, List
+from typing import AbstractSet, List, Optional
 
-from tensora import Mode
-from tensora.ir.ast import Variable, Expression
-from tensora.iteration_graph.identifiable_expression import TensorLeaf
+from ...format import Mode
+from ...ir.ast import Expression, Variable
+from ...stable_frozen_set import StableFrozenSet
+from ..identifiable_expression import TensorLeaf
 from ..identifiable_expression import ast as ie_ast
-from tensora.iteration_graph.names import sparse_end_name, layer_begin_name, layer_pointer, previous_layer_pointer, \
-    pos_name, crd_name, vals_name, pos_capacity_name, crd_capacity_name, vals_capacity_name, dimension_name, \
-    value_from_crd
-from tensora.stable_frozen_set import StableFrozenSet
+from ..names import (
+    crd_capacity_name,
+    crd_name,
+    dimension_name,
+    layer_begin_name,
+    layer_pointer,
+    pos_capacity_name,
+    pos_name,
+    previous_layer_pointer,
+    sparse_end_name,
+    vals_capacity_name,
+    vals_name,
+    value_from_crd,
+)
 
 
 class IterationMode(Enum):

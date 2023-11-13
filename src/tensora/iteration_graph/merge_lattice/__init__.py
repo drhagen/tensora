@@ -1,1 +1,7 @@
-from .merge_lattice import Lattice, LatticeLeaf, LatticeConjuction, LatticeDisjunction, IterationMode  # noqa: F401
+from .merge_lattice import (  # noqa: F401
+    IterationMode,
+    Lattice,
+    LatticeConjuction,
+    LatticeDisjunction,
+    LatticeLeaf,
+)

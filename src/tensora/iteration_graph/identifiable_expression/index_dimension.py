@@ -1,9 +1,9 @@
-__all__ = ['index_dimension']
+__all__ = ["index_dimension"]
 
 from functools import singledispatch
-from typing import Optional, Union, Tuple
+from typing import Optional, Tuple, Union
 
-from .ast import Node, Literal, Integer, Float, Scalar, Tensor, Add, Subtract, Multiply, Assignment
+from .ast import Add, Assignment, Float, Integer, Literal, Multiply, Node, Scalar, Subtract, Tensor
 
 
 @singledispatch

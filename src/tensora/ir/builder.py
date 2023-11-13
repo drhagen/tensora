@@ -1,12 +1,21 @@
 from __future__ import annotations
 
-__all__ = ['SourceBuilder']
+__all__ = ["SourceBuilder"]
 
 from abc import abstractmethod
 from contextlib import contextmanager
-from typing import List, Dict, Optional, Union
+from typing import Dict, List, Optional, Union
 
-from .ast import Statement, FunctionDefinition, Variable, Declaration, Block, Expression, Branch, Loop
+from .ast import (
+    Block,
+    Branch,
+    Declaration,
+    Expression,
+    FunctionDefinition,
+    Loop,
+    Statement,
+    Variable,
+)
 from .types import Type
 
 

@@ -1,5 +1,17 @@
-__all__ = ['Expression', 'Literal', 'Integer', 'Float', 'Variable', 'Scalar', 'Tensor', 'Add', 'Subtract', 'Multiply',
-           'Assignment', 'Node']
+__all__ = [
+    "Expression",
+    "Literal",
+    "Integer",
+    "Float",
+    "Variable",
+    "Scalar",
+    "Tensor",
+    "Add",
+    "Subtract",
+    "Multiply",
+    "Assignment",
+    "Node",
+]
 
 from dataclasses import dataclass
 from typing import Tuple

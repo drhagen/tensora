@@ -7,4 +7,4 @@ class TensorLeaf:
     instance: int
 
     def to_string(self):
-        return f'{self.name}_{self.instance}'
+        return f"{self.name}_{self.instance}"

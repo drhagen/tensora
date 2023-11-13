@@ -45,10 +45,10 @@ __all__ = [
 
 from dataclasses import dataclass
 from functools import reduce
-from typing import List, Optional, Union, Tuple
+from typing import List, Optional, Tuple, Union
 
-from .types import Type
 from ..format import Mode
+from .types import Type
 
 
 class Statement:
@@ -356,7 +356,9 @@ class Branch(Statement):
     def join(leaves: List[Tuple[Union[Expression, int, str], Statement]]):
         # This is a fold right operation
         return reduce(
-            lambda previous, leaf: Branch(to_expression(leaf[0]), leaf[1], previous), reversed(leaves), Block([])
+            lambda previous, leaf: Branch(to_expression(leaf[0]), leaf[1], previous),
+            reversed(leaves),
+            Block([]),
         )
 
 

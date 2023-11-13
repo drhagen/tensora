@@ -1,6 +1,6 @@
 from functools import singledispatch
 
-from .ast import Expression, Literal, Scalar, Tensor, Add, Subtract, Multiply
+from .ast import Add, Expression, Literal, Multiply, Scalar, Subtract, Tensor
 from .tensor_leaf import TensorLeaf
 
 

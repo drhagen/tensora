@@ -2,15 +2,15 @@ __all__ = ["to_identifiable"]
 
 from functools import singledispatch
 
-from . import ast as desugar
 from ..format import Format
 from ..iteration_graph.identifiable_expression import ast as id
+from . import ast as desugar
 
 
 def to_identifiable(
-        assignment: desugar.Assignment,
-        input_formats: dict[str, Format],
-        output_format: Format,
+    assignment: desugar.Assignment,
+    input_formats: dict[str, Format],
+    output_format: Format,
 ) -> id.Assignment:
     return id.Assignment(
         to_identifiable_expression(
@@ -26,7 +26,9 @@ def to_identifiable_expression(
     expression: desugar.DesugaredExpression,
     formats: dict[str, Format],
 ) -> id.Expression:
-    raise NotImplementedError(f"to_identifiable_expression not implemented for type {type(expression)}: {expression}")
+    raise NotImplementedError(
+        f"to_identifiable_expression not implemented for type {type(expression)}: {expression}"
+    )
 
 
 @to_identifiable_expression.register(desugar.Integer)
@@ -48,7 +50,8 @@ def to_identifiable_scalar(expression: desugar.Scalar, formats: dict[str, Format
 def to_identifiable_tensor(expression: desugar.Tensor, formats: dict[str, Format]):
     return id.Tensor(
         expression.variable.to_tensor_leaf(),
-        expression.indexes, formats[expression.variable.name].modes,
+        expression.indexes,
+        formats[expression.variable.name].modes,
     )
 
 

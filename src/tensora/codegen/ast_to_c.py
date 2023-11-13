@@ -4,12 +4,47 @@ from functools import singledispatch
 from typing import Union
 
 from ..format import Mode
-from ..ir.ast import Variable, Multiply, IntegerLiteral, ArrayAllocate, Expression, Statement, \
-    Return, GreaterThanOrEqual, \
-    ArrayReallocate, Max, LessThan, And, Min, BooleanToInteger, Equal, Block, GreaterThan, LessThanOrEqual, \
-    Branch, Add, Or, Subtract, ArrayLiteral, AttributeAccess, ArrayIndex, FloatLiteral, BooleanLiteral, \
-    ModeLiteral, FunctionCall, Address, Free, NotEqual, Break, Allocate, Declaration, Assignment, \
-    DeclarationAssignment, Loop, FunctionDefinition
+from ..ir.ast import (
+    Add,
+    Address,
+    Allocate,
+    And,
+    ArrayAllocate,
+    ArrayIndex,
+    ArrayLiteral,
+    ArrayReallocate,
+    Assignment,
+    AttributeAccess,
+    Block,
+    BooleanLiteral,
+    BooleanToInteger,
+    Branch,
+    Break,
+    Declaration,
+    DeclarationAssignment,
+    Equal,
+    Expression,
+    FloatLiteral,
+    Free,
+    FunctionCall,
+    FunctionDefinition,
+    GreaterThan,
+    GreaterThanOrEqual,
+    IntegerLiteral,
+    LessThan,
+    LessThanOrEqual,
+    Loop,
+    Max,
+    Min,
+    ModeLiteral,
+    Multiply,
+    NotEqual,
+    Or,
+    Return,
+    Statement,
+    Subtract,
+    Variable,
+)
 from .type_to_c import type_to_c
 
 
@@ -137,7 +172,9 @@ def ast_to_c_or(code: Or):
 
 @ast_to_c_expression.register(FunctionCall)
 def ast_to_c_function_call(code: FunctionCall):
-    return f"{ast_to_c_expression(code.name)}({', '.join(map(ast_to_c_expression, code.arguments))})"
+    return (
+        f"{ast_to_c_expression(code.name)}({', '.join(map(ast_to_c_expression, code.arguments))})"
+    )
 
 
 @ast_to_c_expression.register(Max)

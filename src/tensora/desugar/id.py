@@ -9,5 +9,6 @@ class Id:
     instance: int
 
     def to_tensor_leaf(self):
-        from tensora.iteration_graph.identifiable_expression.tensor_leaf import TensorLeaf
+        from ..iteration_graph.identifiable_expression import TensorLeaf
+
         return TensorLeaf(self.name, self.instance)

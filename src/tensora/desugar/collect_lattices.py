@@ -1,16 +1,20 @@
 __all__ = ["collect_lattices"]
 
 from functools import singledispatch
-from tensora.format.format import Format
 
-from . import ast
-from ..iteration_graph import LatticeConjuction, LatticeDisjunction, LatticeLeaf, Lattice
+from ..format import Format
+from ..iteration_graph import Lattice, LatticeConjuction, LatticeDisjunction, LatticeLeaf
 from ..iteration_graph.identifiable_expression import ast as id
+from . import ast
 
 
 @singledispatch
-def collect_lattices(expression: ast.DesugaredExpression, formats: dict[str, Format]) -> dict[str, Lattice]:
-    raise NotImplementedError(f"collect_lattices not implemented for type {type(expression)}: {expression}")
+def collect_lattices(
+    expression: ast.DesugaredExpression, formats: dict[str, Format]
+) -> dict[str, Lattice]:
+    raise NotImplementedError(
+        f"collect_lattices not implemented for type {type(expression)}: {expression}"
+    )
 
 
 @collect_lattices.register(ast.Literal)

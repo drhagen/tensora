@@ -2,7 +2,7 @@ from typing import Dict
 
 from tensora import Format, Mode
 from tensora.expression import Assignment
-from tensora.expression.ast import Add, Multiply, Tensor, Node
+from tensora.expression.ast import Add, Multiply, Node, Tensor
 
 code_source = """\
 int evaluate({{#each declaration}}taco_tensor_t *{{this}}{{#unless @last}}, {{/unless}}{{/each}})
@@ -22,7 +22,9 @@ int evaluate({{#each declaration}}taco_tensor_t *{{this}}{{#unless @last}}, {{/u
 """
 
 
-def generate_c_code(assignment: Assignment, input_formats: Dict[str, Format], output_format: Format) -> str:
+def generate_c_code(
+    assignment: Assignment, input_formats: Dict[str, Format], output_format: Format
+) -> str:
     # This only works for assignments with zero or one layer of addition above zero or one layer of multiplication of
     # tensors. Each multiplication term must contain all output indexes (no broadcasting). Also, all tensors must have
     # the format ds*.
@@ -48,30 +50,32 @@ def generate_c_code(assignment: Assignment, input_formats: Dict[str, Format], ou
 
     source_lines = [
         f"int evaluate({', '.join(f'taco_tensor_t * {name}' for name in tensor_names)})",
-        '{',
+        "{",
     ]
 
     # Unpack tensors
     for name, format in {target_name: output_format, **input_formats}.items():
         for i, mode in enumerate(format.modes):
-            dim_name = f'{name}{i + 1}'
+            dim_name = f"{name}{i + 1}"
             if mode == Mode.dense:
-                source_lines.append(f'  int {dim_name}_dimension = (int)({name}->dimensions[{i}]);')
+                source_lines.append(
+                    f"  int {dim_name}_dimension = (int)({name}->dimensions[{i}]);"
+                )
             elif mode == Mode.compressed:
                 source_lines += [
-                    f'  int* restrict {dim_name}_pos = (int*)({name}->indices[{i}][0]);',
-                    f'  int* restrict {dim_name}_crd = (int*)({name}->indices[{i}][1]);',
+                    f"  int* restrict {dim_name}_pos = (int*)({name}->indices[{i}][0]);",
+                    f"  int* restrict {dim_name}_crd = (int*)({name}->indices[{i}][1]);",
                 ]
             else:
                 raise NotImplementedError
-        source_lines.append(f'  double* restrict {name}_vals = (double*)({name}->vals);')
+        source_lines.append(f"  double* restrict {name}_vals = (double*)({name}->vals);")
 
-    source_lines.append('')
+    source_lines.append("")
 
     # Allocate memory for target
     all_dense = True
     for i, mode in enumerate(output_format.modes):
-        dim_name = f'{target_name}{i+1}'
+        dim_name = f"{target_name}{i+1}"
         if mode == Mode.dense:
             pass
         elif mode == Mode.compressed:
@@ -79,25 +83,25 @@ def generate_c_code(assignment: Assignment, input_formats: Dict[str, Format], ou
             if all_dense:
                 # If the previous dimensions were all dense, then the size of pos in this dimension is fixed
                 if i == 0:
-                    nnz_string = '2'
+                    nnz_string = "2"
                 else:
                     nnz_string = f'({" * ".join(f"{target_name}{i_prev}_dimension" for i_prev in range(i))} + 1)'
 
                 source_lines += [
-                    f'  {dim_name}_pos = (int32_t*)malloc(sizeof(int32_t) * {nnz_string};',
-                    f'  {dim_name}_pos[0] = 0;',
+                    f"  {dim_name}_pos = (int32_t*)malloc(sizeof(int32_t) * {nnz_string};",
+                    f"  {dim_name}_pos[0] = 0;",
                 ]
             else:
                 source_lines += [
-                    f'  int32_t {dim_name}_pos_size = 1048576;',
-                    f'  {dim_name}_pos = (int32_t*)malloc(sizeof(int32_t) * {dim_name}_pos_size);',
-                    f'  {dim_name}_pos[0] = 0;',
+                    f"  int32_t {dim_name}_pos_size = 1048576;",
+                    f"  {dim_name}_pos = (int32_t*)malloc(sizeof(int32_t) * {dim_name}_pos_size);",
+                    f"  {dim_name}_pos[0] = 0;",
                 ]
 
             source_lines += [
-                f'  int32_t {dim_name}_crd_size = 1048576;',
-                f'  {dim_name}_crd = (int32_t*)malloc(sizeof(int32_t) * {dim_name}_crd_size);',
-                f'  int32_t {assignment.target.indexes[i]}{target_name} = 0;',
+                f"  int32_t {dim_name}_crd_size = 1048576;",
+                f"  {dim_name}_crd = (int32_t*)malloc(sizeof(int32_t) * {dim_name}_crd_size);",
+                f"  int32_t {assignment.target.indexes[i]}{target_name} = 0;",
             ]
 
             all_dense = False
@@ -105,17 +109,21 @@ def generate_c_code(assignment: Assignment, input_formats: Dict[str, Format], ou
             raise NotImplementedError
 
     if all_dense:
-        all_dimensions = ' * '.join(f'{target_name}{i}_dimension' for i in range(output_format.order))
+        all_dimensions = " * ".join(
+            f"{target_name}{i}_dimension" for i in range(output_format.order)
+        )
         source_lines.append(f"  int32_t {target_name}_capacity = {all_dimensions};")
     else:
-        source_lines.append(f'  int32_t {target_name}_capacity = 1048576;')
-    source_lines.append(f'  {target_name}_vals = (double*)malloc(sizeof(double) * {target_name}_capacity);')
+        source_lines.append(f"  int32_t {target_name}_capacity = 1048576;")
+    source_lines.append(
+        f"  {target_name}_vals = (double*)malloc(sizeof(double) * {target_name}_capacity);"
+    )
 
     # Loop over target dimensions
     outer_index = assignment.target.indexes[0]
     source_lines.append(
-        f'  for (int32_t {outer_index} = 0; {outer_index} < {target_name}1_dimension; {outer_index}++) {{'
+        f"  for (int32_t {outer_index} = 0; {outer_index} < {target_name}1_dimension; {outer_index}++) {{"
     )
 
-    source_lines.append('}')
-    return '\n'.join(source_lines)
+    source_lines.append("}")
+    return "\n".join(source_lines)

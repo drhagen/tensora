@@ -69,8 +69,14 @@ single_lines = [
     # Allocate
     (Allocate(tensor), "malloc(sizeof(taco_tensor_t))"),
     (ArrayAllocate(integer, Variable("capacity")), "malloc(sizeof(int32_t) * capacity)"),
-    (ArrayAllocate(float, Add(Variable("previous"), Variable("new"))), "malloc(sizeof(double) * (previous + new))"),
-    (ArrayReallocate(Variable("old"), integer, Variable("capacity")), "realloc(old, sizeof(int32_t) * capacity)"),
+    (
+        ArrayAllocate(float, Add(Variable("previous"), Variable("new"))),
+        "malloc(sizeof(double) * (previous + new))",
+    ),
+    (
+        ArrayReallocate(Variable("old"), integer, Variable("capacity")),
+        "realloc(old, sizeof(int32_t) * capacity)",
+    ),
     (
         ArrayReallocate(Variable("old"), float, Add(Variable("previous"), Variable("new"))),
         "realloc(old, sizeof(double) * (previous + new))",
@@ -134,7 +140,9 @@ multiple_lines = [
             [
                 Block(
                     [
-                        DeclarationAssignment(Declaration(Variable("x"), integer), IntegerLiteral(0)),
+                        DeclarationAssignment(
+                            Declaration(Variable("x"), integer), IntegerLiteral(0)
+                        ),
                     ],
                     "inner comment",
                 ),
@@ -154,7 +162,9 @@ multiple_lines = [
                 DeclarationAssignment(Declaration(Variable("y"), integer), IntegerLiteral(0)),
                 Block(
                     [
-                        DeclarationAssignment(Declaration(Variable("x"), integer), IntegerLiteral(0)),
+                        DeclarationAssignment(
+                            Declaration(Variable("x"), integer), IntegerLiteral(0)
+                        ),
                     ],
                     "inner comment",
                 ),
@@ -172,7 +182,9 @@ multiple_lines = [
             [
                 Block(
                     [
-                        DeclarationAssignment(Declaration(Variable("x"), integer), IntegerLiteral(0)),
+                        DeclarationAssignment(
+                            Declaration(Variable("x"), integer), IntegerLiteral(0)
+                        ),
                     ],
                     "inner comment",
                 ),
@@ -262,7 +274,10 @@ multiple_lines = [
         """,
     ),
     (
-        Loop(LessThan(Variable("x"), Variable("y")), Assignment(Variable("x"), Add(Variable("x"), IntegerLiteral(1)))),
+        Loop(
+            LessThan(Variable("x"), Variable("y")),
+            Assignment(Variable("x"), Add(Variable("x"), IntegerLiteral(1))),
+        ),
         """
         while (x < y) {
           x++;

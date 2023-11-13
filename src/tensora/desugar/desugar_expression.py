@@ -13,14 +13,18 @@ def desugar_assignment(assignment: sugar.Assignment) -> desugar.Assignment:
     if isinstance(assignment.target, sugar.Scalar):
         desugared_target = desugar.Scalar(id.Id(assignment.target.name, 0))
     elif isinstance(assignment.target, sugar.Tensor):
-        desugared_target = desugar.Tensor(id.Id(assignment.target.name, 0), assignment.target.indexes)
+        desugared_target = desugar.Tensor(
+            id.Id(assignment.target.name, 0), assignment.target.indexes
+        )
     else:
         raise NotImplementedError
 
     all_indexes = set(assignment.index_participants().keys())
     contract_indexes = all_indexes - set(assignment.target.indexes)
 
-    desugared_right_hand_side = desugar_expression(assignment.expression, contract_indexes, count(1))
+    desugared_right_hand_side = desugar_expression(
+        assignment.expression, contract_indexes, count(1)
+    )
 
     return desugar.Assignment(desugared_target, desugared_right_hand_side)
 
@@ -29,7 +33,9 @@ def desugar_assignment(assignment: sugar.Assignment) -> desugar.Assignment:
 def desugar_expression(
     expression: sugar.Expression, contract_indexes: Set[str], ids: Iterator[int]
 ) -> desugar.DesugaredExpression:
-    raise NotImplementedError(f"desugar_expression not implemented for {type(expression)}: {expression}")
+    raise NotImplementedError(
+        f"desugar_expression not implemented for {type(expression)}: {expression}"
+    )
 
 
 @desugar_expression.register(sugar.Integer)
@@ -64,9 +70,13 @@ def desugar_tensor(
 
 
 @desugar_expression.register(sugar.Add)
-def desugar_add(expression: sugar.Add, contract_indexes: Set[str], ids: Iterator[int]) -> desugar.DesugaredExpression:
+def desugar_add(
+    expression: sugar.Add, contract_indexes: Set[str], ids: Iterator[int]
+) -> desugar.DesugaredExpression:
     left_indexes = set(expression.left.index_participants().keys()).intersection(contract_indexes)
-    right_indexes = set(expression.right.index_participants().keys()).intersection(contract_indexes)
+    right_indexes = set(expression.right.index_participants().keys()).intersection(
+        contract_indexes
+    )
 
     intersection_indexes = left_indexes.intersection(right_indexes)
 
@@ -86,7 +96,9 @@ def desugar_subtract(
     expression: sugar.Subtract, contract_indexes: Set[str], ids: Iterator[int]
 ) -> desugar.DesugaredExpression:
     left_indexes = set(expression.left.index_participants().keys()).intersection(contract_indexes)
-    right_indexes = set(expression.right.index_participants().keys()).intersection(contract_indexes)
+    right_indexes = set(expression.right.index_participants().keys()).intersection(
+        contract_indexes
+    )
 
     intersection_indexes = left_indexes.intersection(right_indexes)
 
@@ -109,7 +121,9 @@ def desugar_multiply(
     expression: sugar.Multiply, contract_indexes: Set[str], ids: Iterator[int]
 ) -> desugar.DesugaredExpression:
     left_indexes = set(expression.left.index_participants().keys()).intersection(contract_indexes)
-    right_indexes = set(expression.right.index_participants().keys()).intersection(contract_indexes)
+    right_indexes = set(expression.right.index_participants().keys()).intersection(
+        contract_indexes
+    )
 
     intersection_indexes = left_indexes.intersection(right_indexes)
 

@@ -58,7 +58,9 @@ changed = [
     (Loop(Variable("t"), Block([], "comment")), Block([])),
     # Pass through
     (
-        ArrayIndex(ArrayIndex(Variable("x"), Add(IntegerLiteral(0), Variable("i"))), Variable("j")),
+        ArrayIndex(
+            ArrayIndex(Variable("x"), Add(IntegerLiteral(0), Variable("i"))), Variable("j")
+        ),
         ArrayIndex(ArrayIndex(Variable("x"), Variable("i")), Variable("j")),
     ),
     (
@@ -94,11 +96,15 @@ changed = [
         Assignment(Variable("x"), Variable("y")),
     ),
     (
-        Assignment(ArrayIndex(Variable("x"), Add(IntegerLiteral(0), Variable("i"))), Variable("y")),
+        Assignment(
+            ArrayIndex(Variable("x"), Add(IntegerLiteral(0), Variable("i"))), Variable("y")
+        ),
         Assignment(ArrayIndex(Variable("x"), Variable("i")), Variable("y")),
     ),
     (
-        DeclarationAssignment(Declaration(Variable("x"), float), Add(FloatLiteral(0.0), Variable("y"))),
+        DeclarationAssignment(
+            Declaration(Variable("x"), float), Add(FloatLiteral(0.0), Variable("y"))
+        ),
         DeclarationAssignment(Declaration(Variable("x"), float), Variable("y")),
     ),
     (
@@ -110,11 +116,19 @@ changed = [
         Branch(Variable("t"), Variable("x"), Variable("y")),
     ),
     (
-        Branch(Variable("t"), Add(IntegerLiteral(0), Variable("x")), Add(IntegerLiteral(0), Variable("y"))),
+        Branch(
+            Variable("t"),
+            Add(IntegerLiteral(0), Variable("x")),
+            Add(IntegerLiteral(0), Variable("y")),
+        ),
         Branch(Variable("t"), Variable("x"), Variable("y")),
     ),
     (
-        Branch(And(BooleanLiteral(True), Variable("t")), Variable("x"), Add(IntegerLiteral(0), Variable("y"))),
+        Branch(
+            And(BooleanLiteral(True), Variable("t")),
+            Variable("x"),
+            Add(IntegerLiteral(0), Variable("y")),
+        ),
         Branch(Variable("t"), Variable("x"), Variable("y")),
     ),
     (
@@ -189,7 +203,9 @@ unchanged = [
     FunctionCall(Variable("f"), [Variable("x")]),
     Loop(BooleanLiteral(True), Variable("x")),
     Assignment(Variable("x"), ArrayIndex(ArrayIndex(Variable("y"), Variable("i")), Variable("j"))),
-    FunctionDefinition(Variable("f"), [Declaration(Variable("x"), tensor)], integer, Return(IntegerLiteral(0))),
+    FunctionDefinition(
+        Variable("f"), [Declaration(Variable("x"), tensor)], integer, Return(IntegerLiteral(0))
+    ),
 ]
 
 

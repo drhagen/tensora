@@ -1,8 +1,8 @@
-__all__ = ['to_c_code']
+__all__ = ["to_c_code"]
 
 from functools import singledispatch
 
-from .ast import Expression, Integer, Float, Scalar, Tensor, Add, Subtract, Multiply
+from .ast import Add, Expression, Float, Integer, Multiply, Scalar, Subtract, Tensor
 
 
 @singledispatch
@@ -24,25 +24,26 @@ def to_c_code_float(self: Float):
 
 @to_c_code.register(Scalar)
 def to_c_code_scalar(self: Scalar):
-    return f'{self.variable.name}_vals[0]'
+    return f"{self.variable.name}_vals[0]"
 
 
 @to_c_code.register(Tensor)
 def to_c_code_tensor(self: Tensor):
     from ..names import layer_pointer
-    return f'{self.variable.name}_vals[{layer_pointer(self.variable, len(self.indexes) - 1)}]'
+
+    return f"{self.variable.name}_vals[{layer_pointer(self.variable, len(self.indexes) - 1)}]"
 
 
 @to_c_code.register(Add)
 def to_c_code_add(self: Add):
-    return f'({to_c_code(self.left)} + {to_c_code(self.right)})'
+    return f"({to_c_code(self.left)} + {to_c_code(self.right)})"
 
 
 @to_c_code.register(Subtract)
 def to_c_code_subtract(self: Subtract):
-    return f'({to_c_code(self.left)} - {to_c_code(self.right)})'
+    return f"({to_c_code(self.left)} - {to_c_code(self.right)})"
 
 
 @to_c_code.register(Multiply)
 def to_c_code_multiply(self: Multiply):
-    return f'({to_c_code(self.left)} * {to_c_code(self.right)})'
+    return f"({to_c_code(self.left)} * {to_c_code(self.right)})"

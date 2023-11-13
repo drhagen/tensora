@@ -3,7 +3,7 @@ __all__ = ["type_to_c"]
 from functools import singledispatch
 from typing import Optional
 
-from ..ir.types import Type, Integer, Float, Tensor, Mode, HashTable, Pointer, Array, FixedArray
+from ..ir.types import Array, FixedArray, Float, HashTable, Integer, Mode, Pointer, Tensor, Type
 
 
 @singledispatch

@@ -1,8 +1,44 @@
-from .ast import Statement, Expression, Assignable, Variable, AttributeAccess, ArrayIndex, \
-    IntegerLiteral, FloatLiteral, BooleanLiteral, ModeLiteral, ArrayLiteral, Add, Subtract, \
-    Multiply, Equal, NotEqual, GreaterThan, GreaterThanOrEqual, LessThan, LessThanOrEqual, \
-    And, Or, FunctionCall, Max, Min, Address, BooleanToInteger, Allocate, ArrayAllocate, \
-    ArrayReallocate, Free, Declaration, Assignment, DeclarationAssignment, Block, \
-    Branch, Loop, Break, Return, FunctionDefinition  # noqa: F401
+from .ast import (
+    Add,
+    Address,
+    Allocate,
+    And,
+    ArrayAllocate,
+    ArrayIndex,
+    ArrayLiteral,
+    ArrayReallocate,
+    Assignable,
+    Assignment,
+    AttributeAccess,
+    Block,
+    BooleanLiteral,
+    BooleanToInteger,
+    Branch,
+    Break,
+    Declaration,
+    DeclarationAssignment,
+    Equal,
+    Expression,
+    FloatLiteral,
+    Free,
+    FunctionCall,
+    FunctionDefinition,
+    GreaterThan,
+    GreaterThanOrEqual,
+    IntegerLiteral,
+    LessThan,
+    LessThanOrEqual,
+    Loop,
+    Max,
+    Min,
+    ModeLiteral,
+    Multiply,
+    NotEqual,
+    Or,
+    Return,
+    Statement,
+    Subtract,
+    Variable,
+)
 from .builder import SourceBuilder  # noqa: F401
 from .peephole import peephole  # noqa: F401

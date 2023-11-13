@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-__all__ = ['SourceBuilder']
+__all__ = ["SourceBuilder"]
 
 from itertools import chain
-from typing import List, Dict
+from typing import Dict, List
 
 
 class SourceIndented:
@@ -25,7 +25,7 @@ class SourceBuilder:
         self.indent = 0
 
     def append(self, line: str):
-        self.lines.append(' ' * self.indent + line)
+        self.lines.append(" " * self.indent + line)
 
     def extend(self, lines: List[str]):
         for line in lines:
@@ -45,4 +45,4 @@ class SourceBuilder:
         return SourceIndented(self, n)
 
     def source(self):
-        return '\n'.join(chain(self.dependencies.values(), self.lines))
+        return "\n".join(chain(self.dependencies.values(), self.lines))

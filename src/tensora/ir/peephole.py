@@ -23,12 +23,48 @@ __all__ = ["peephole"]
 from dataclasses import replace
 from functools import singledispatch
 
-from .ast import Statement, Expression, Assignable, Variable, AttributeAccess, ArrayIndex, \
-    IntegerLiteral, FloatLiteral, BooleanLiteral, ModeLiteral, Address, Allocate, ArrayLiteral, \
-    Add, Subtract, Multiply, Equal, NotEqual, GreaterThan, GreaterThanOrEqual, LessThanOrEqual, \
-    LessThan, And, Or, FunctionCall, Max, Min, BooleanToInteger, ArrayAllocate, ArrayReallocate, \
-    Free, Declaration, Assignment, DeclarationAssignment, Block, Branch, Loop, Break, Return, \
-    FunctionDefinition
+from .ast import (
+    Add,
+    Address,
+    Allocate,
+    And,
+    ArrayAllocate,
+    ArrayIndex,
+    ArrayLiteral,
+    ArrayReallocate,
+    Assignable,
+    Assignment,
+    AttributeAccess,
+    Block,
+    BooleanLiteral,
+    BooleanToInteger,
+    Branch,
+    Break,
+    Declaration,
+    DeclarationAssignment,
+    Equal,
+    Expression,
+    FloatLiteral,
+    Free,
+    FunctionCall,
+    FunctionDefinition,
+    GreaterThan,
+    GreaterThanOrEqual,
+    IntegerLiteral,
+    LessThan,
+    LessThanOrEqual,
+    Loop,
+    Max,
+    Min,
+    ModeLiteral,
+    Multiply,
+    NotEqual,
+    Or,
+    Return,
+    Statement,
+    Subtract,
+    Variable,
+)
 
 
 @singledispatch
@@ -264,7 +300,12 @@ def peephole_branch(code: Branch):
         return if_true
     elif condition == BooleanLiteral(False):
         return if_false
-    elif isinstance(if_true, Block) and if_true.is_empty() and isinstance(if_false, Block) and if_false.is_empty():
+    elif (
+        isinstance(if_true, Block)
+        and if_true.is_empty()
+        and isinstance(if_false, Block)
+        and if_false.is_empty()
+    ):
         return Block([])
     else:
         return Branch(condition, if_true, if_false)

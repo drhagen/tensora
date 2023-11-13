@@ -1,15 +1,18 @@
 import pytest
 
-from tensora.desugar import desugar_assignment, Id
-from tensora.expression import ast as sugar
+from tensora.desugar import Id, desugar_assignment
 from tensora.desugar import ast as desugar
+from tensora.expression import ast as sugar
 
 
 @pytest.mark.parametrize(
     ["expression", "expected"],
     [
         [
-            sugar.Assignment(sugar.Tensor("a", ["i"]), sugar.Add(sugar.Tensor("b", ["i"]), sugar.Tensor("c", ["i"]))),
+            sugar.Assignment(
+                sugar.Tensor("a", ["i"]),
+                sugar.Add(sugar.Tensor("b", ["i"]), sugar.Tensor("c", ["i"])),
+            ),
             desugar.Assignment(
                 desugar.Tensor(Id("a", 0), ["i"]),
                 desugar.Add(desugar.Tensor(Id("b", 1), ["i"]), desugar.Tensor(Id("c", 2), ["i"])),
@@ -24,7 +27,10 @@ from tensora.desugar import ast as desugar
                 desugar.Tensor(Id("A", 0), ["i", "j"]),
                 desugar.Contract(
                     "k",
-                    desugar.Multiply(desugar.Tensor(Id("B", 1), ["i", "k"]), desugar.Tensor(Id("C", 2), ["k", "i"])),
+                    desugar.Multiply(
+                        desugar.Tensor(Id("B", 1), ["i", "k"]),
+                        desugar.Tensor(Id("C", 2), ["k", "i"]),
+                    ),
                 ),
             ),
         ],
@@ -43,7 +49,8 @@ from tensora.desugar import ast as desugar
                     desugar.Contract(
                         "k",
                         desugar.Multiply(
-                            desugar.Tensor(Id("B", 2), ["i", "k"]), desugar.Tensor(Id("C", 3), ["k", "i"])
+                            desugar.Tensor(Id("B", 2), ["i", "k"]),
+                            desugar.Tensor(Id("C", 3), ["k", "i"]),
                         ),
                     ),
                 ),

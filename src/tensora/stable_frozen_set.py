@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-__all__ = ['StableFrozenSet']
+__all__ = ["StableFrozenSet"]
 
-from typing import AbstractSet, Hashable, TypeVar, Iterator
+from typing import AbstractSet, Hashable, Iterator, TypeVar
 
 T = TypeVar("T", bound=Hashable, covariant=True)
 

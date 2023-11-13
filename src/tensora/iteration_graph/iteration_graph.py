@@ -4,10 +4,10 @@ from abc import abstractmethod
 from dataclasses import dataclass, replace
 from typing import List, Optional
 
+from .. import Mode
+from .identifiable_expression import Expression, TensorLeaf
 from .identifiable_expression.exhaust_tensors import exhaust_tensor
 from .merge_lattice import Lattice, LatticeLeaf
-from .identifiable_expression import Expression, TensorLeaf
-from .. import Mode
 
 
 class IterationGraph:

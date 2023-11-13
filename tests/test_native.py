@@ -1,4 +1,4 @@
-from tensora.native import generate_code, KernelType
+from tensora.native import KernelType, generate_code
 
 
 def test_native_codegen():

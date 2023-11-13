@@ -1,9 +1,9 @@
-__all__ = ['to_ir']
+__all__ = ["to_ir"]
 
 from functools import singledispatch
 
-from .ast import Expression, Integer, Float, Scalar, Tensor, Add, Subtract, Multiply
 from ...ir import ast as ir
+from .ast import Add, Expression, Float, Integer, Multiply, Scalar, Subtract, Tensor
 
 
 @singledispatch
@@ -30,7 +30,8 @@ def to_c_code_scalar(self: Scalar):
 
 @to_ir.register(Tensor)
 def to_c_code_tensor(self: Tensor):
-    from ..names import vals_name, previous_layer_pointer
+    from ..names import previous_layer_pointer, vals_name
+
     return vals_name(self.variable.name).idx(previous_layer_pointer(self.variable, self.order))
 
 
