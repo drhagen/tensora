@@ -1,4 +1,4 @@
-from nox import options, Session, session, parametrize
+from nox import Session, options, parametrize, session
 
 options.sessions = ["test", "test_numpy", "coverage", "lint"]
 

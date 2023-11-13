@@ -1,10 +1,10 @@
-from tensora import Tensor
-
 import pytest
+
+from tensora import Tensor
 
 
 @pytest.mark.parametrize(
-    'array',
+    "array",
     [
         0.0,
         4.5,
@@ -15,9 +15,9 @@ import pytest
         [[[0, 0, 3], [4, 5, 0]], [[0, 0, 0], [4, 5, 6]]],
     ],
 )
-@pytest.mark.parametrize('format', ['d', 's'])
+@pytest.mark.parametrize("format", ["d", "s"])
 def test_to_from_numpy(array, format):
-    numpy = pytest.importorskip('numpy')
+    numpy = pytest.importorskip("numpy")
 
     expected = numpy.array(array)
 

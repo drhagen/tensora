@@ -2,23 +2,23 @@ import pickle
 
 import pytest
 
-from tensora import Mode, Format, Tensor
+from tensora import Format, Mode, Tensor
 
 # The example tensors from the original taco paper:
 # http://tensor-compiler.org/kjolstad-oopsla17-tensor-compiler.pdf
 figure_5_taco_data = [
-    ('d0d1', [[], []], [6, 0, 9, 8, 0, 0, 0, 0, 5, 0, 0, 7]),
-    ('s0d1', [[[0, 2], [0, 2]], []], [6, 0, 9, 8, 5, 0, 0, 7]),
-    ('d0s1', [[], [[0, 3, 3, 5], [0, 2, 3, 0, 3]]], [6, 9, 8, 5, 7]),
-    ('s0s1', [[[0, 2], [0, 2]], [[0, 3, 5], [0, 2, 3, 0, 3]]], [6, 9, 8, 5, 7]),
-    ('d1d0', [[], []], [6, 0, 5, 0, 0, 0, 9, 0, 0, 8, 0, 7]),
-    ('s1d0', [[[0, 3], [0, 2, 3]], []], [6, 0, 5, 9, 0, 0, 8, 0, 7]),
-    ('d1s0', [[], [[0, 2, 2, 3, 5], [0, 2, 0, 0, 2]]], [6, 5, 9, 8, 7]),
-    ('s1s0', [[[0, 3], [0, 2, 3]], [[0, 2, 3, 5], [0, 2, 0, 0, 2]]], [6, 5, 9, 8, 7]),
+    ("d0d1", [[], []], [6, 0, 9, 8, 0, 0, 0, 0, 5, 0, 0, 7]),
+    ("s0d1", [[[0, 2], [0, 2]], []], [6, 0, 9, 8, 5, 0, 0, 7]),
+    ("d0s1", [[], [[0, 3, 3, 5], [0, 2, 3, 0, 3]]], [6, 9, 8, 5, 7]),
+    ("s0s1", [[[0, 2], [0, 2]], [[0, 3, 5], [0, 2, 3, 0, 3]]], [6, 9, 8, 5, 7]),
+    ("d1d0", [[], []], [6, 0, 5, 0, 0, 0, 9, 0, 0, 8, 0, 7]),
+    ("s1d0", [[[0, 3], [0, 2, 3]], []], [6, 0, 5, 9, 0, 0, 8, 0, 7]),
+    ("d1s0", [[], [[0, 2, 2, 3, 5], [0, 2, 0, 0, 2]]], [6, 5, 9, 8, 7]),
+    ("s1s0", [[[0, 3], [0, 2, 3]], [[0, 2, 3, 5], [0, 2, 0, 0, 2]]], [6, 5, 9, 8, 7]),
 ]
 
 
-@pytest.mark.parametrize('format,indices,vals', figure_5_taco_data)
+@pytest.mark.parametrize("format,indices,vals", figure_5_taco_data)
 def test_figure_5(format, indices, vals):
     data = [[6, 0, 9, 8], [0, 0, 0, 0], [5, 0, 0, 7]]
     A = Tensor.from_lol(data, dimensions=(3, 4), format=format)
@@ -27,13 +27,16 @@ def test_figure_5(format, indices, vals):
     assert A.taco_vals == vals
 
 
-@pytest.mark.parametrize('format,indices,vals', figure_5_taco_data)
-@pytest.mark.parametrize('permutation', [
-    [0, 1, 2, 3, 4],
-    [4, 3, 2, 1, 0],
-    [0, 4, 3, 2, 1],
-    [2, 1, 3, 4, 0],
-])
+@pytest.mark.parametrize("format,indices,vals", figure_5_taco_data)
+@pytest.mark.parametrize(
+    "permutation",
+    [
+        [0, 1, 2, 3, 4],
+        [4, 3, 2, 1, 0],
+        [0, 4, 3, 2, 1],
+        [2, 1, 3, 4, 0],
+    ],
+)
 def test_unsorted_coordinates(format, indices, vals, permutation):
     data = [
         ((0, 0), 6),
@@ -64,10 +67,10 @@ def test_unsorted_coordinates(format, indices, vals, permutation):
 
 # The example tensors from the follow-up taco paper:
 # https://tensor-compiler.org/chou-oopsla18-taco-formats.pdf
-@pytest.mark.parametrize('format,indices,vals', [
-    ('d', [[]], [5, 1, 0, 0, 2, 0, 8, 0]),
-    ('s', [[[0, 4], [0, 1, 4, 6]]], [5, 1, 2, 8])
-])
+@pytest.mark.parametrize(
+    "format,indices,vals",
+    [("d", [[]], [5, 1, 0, 0, 2, 0, 8, 0]), ("s", [[[0, 4], [0, 1, 4, 6]]], [5, 1, 2, 8])],
+)
 def test_figure_2a(format, indices, vals):
     data = [5, 1, 0, 0, 2, 0, 8, 0]
     a = Tensor.from_lol(data, dimensions=(8,), format=format)
@@ -76,10 +79,17 @@ def test_figure_2a(format, indices, vals):
     assert a.taco_vals == vals
 
 
-@pytest.mark.parametrize('format,indices,vals', [
-    ('ds', [[], [[0, 2, 4, 4, 7], [0, 1, 0, 1, 0, 3, 4]]], [5, 1, 7, 3, 8, 4, 9]),
-    ('ss', [[[0, 3], [0, 1, 3]], [[0, 2, 4, 7], [0, 1, 0, 1, 0, 3, 4]]], [5, 1, 7, 3, 8, 4, 9])
-])
+@pytest.mark.parametrize(
+    "format,indices,vals",
+    [
+        ("ds", [[], [[0, 2, 4, 4, 7], [0, 1, 0, 1, 0, 3, 4]]], [5, 1, 7, 3, 8, 4, 9]),
+        (
+            "ss",
+            [[[0, 3], [0, 1, 3]], [[0, 2, 4, 7], [0, 1, 0, 1, 0, 3, 4]]],
+            [5, 1, 7, 3, 8, 4, 9],
+        ),
+    ],
+)
 def test_figure_2e(format, indices, vals):
     data = {
         (0, 0): 5,
@@ -96,10 +106,20 @@ def test_figure_2e(format, indices, vals):
     assert a.taco_vals == vals
 
 
-@pytest.mark.parametrize('format,indices,vals', [
-    ('sss', [[[0, 2], [0, 2]], [[0, 2, 5], [0, 2, 0, 2, 3]], [[0, 2, 3, 4, 6, 8], [0, 1, 1, 1, 0, 1, 0, 1]]],
-     [1, 7, 5, 2, 4, 8, 3, 9]),
-])
+@pytest.mark.parametrize(
+    "format,indices,vals",
+    [
+        (
+            "sss",
+            [
+                [[0, 2], [0, 2]],
+                [[0, 2, 5], [0, 2, 0, 2, 3]],
+                [[0, 2, 3, 4, 6, 8], [0, 1, 1, 1, 0, 1, 0, 1]],
+            ],
+            [1, 7, 5, 2, 4, 8, 3, 9],
+        ),
+    ],
+)
 def test_figure_2m(format, indices, vals):
     data = {
         (0, 0, 0): 1,
@@ -125,7 +145,7 @@ def test_from_dok():
         (2, 3): 5.0,
     }
     format = Format((Mode.compressed, Mode.compressed), (0, 1))
-    x = Tensor.from_dok(data, dimensions=(4, 5), format='ss')
+    x = Tensor.from_dok(data, dimensions=(4, 5), format="ss")
 
     assert x.order == 2
     assert x.dimensions == (4, 5)
@@ -248,11 +268,14 @@ def test_nonscalar_to_float():
         _ = float(x)
 
 
-@pytest.mark.parametrize('a,b,c', [
-    ([0, 0, 1], 3, [3, 3, 4]),
-    (3, [0, 0, 1], [3, 3, 4]),
-    ([1, 2, 3], [0, 0, 1], [1, 2, 4]),
-])
+@pytest.mark.parametrize(
+    "a,b,c",
+    [
+        ([0, 0, 1], 3, [3, 3, 4]),
+        (3, [0, 0, 1], [3, 3, 4]),
+        ([1, 2, 3], [0, 0, 1], [1, 2, 4]),
+    ],
+)
 def test_add(a, b, c):
     if isinstance(a, list):
         a = Tensor.from_lol(a)
@@ -264,11 +287,14 @@ def test_add(a, b, c):
     assert actual == expected
 
 
-@pytest.mark.parametrize('a,b,c', [
-    ([0, 0, 1], 3, [-3, -3, -2]),
-    (3, [0, 0, 1], [3, 3, 2]),
-    ([1, 2, 3], [0, 0, 1], [1, 2, 2]),
-])
+@pytest.mark.parametrize(
+    "a,b,c",
+    [
+        ([0, 0, 1], 3, [-3, -3, -2]),
+        (3, [0, 0, 1], [3, 3, 2]),
+        ([1, 2, 3], [0, 0, 1], [1, 2, 2]),
+    ],
+)
 def test_subtract(a, b, c):
     if isinstance(a, list):
         a = Tensor.from_lol(a)
@@ -280,11 +306,14 @@ def test_subtract(a, b, c):
     assert actual == expected
 
 
-@pytest.mark.parametrize('a,b,c', [
-    ([0, 0, 1], 3, [0, 0, 3]),
-    (3, [0, 0, 2], [0, 0, 6]),
-    ([1, 2, 3], [0, 0, 4], [0, 0, 12]),
-])
+@pytest.mark.parametrize(
+    "a,b,c",
+    [
+        ([0, 0, 1], 3, [0, 0, 3]),
+        (3, [0, 0, 2], [0, 0, 6]),
+        ([1, 2, 3], [0, 0, 4], [0, 0, 12]),
+    ],
+)
 def test_multiply(a, b, c):
     if isinstance(a, list):
         a = Tensor.from_lol(a)
@@ -296,12 +325,15 @@ def test_multiply(a, b, c):
     assert actual == expected
 
 
-@pytest.mark.parametrize('a,b,c', [
-    ([3, 2, 5], [1, 2, 0], 7),
-    ([0, 0, 1], [[0, 0], [4, -1], [0, 2]], [0, 2]),
-    ([[0, 0, 1], [2, 2, 3]], [0, -1, 2], [2, 4]),
-    ([[0, 0, 1], [2, 2, 3]], [[0, 0], [4, -1], [0, 2]], [[0, 2], [8, 4]]),
-])
+@pytest.mark.parametrize(
+    "a,b,c",
+    [
+        ([3, 2, 5], [1, 2, 0], 7),
+        ([0, 0, 1], [[0, 0], [4, -1], [0, 2]], [0, 2]),
+        ([[0, 0, 1], [2, 2, 3]], [0, -1, 2], [2, 4]),
+        ([[0, 0, 1], [2, 2, 3]], [[0, 0], [4, -1], [0, 2]], [[0, 2], [8, 4]]),
+    ],
+)
 def test_matrix_multiply(a, b, c):
     a = Tensor.from_lol(a)
     b = Tensor.from_lol(b)
@@ -336,28 +368,36 @@ def test_matrix_multiply_mismatched_dimensions():
 
 def test_matrix_multiply_too_many_dimensions():
     a = Tensor.from_lol([3, 2, 5])
-    b = Tensor.from_dok({
-        (0, 0, 0): 4.5,
-        (1, 0, 1): 3.2,
-        (1, 1, 2): -3.0,
-        (0, 1, 1): 5.0,
-    }, dimensions=(3, 3, 3))
+    b = Tensor.from_dok(
+        {
+            (0, 0, 0): 4.5,
+            (1, 0, 1): 3.2,
+            (1, 1, 2): -3.0,
+            (0, 1, 1): 5.0,
+        },
+        dimensions=(3, 3, 3),
+    )
 
     with pytest.raises(ValueError):
         _ = a @ b
 
 
 def test_equality():
-    assert Tensor.from_lol([0, 2, 0], format='d') == Tensor.from_lol([0, 2, 0], format='s')
-    assert Tensor.from_lol([0, 1, 0], format='d') != Tensor.from_lol([0, 2, 0], format='s')
-    assert Tensor.from_lol([0, 1, 0], format='d') != 1
+    assert Tensor.from_lol([0, 2, 0], format="d") == Tensor.from_lol([0, 2, 0], format="s")
+    assert Tensor.from_lol([0, 1, 0], format="d") != Tensor.from_lol([0, 2, 0], format="s")
+    assert Tensor.from_lol([0, 1, 0], format="d") != 1
 
 
-@pytest.mark.parametrize('tensor', [
-    Tensor.from_dok({}, dimensions=()),
-    Tensor.from_dok({(2, 3): 2.0, (0, 1): 0.0, (1, 2): -1.0, (0, 3): 0.0}, dimensions=(2, 4)),
-    Tensor.from_dok({(0, 0, 0): 4.5, (1, 0, 1): 3.2, (1, 1, 2): -3.0, (0, 1, 1): 5.0}, dimensions=(3, 3, 3)),
-])
+@pytest.mark.parametrize(
+    "tensor",
+    [
+        Tensor.from_dok({}, dimensions=()),
+        Tensor.from_dok({(2, 3): 2.0, (0, 1): 0.0, (1, 2): -1.0, (0, 3): 0.0}, dimensions=(2, 4)),
+        Tensor.from_dok(
+            {(0, 0, 0): 4.5, (1, 0, 1): 3.2, (1, 1, 2): -3.0, (0, 1, 1): 5.0}, dimensions=(3, 3, 3)
+        ),
+    ],
+)
 def test_pickle(tensor):
     # Ensure that not only are the tensors equal, but that they also have the same format and explicit zeros, neither of
     # which affects equality

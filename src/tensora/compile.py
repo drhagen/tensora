@@ -1,20 +1,25 @@
-__all__ = ['taco_kernel', 'allocate_taco_structure', 'taco_structure_to_cffi', 'take_ownership_of_arrays',
-           'tensor_cdefs', 'take_ownership_of_tensor_members']
+__all__ = [
+    "taco_kernel",
+    "allocate_taco_structure",
+    "taco_structure_to_cffi",
+    "take_ownership_of_arrays",
+    "tensor_cdefs",
+    "take_ownership_of_tensor_members",
+]
 
 import re
 import subprocess
 import tempfile
+import threading
 from pathlib import Path
-from typing import List, Tuple, FrozenSet, Any
+from typing import Any, FrozenSet, List, Tuple
 from weakref import WeakKeyDictionary
 
 from cffi import FFI
 
-import threading
-
 lock = threading.Lock()
 
-taco_binary = Path(__file__).parent.joinpath('taco/bin/taco')
+taco_binary = Path(__file__).parent.joinpath("taco/bin/taco")
 
 global_weakkeydict = WeakKeyDictionary()
 
@@ -81,7 +86,7 @@ tensor_cdefs = FFI()
 tensor_cdefs.cdef(taco_type_header)
 
 # This library only has definitions, in order to call `dlopen`, `set_source` must be called with empty `source` first
-tensor_cdefs.set_source('_main', '')
+tensor_cdefs.set_source("_main", "")
 
 tensor_lib = tensor_cdefs.dlopen(None)
 
@@ -111,9 +116,12 @@ def taco_kernel(expression: str, formats: FrozenSet[Tuple[str, str]]) -> Tuple[L
         cffi pointers to taco_tensor_t instances in order specified by the list of variable names.
     """
     # Call taco to write the kernels to standard out
-    result = subprocess.run([taco_binary, expression, '-print-evaluate', '-print-nocolor']
-                            + [f'-f={name}:{format}' for name, format in formats],
-                            capture_output=True, text=True)
+    result = subprocess.run(
+        [taco_binary, expression, "-print-evaluate", "-print-nocolor"]
+        + [f"-f={name}:{format}" for name, format in formats],
+        capture_output=True,
+        text=True,
+    )
 
     if result.returncode != 0:
         raise RuntimeError(result.stderr)
@@ -123,17 +131,20 @@ def taco_kernel(expression: str, formats: FrozenSet[Tuple[str, str]]) -> Tuple[L
     # Determine signature
     # 1) Find function by name and capture its parameter list
     # 2) Find each parameter by `*` and capture its name
-    signature_match = re.search(r'int evaluate\(([^)]*)\)', source)
+    signature_match = re.search(r"int evaluate\(([^)]*)\)", source)
     signature = signature_match.group(0)
-    parameter_list_matches = re.finditer(r'\*([^,]*)', signature_match.group(1))
+    parameter_list_matches = re.finditer(r"\*([^,]*)", signature_match.group(1))
     parameter_names = [match.group(1) for match in parameter_list_matches]
 
     # Use cffi to compile the kernels
     ffibuilder = FFI()
     ffibuilder.include(tensor_cdefs)
-    ffibuilder.cdef(signature + ';')
-    ffibuilder.set_source('taco_kernel', taco_define_header + taco_type_header + source,
-                          extra_compile_args=['-Wno-unused-variable', '-Wno-unknown-pragmas'])
+    ffibuilder.cdef(signature + ";")
+    ffibuilder.set_source(
+        "taco_kernel",
+        taco_define_header + taco_type_header + source,
+        extra_compile_args=["-Wno-unused-variable", "-Wno-unknown-pragmas"],
+    )
 
     with tempfile.TemporaryDirectory() as temp_dir:
         # Lock because FFI.compile is not thread safe: https://foss.heptapod.net/pypy/cffi/-/issues/490
@@ -152,7 +163,9 @@ def taco_kernel(expression: str, formats: FrozenSet[Tuple[str, str]]) -> Tuple[L
     return parameter_names, lib
 
 
-def allocate_taco_structure(mode_types: Tuple[int, ...], dimensions: Tuple[int, ...], mode_ordering: Tuple[int, ...]):
+def allocate_taco_structure(
+    mode_types: Tuple[int, ...], dimensions: Tuple[int, ...], mode_ordering: Tuple[int, ...]
+):
     """Allocate all parts of a taco tensor except growable arrays.
 
     All int32_t[] tensor.indices[*][*] and double[] tensor.vals are NULL pointers. All other properties are immutable.
@@ -171,40 +184,44 @@ def allocate_taco_structure(mode_types: Tuple[int, ...], dimensions: Tuple[int, 
     """
     # Validate inputs
     if not (len(mode_types) == len(dimensions) == len(mode_ordering)):
-        raise ValueError(f'Must all be the same length: mode_types = {mode_types}, dimensions = {dimensions}, '
-                         f'mode_ordering = {mode_ordering}')
+        raise ValueError(
+            f"Must all be the same length: mode_types = {mode_types}, dimensions = {dimensions}, "
+            f"mode_ordering = {mode_ordering}"
+        )
 
     for mode_type in mode_types:
         if mode_type not in (0, 1):
-            raise ValueError(f'mode_types must only contain elements 0 or 1: {mode_types}')
+            raise ValueError(f"mode_types must only contain elements 0 or 1: {mode_types}")
 
     for dimension in dimensions:
         if dimension < 0:
             # cffi will reject integers too big to fit into an int32_t
-            raise ValueError(f'All values in dimensions must be positive: {dimensions}')
+            raise ValueError(f"All values in dimensions must be positive: {dimensions}")
 
     if set(mode_ordering) != set(range(len(mode_types))):
-        raise ValueError(f'mode_ordering must contain each number in the set {{0, 1, ..., order - 1}} exactly once: '
-                         f'{mode_ordering}')
+        raise ValueError(
+            f"mode_ordering must contain each number in the set {{0, 1, ..., order - 1}} exactly once: "
+            f"{mode_ordering}"
+        )
 
     # This structure mimics the taco structure and holds the objects owning the memory of the arrays, ensuring that the
     # pointers stay valid as long as the cffi taco structure has not been garbage collected.
     memory_holder = {}
 
-    cffi_tensor = tensor_cdefs.new('taco_tensor_t*')
+    cffi_tensor = tensor_cdefs.new("taco_tensor_t*")
 
     cffi_tensor.order = len(mode_types)
 
-    cffi_dimensions = tensor_cdefs.new('int32_t[]', dimensions)
-    memory_holder['dimensions'] = cffi_dimensions
+    cffi_dimensions = tensor_cdefs.new("int32_t[]", dimensions)
+    memory_holder["dimensions"] = cffi_dimensions
     cffi_tensor.dimensions = cffi_dimensions
 
-    cffi_mode_ordering = tensor_cdefs.new('int32_t[]', mode_ordering)
-    memory_holder['mode_ordering'] = cffi_mode_ordering
+    cffi_mode_ordering = tensor_cdefs.new("int32_t[]", mode_ordering)
+    memory_holder["mode_ordering"] = cffi_mode_ordering
     cffi_tensor.mode_ordering = cffi_mode_ordering
 
-    cffi_mode_types = tensor_cdefs.new('taco_mode_t[]', mode_types)
-    memory_holder['mode_types'] = cffi_mode_types
+    cffi_mode_types = tensor_cdefs.new("taco_mode_t[]", mode_types)
+    memory_holder["mode_types"] = cffi_mode_types
     cffi_tensor.mode_types = cffi_mode_types
 
     converted_levels = []
@@ -215,15 +232,15 @@ def allocate_taco_structure(mode_types: Tuple[int, ...], dimensions: Tuple[int, 
             converted_arrays = []
         elif mode == tensor_lib.taco_mode_sparse:
             converted_arrays = [tensor_cdefs.NULL, tensor_cdefs.NULL]
-        cffi_level = tensor_cdefs.new('int32_t*[]', converted_arrays)
+        cffi_level = tensor_cdefs.new("int32_t*[]", converted_arrays)
         memory_holder_levels.append(cffi_level)
         memory_holder_levels_arrays.append(converted_arrays)
         converted_levels.append(cffi_level)
-    cffi_levels = tensor_cdefs.new('int32_t**[]', converted_levels)
-    memory_holder['indices'] = cffi_levels
-    memory_holder['*indices'] = memory_holder_levels
-    memory_holder['**indices'] = memory_holder_levels_arrays
-    cffi_tensor.indices = tensor_cdefs.cast('uint8_t***', cffi_levels)
+    cffi_levels = tensor_cdefs.new("int32_t**[]", converted_levels)
+    memory_holder["indices"] = cffi_levels
+    memory_holder["*indices"] = memory_holder_levels
+    memory_holder["**indices"] = memory_holder_levels_arrays
+    cffi_tensor.indices = tensor_cdefs.cast("uint8_t***", cffi_levels)
 
     cffi_tensor.vals = tensor_cdefs.NULL
 
@@ -234,8 +251,14 @@ def allocate_taco_structure(mode_types: Tuple[int, ...], dimensions: Tuple[int, 
     return cffi_tensor
 
 
-def taco_structure_to_cffi(indices: List[List[List[int]]], vals: List[float], *,
-                           mode_types: Tuple[int, ...], dimensions: Tuple[int, ...], mode_ordering: Tuple[int, ...]):
+def taco_structure_to_cffi(
+    indices: List[List[List[int]]],
+    vals: List[float],
+    *,
+    mode_types: Tuple[int, ...],
+    dimensions: Tuple[int, ...],
+    mode_ordering: Tuple[int, ...],
+):
     """Build a cffi taco tensor from Python data.
 
     This takes Python data with a one-to-one mapping to taco tensor attributes and builds a cffi taco tensor from it.
@@ -255,58 +278,76 @@ def taco_structure_to_cffi(indices: List[List[List[int]]], vals: List[float], *,
 
     # Validate inputs
     if len(indices) != len(mode_types):
-        raise ValueError(f'Length of indices ({len(indices)}) must be equal to the length of mode_types, dimensions, '
-                         f'and mode_ordering ({len(mode_types)})')
+        raise ValueError(
+            f"Length of indices ({len(indices)}) must be equal to the length of mode_types, dimensions, "
+            f"and mode_ordering ({len(mode_types)})"
+        )
 
     nnz = 1
     for i_level in range(cffi_tensor.order):
         if mode_types[i_level] == 0:
             if len(indices[i_level]) != 0:
-                raise ValueError(f'Level {i_level} is a dense mode and therefore expects indices[{i_level}] to be '
-                                 f'empty: {indices[i_level]}')
+                raise ValueError(
+                    f"Level {i_level} is a dense mode and therefore expects indices[{i_level}] to be "
+                    f"empty: {indices[i_level]}"
+                )
             nnz *= dimensions[mode_ordering[i_level]]
         elif mode_types[i_level] == 1:
             if len(indices[i_level]) != 2:
-                raise ValueError(f'Level {i_level} is a compressed mode and therefore expects indices[{i_level}] to be '
-                                 f'length 2 not length {len(indices[i_level])}: {indices[i_level]}')
+                raise ValueError(
+                    f"Level {i_level} is a compressed mode and therefore expects indices[{i_level}] to be "
+                    f"length 2 not length {len(indices[i_level])}: {indices[i_level]}"
+                )
             pos = indices[i_level][0]
             crd = indices[i_level][1]
             if len(pos) != nnz + 1:
-                raise ValueError(f'The pos array of level {i_level} (indices[{i_level}][0]) must have length {nnz}, '
-                                 f'the number of explicit indexes so far, not length {len(pos)}: {pos}')
+                raise ValueError(
+                    f"The pos array of level {i_level} (indices[{i_level}][0]) must have length {nnz}, "
+                    f"the number of explicit indexes so far, not length {len(pos)}: {pos}"
+                )
             if pos[0] != 0:
-                raise ValueError(f'The first element of the pos array of level {i_level} must be 0: {pos}')
+                raise ValueError(
+                    f"The first element of the pos array of level {i_level} must be 0: {pos}"
+                )
             if not weakly_increasing(pos):
-                raise ValueError(f'The pos array of level {i_level} (indices[{i_level}][0]) must be weakly '
-                                 f'monotonically increasing: {pos}')
+                raise ValueError(
+                    f"The pos array of level {i_level} (indices[{i_level}][0]) must be weakly "
+                    f"monotonically increasing: {pos}"
+                )
             if len(crd) != pos[-1]:
-                raise ValueError(f'The crd array of level {i_level} (indices[{i_level}][1]) must have length '
-                                 f"{pos[-1]}, the last element of this level's pos array, not length {len(crd)}: {crd}")
+                raise ValueError(
+                    f"The crd array of level {i_level} (indices[{i_level}][1]) must have length "
+                    f"{pos[-1]}, the last element of this level's pos array, not length {len(crd)}: {crd}"
+                )
             if not all(0 <= x < dimensions[mode_ordering[i_level]] for x in crd):
-                raise ValueError(f'All values in the crd array of level {i_level} (indices[{i_level}][1]) must be '
-                                 f'nonnegative and less than the size of this dimension: {crd}')
+                raise ValueError(
+                    f"All values in the crd array of level {i_level} (indices[{i_level}][1]) must be "
+                    f"nonnegative and less than the size of this dimension: {crd}"
+                )
             nnz = len(crd)
 
     if len(vals) != nnz:
-        raise ValueError(f'Length of vals must be equal to the number of indexes implicitly defined by indices {nnz} '
-                         f'not {len(vals)}: {vals}')
+        raise ValueError(
+            f"Length of vals must be equal to the number of indexes implicitly defined by indices {nnz} "
+            f"not {len(vals)}: {vals}"
+        )
 
     # Get the partial constructed memory holder stored by allocate_taco_structure
     memory_holder = global_weakkeydict[cffi_tensor]
 
-    cffi_indices = tensor_cdefs.cast('int32_t***', cffi_tensor.indices)
+    cffi_indices = tensor_cdefs.cast("int32_t***", cffi_tensor.indices)
     for i_level, (mode, level) in enumerate(zip(mode_types, indices)):
         if mode == tensor_lib.taco_mode_dense:
             pass
         elif mode == tensor_lib.taco_mode_sparse:
             for i_array, array in enumerate(level):
-                cffi_array = tensor_cdefs.new('int32_t[]', array)
-                memory_holder['**indices'][i_level][i_array] = cffi_array
+                cffi_array = tensor_cdefs.new("int32_t[]", array)
+                memory_holder["**indices"][i_level][i_array] = cffi_array
                 cffi_indices[i_level][i_array] = cffi_array
 
-    cffi_vals = tensor_cdefs.new('double[]', vals)
-    memory_holder['vals'] = cffi_vals
-    cffi_tensor.vals = tensor_cdefs.cast('uint8_t*', cffi_vals)
+    cffi_vals = tensor_cdefs.new("double[]", vals)
+    memory_holder["vals"] = cffi_vals
+    cffi_tensor.vals = tensor_cdefs.cast("uint8_t*", cffi_vals)
 
     cffi_tensor.vals_size = len(vals)
 
@@ -333,15 +374,19 @@ def take_ownership_of_arrays(cffi_tensor) -> None:
 
     modes = cffi_tensor.mode_types[0:order]
 
-    cffi_levels = tensor_cdefs.cast('int32_t***', cffi_tensor.indices)
+    cffi_levels = tensor_cdefs.cast("int32_t***", cffi_tensor.indices)
     for i_dimension, mode in enumerate(modes):
         if mode == tensor_lib.taco_mode_dense:
             pass
         if mode == tensor_lib.taco_mode_sparse:
-            memory_holder['**indices'][i_dimension][0] = tensor_cdefs.gc(cffi_levels[i_dimension][0], tensor_lib.free)
-            memory_holder['**indices'][i_dimension][1] = tensor_cdefs.gc(cffi_levels[i_dimension][1], tensor_lib.free)
+            memory_holder["**indices"][i_dimension][0] = tensor_cdefs.gc(
+                cffi_levels[i_dimension][0], tensor_lib.free
+            )
+            memory_holder["**indices"][i_dimension][1] = tensor_cdefs.gc(
+                cffi_levels[i_dimension][1], tensor_lib.free
+            )
 
-    memory_holder['vals'] = tensor_cdefs.gc(cffi_tensor.vals, tensor_lib.free)
+    memory_holder["vals"] = tensor_cdefs.gc(cffi_tensor.vals, tensor_lib.free)
 
 
 def take_ownership_of_tensor_members(cffi_tensor) -> None:
@@ -363,24 +408,26 @@ def take_ownership_of_tensor_members(cffi_tensor) -> None:
     # First, take ownership of everything that is owned after taco_structure_to_cffi
     order = cffi_tensor.order
 
-    memory_holder['dimensions'] = tensor_cdefs.gc(cffi_tensor.dimensions, tensor_lib.free)
+    memory_holder["dimensions"] = tensor_cdefs.gc(cffi_tensor.dimensions, tensor_lib.free)
 
-    memory_holder['mode_ordering'] = tensor_cdefs.gc(cffi_tensor.mode_ordering, tensor_lib.free)
+    memory_holder["mode_ordering"] = tensor_cdefs.gc(cffi_tensor.mode_ordering, tensor_lib.free)
 
-    memory_holder['mode_types'] = tensor_cdefs.gc(cffi_tensor.mode_types, tensor_lib.free)
+    memory_holder["mode_types"] = tensor_cdefs.gc(cffi_tensor.mode_types, tensor_lib.free)
 
     memory_holder_levels = []
     memory_holder_levels_arrays = []
     for i_dimension, mode in enumerate(cffi_tensor.mode_types[0:order]):
-        memory_holder_levels.append(tensor_cdefs.gc(cffi_tensor.indices[i_dimension], tensor_lib.free))
+        memory_holder_levels.append(
+            tensor_cdefs.gc(cffi_tensor.indices[i_dimension], tensor_lib.free)
+        )
         if mode == tensor_lib.taco_mode_dense:
             memory_holder_levels_arrays.append([])
         elif mode == tensor_lib.taco_mode_sparse:
             # It does not matter what the values are here. They will be overwritten in take_ownership_of_arrays.
             memory_holder_levels_arrays.append([tensor_cdefs.NULL, tensor_cdefs.NULL])
-    memory_holder['indices'] = tensor_cdefs.gc(cffi_tensor.indices, tensor_lib.free)
-    memory_holder['*indices'] = memory_holder_levels
-    memory_holder['**indices'] = memory_holder_levels_arrays
+    memory_holder["indices"] = tensor_cdefs.gc(cffi_tensor.indices, tensor_lib.free)
+    memory_holder["*indices"] = memory_holder_levels
+    memory_holder["**indices"] = memory_holder_levels_arrays
 
     global_weakkeydict[cffi_tensor] = memory_holder
 
@@ -401,7 +448,7 @@ def take_ownership_of_tensor(cffi_tensor) -> None:
     Args:
         cffi_tensor: A cffi taco_tensor_t*.
     """
-    global_weakkeydict[cffi_tensor] = {'tensor': tensor_cdefs.gc(cffi_tensor, tensor_lib.free)}
+    global_weakkeydict[cffi_tensor] = {"tensor": tensor_cdefs.gc(cffi_tensor, tensor_lib.free)}
     take_ownership_of_tensor_members(cffi_tensor)
 
 

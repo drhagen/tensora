@@ -1,9 +1,21 @@
-__all__ = ['Node', 'Expression', 'Literal', 'Integer', 'Float', 'Variable', 'Scalar', 'Tensor', 'Add', 'Subtract',
-           'Multiply', 'Assignment']
+__all__ = [
+    "Node",
+    "Expression",
+    "Literal",
+    "Integer",
+    "Float",
+    "Variable",
+    "Scalar",
+    "Tensor",
+    "Add",
+    "Subtract",
+    "Multiply",
+    "Assignment",
+]
 
 from abc import abstractmethod
 from dataclasses import dataclass
-from typing import List, Dict, Tuple, Set
+from typing import Dict, List, Set, Tuple
 
 
 class Node:
@@ -100,14 +112,16 @@ class Tensor(Variable):
     indexes: List[str]
 
     def deparse(self):
-        return self.name + '(' + ','.join(self.indexes) + ')'
+        return self.name + "(" + ",".join(self.indexes) + ")"
 
 
 def merge_index_participants(left: Expression, right: Expression):
     left_indexes = left.index_participants()
     right_indexes = right.index_participants()
-    return {index_name: left_indexes.get(index_name, set()) | right_indexes.get(index_name, set())
-            for index_name in {*left_indexes.keys(), *right_indexes.keys()}}
+    return {
+        index_name: left_indexes.get(index_name, set()) | right_indexes.get(index_name, set())
+        for index_name in {*left_indexes.keys(), *right_indexes.keys()}
+    }
 
 
 @dataclass(frozen=True)
@@ -116,7 +130,7 @@ class Add(Expression):
     right: Expression
 
     def deparse(self):
-        return self.left.deparse() + ' + ' + self.right.deparse()
+        return self.left.deparse() + " + " + self.right.deparse()
 
     def variable_orders(self) -> Dict[str, int]:
         return {**self.left.variable_orders(), **self.right.variable_orders()}
@@ -131,7 +145,7 @@ class Subtract(Expression):
     right: Expression
 
     def deparse(self):
-        return self.left.deparse() + ' - ' + self.right.deparse()
+        return self.left.deparse() + " - " + self.right.deparse()
 
     def variable_orders(self) -> Dict[str, int]:
         return {**self.left.variable_orders(), **self.right.variable_orders()}
@@ -147,16 +161,16 @@ class Multiply(Expression):
 
     def deparse(self):
         if isinstance(self.left, (Add, Subtract)):
-            left_string = '(' + self.left.deparse() + ')'
+            left_string = "(" + self.left.deparse() + ")"
         else:
             left_string = self.left.deparse()
 
         if isinstance(self.right, (Add, Subtract)):
-            right_string = '(' + self.right.deparse() + ')'
+            right_string = "(" + self.right.deparse() + ")"
         else:
             right_string = self.right.deparse()
 
-        return left_string + ' * ' + right_string
+        return left_string + " * " + right_string
 
     def variable_orders(self) -> Dict[str, int]:
         return {**self.left.variable_orders(), **self.right.variable_orders()}
@@ -171,7 +185,7 @@ class Assignment(Node):
     expression: Expression
 
     def deparse(self) -> str:
-        return self.target.deparse() + ' = ' + self.expression.deparse()
+        return self.target.deparse() + " = " + self.expression.deparse()
 
     def variable_orders(self) -> Dict[str, int]:
         return {**self.target.variable_orders(), **self.expression.variable_orders()}
