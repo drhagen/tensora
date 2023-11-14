@@ -1,3 +1,5 @@
+__all__ = ["exhaust_tensor"]
+
 from functools import singledispatch
 
 from .ast import Add, Expression, Literal, Multiply, Scalar, Subtract, Tensor
@@ -5,7 +7,7 @@ from .tensor_leaf import TensorLeaf
 
 
 @singledispatch
-def exhaust_tensor(self, tensor: TensorLeaf) -> Expression:
+def exhaust_tensor(self, tensor: TensorLeaf) -> Expression | None:
     pass
 
 

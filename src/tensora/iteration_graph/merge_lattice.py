@@ -1,22 +1,18 @@
 from __future__ import annotations
 
-__all__ = ["Lattice", "LatticeLeaf", "LatticeConjuction", "LatticeDisjunction", "IterationMode"]
+__all__ = ["Lattice", "LatticeLeaf", "LatticeConjuction", "LatticeDisjunction"]
 
 from abc import abstractmethod
 from dataclasses import dataclass
-from enum import Enum, auto
-from typing import AbstractSet, List, Optional
 
-from ...format import Mode
-from ...ir.ast import Expression, Variable
-from ...stable_set import StableFrozenSet
-from ..identifiable_expression import TensorLeaf
-from ..identifiable_expression import ast as ie_ast
-from ..names import (
+from ..format import Mode
+from ..ir.ast import Expression, Variable
+from ..stable_set import StableFrozenSet
+from .identifiable_expression import TensorLeaf
+from .identifiable_expression import ast as ie_ast
+from .names import (
     crd_capacity_name,
     crd_name,
-    dimension_name,
-    layer_begin_name,
     layer_pointer,
     pos_capacity_name,
     pos_name,
@@ -26,12 +22,6 @@ from ..names import (
     vals_name,
     value_from_crd,
 )
-
-
-class IterationMode(Enum):
-    dense_only = auto()
-    sparse_only = auto()
-    dense_and_sparse = auto()
 
 
 class Lattice:
@@ -44,27 +34,15 @@ class Lattice:
         pass
 
     @abstractmethod
-    def exhaust_tensor(self, tensor: TensorLeaf) -> Optional[Lattice]:
+    def exhaust_tensor(self, tensor: TensorLeaf) -> Lattice | None:
         pass
 
     @abstractmethod
-    def iteration_mode(self) -> IterationMode:
+    def sparse_leaves(self) -> list[LatticeLeaf]:
         pass
 
     @abstractmethod
-    def sparse_tensors(self) -> AbstractSet[TensorLeaf]:
-        pass
-
-    @abstractmethod
-    def leaves(self) -> List[LatticeLeaf]:
-        pass
-
-    @abstractmethod
-    def sparse_leaves(self) -> List[LatticeLeaf]:
-        pass
-
-    @abstractmethod
-    def dense_leaves(self) -> List[LatticeLeaf]:
+    def dense_leaves(self) -> list[LatticeLeaf]:
         pass
 
 
@@ -82,9 +60,6 @@ class LatticeLeaf(Lattice):
 
     def sparse_end_name(self) -> Variable:
         return sparse_end_name(self.tensor.variable, self.layer)
-
-    def layer_begin_name(self) -> Variable:
-        return layer_begin_name(self.tensor.variable, self.layer)
 
     def previous_layer_pointer(self) -> Expression:
         return previous_layer_pointer(self.tensor.variable, self.layer)
@@ -110,9 +85,6 @@ class LatticeLeaf(Lattice):
     def vals_capacity_name(self) -> Variable:
         return vals_capacity_name(self.tensor.variable.name)
 
-    def dimension_name(self) -> Variable:
-        return dimension_name(self.tensor.indexes[self.layer])
-
     def is_dense(self) -> bool:
         return self.mode == Mode.dense
 
@@ -122,48 +94,24 @@ class LatticeLeaf(Lattice):
         else:
             return StableFrozenSet()
 
-    def exhaust_tensor(self, tensor: TensorLeaf) -> Optional[Lattice]:
+    def exhaust_tensor(self, tensor: TensorLeaf) -> Lattice | None:
         if self.tensor.variable == tensor:
             # This will only happen when mode == compressed
             return None
         else:
             return self
 
-    def iteration_mode(self):
-        if self.mode == Mode.dense:
-            return IterationMode.dense_only
-        elif self.mode == Mode.compressed:
-            return IterationMode.sparse_only
-        else:
-            raise NotImplementedError()
-
-    def sparse_tensors(self) -> AbstractSet[TensorLeaf]:
-        if self.mode == Mode.compressed:
-            return StableFrozenSet(self.tensor.variable)
-        else:
-            return StableFrozenSet()
-
-    def leaves(self):
-        return [self]
-
-    def sparse_leaves(self) -> List[LatticeLeaf]:
+    def sparse_leaves(self) -> list[LatticeLeaf]:
         if self.mode == Mode.dense:
             return []
         elif self.mode == Mode.compressed:
             return [self]
 
-    def dense_leaves(self) -> List[LatticeLeaf]:
+    def dense_leaves(self) -> list[LatticeLeaf]:
         if self.mode == Mode.dense:
             return [self]
         elif self.mode == Mode.compressed:
             return []
-
-    def next_layer(self) -> Optional[LatticeLeaf]:
-        next_layer = self.layer + 1
-        if next_layer == len(self.tensor.modes):
-            return None
-        else:
-            return LatticeLeaf(self.tensor, next_layer)
 
 
 @dataclass(frozen=True)
@@ -177,7 +125,7 @@ class LatticeConjuction(Lattice):
     def compressed_dimensions(self) -> StableFrozenSet[TensorLeaf]:
         return self.left.compressed_dimensions() | self.right.compressed_dimensions()
 
-    def exhaust_tensor(self, tensor: TensorLeaf) -> Optional[Lattice]:
+    def exhaust_tensor(self, tensor: TensorLeaf) -> Lattice | None:
         left_exhausted = self.left.exhaust_tensor(tensor)
         right_exhausted = self.right.exhaust_tensor(tensor)
         if left_exhausted is self.left and right_exhausted is self.right:
@@ -191,24 +139,10 @@ class LatticeConjuction(Lattice):
         else:
             return LatticeConjuction(left_exhausted, right_exhausted)
 
-    def iteration_mode(self):
-        left_iteration_mode = self.left.iteration_mode()
-        right_iteration_mode = self.right.iteration_mode()
-        if left_iteration_mode == right_iteration_mode:
-            return left_iteration_mode
-        else:
-            return IterationMode.dense_and_sparse
-
-    def sparse_tensors(self) -> AbstractSet[TensorLeaf]:
-        return self.left.sparse_tensors() | self.right.sparse_tensors()
-
-    def leaves(self) -> List[LatticeLeaf]:
-        return self.left.leaves() + self.right.leaves()
-
-    def sparse_leaves(self) -> List[LatticeLeaf]:
+    def sparse_leaves(self) -> list[LatticeLeaf]:
         return self.left.sparse_leaves() + self.right.sparse_leaves()
 
-    def dense_leaves(self) -> List[LatticeLeaf]:
+    def dense_leaves(self) -> list[LatticeLeaf]:
         return self.left.dense_leaves() + self.right.dense_leaves()
 
 
@@ -223,7 +157,7 @@ class LatticeDisjunction(Lattice):
     def compressed_dimensions(self) -> StableFrozenSet[TensorLeaf]:
         return self.left.compressed_dimensions() | self.right.compressed_dimensions()
 
-    def exhaust_tensor(self, tensor: TensorLeaf) -> Optional[Lattice]:
+    def exhaust_tensor(self, tensor: TensorLeaf) -> Lattice | None:
         left_exhausted = self.left.exhaust_tensor(tensor)
         right_exhausted = self.right.exhaust_tensor(tensor)
         if left_exhausted is self.left and right_exhausted is self.right:
@@ -234,22 +168,8 @@ class LatticeDisjunction(Lattice):
         else:
             return LatticeDisjunction(left_exhausted, right_exhausted)
 
-    def iteration_mode(self):
-        left_iteration_mode = self.left.iteration_mode()
-        right_iteration_mode = self.right.iteration_mode()
-        if left_iteration_mode == right_iteration_mode:
-            return left_iteration_mode
-        else:
-            return IterationMode.dense_and_sparse
-
-    def sparse_tensors(self) -> AbstractSet[TensorLeaf]:
-        return self.left.sparse_tensors() | self.right.sparse_tensors()
-
-    def leaves(self) -> List[LatticeLeaf]:
-        return self.left.leaves() + self.right.leaves()
-
-    def sparse_leaves(self) -> List[LatticeLeaf]:
+    def sparse_leaves(self) -> list[LatticeLeaf]:
         return self.left.sparse_leaves() + self.right.sparse_leaves()
 
-    def dense_leaves(self) -> List[LatticeLeaf]:
+    def dense_leaves(self) -> list[LatticeLeaf]:
         return self.left.dense_leaves() + self.right.dense_leaves()

@@ -1,3 +1,18 @@
+__all__ = [
+    "dimension_name",
+    "pos_name",
+    "crd_name",
+    "vals_name",
+    "pos_capacity_name",
+    "crd_capacity_name",
+    "vals_capacity_name",
+    "tensor_to_string",
+    "layer_pointer",
+    "previous_layer_pointer",
+    "sparse_end_name",
+    "value_from_crd",
+]
+
 from ..ir.ast import Expression, IntegerLiteral, Variable
 from .identifiable_expression import TensorLeaf
 
@@ -47,10 +62,6 @@ def previous_layer_pointer(tensor: TensorLeaf, layer: int) -> Expression:
 
 def sparse_end_name(tensor: TensorLeaf, layer: int) -> Variable:
     return Variable(f"p_{tensor_to_string(tensor)}_{layer}_end")
-
-
-def layer_begin_name(tensor: TensorLeaf, layer: int) -> Variable:
-    return Variable(f"p_{tensor_to_string(tensor)}_{layer}_begin")
 
 
 def value_from_crd(tensor: TensorLeaf, layer: int) -> Variable:

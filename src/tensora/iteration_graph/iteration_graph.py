@@ -1,36 +1,36 @@
 from __future__ import annotations
 
+__all__ = ["IterationGraph", "Add", "Multiply", "IterationVariable", "TerminalExpression"]
+
 from abc import abstractmethod
 from dataclasses import dataclass, replace
-from typing import List, Optional
 
-from .. import Mode
-from .identifiable_expression import Expression, TensorLeaf
-from .identifiable_expression.exhaust_tensors import exhaust_tensor
+from ..format import Mode
+from .identifiable_expression import Expression, TensorLeaf, exhaust_tensor
 from .merge_lattice import Lattice, LatticeLeaf
 
 
 class IterationGraph:
     @abstractmethod
-    def exhaust_tensor(self, tensor: TensorLeaf):
+    def exhaust_tensor(self, tensor: TensorLeaf) -> IterationGraph | None:
         raise NotImplementedError()
 
     @abstractmethod
-    def all_dense(self):
+    def all_dense(self) -> bool:
         raise NotImplementedError()
 
     @abstractmethod
-    def is_sparse_output(self):
+    def is_sparse_output(self) -> bool:
         # Needed by assembly to determine if next layer is guaranteed to advance position or not
-        pass
+        raise NotImplementedError()
 
 
 @dataclass(frozen=True)
 class Add(IterationGraph):
     name: str
-    terms: List[IterationGraph]
+    terms: list[IterationGraph]
 
-    def exhaust_tensor(self, tensor: TensorLeaf):
+    def exhaust_tensor(self, tensor: TensorLeaf) -> IterationGraph | None:
         new_terms = []
         for term in self.terms:
             new_term = term.exhaust_tensor(tensor)
@@ -42,27 +42,27 @@ class Add(IterationGraph):
         else:
             return replace(self, terms=new_terms)
 
-    def all_dense(self):
+    def all_dense(self) -> bool:
         return True
 
-    def is_sparse_output(self):
+    def is_sparse_output(self) -> bool:
         return False
 
 
 @dataclass(frozen=True)
 class Multiply(IterationGraph):
     name: str
-    factors: List[IterationGraph]
+    factors: list[IterationGraph]
 
 
 @dataclass(frozen=True)
 class IterationVariable(IterationGraph):
     index_variable: str
-    output: Optional[LatticeLeaf]
+    output: LatticeLeaf | None
     lattice: Lattice
     next: IterationGraph
 
-    def exhaust_tensor(self, tensor: TensorLeaf):
+    def exhaust_tensor(self, tensor: TensorLeaf) -> IterationGraph | None:
         new_lattice = self.lattice.exhaust_tensor(tensor)
         if new_lattice is not None:
             new_next = self.next.exhaust_tensor(tensor)
@@ -74,10 +74,10 @@ class IterationVariable(IterationGraph):
         else:
             return None
 
-    def all_dense(self):
+    def all_dense(self) -> bool:
         return self.lattice.is_dense() and self.next.all_dense()
 
-    def is_sparse_output(self):
+    def is_sparse_output(self) -> bool:
         return self.output is not None and self.output.mode == Mode.compressed
 
 
@@ -85,11 +85,11 @@ class IterationVariable(IterationGraph):
 class TerminalExpression(IterationGraph):
     expression: Expression
 
-    def exhaust_tensor(self, tensor: TensorLeaf):
+    def exhaust_tensor(self, tensor: TensorLeaf) -> IterationGraph | None:
         return TerminalExpression(exhaust_tensor(self.expression, tensor))
 
-    def all_dense(self):
+    def all_dense(self) -> bool:
         return True
 
-    def is_sparse_output(self):
+    def is_sparse_output(self) -> bool:
         return False

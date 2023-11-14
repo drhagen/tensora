@@ -12,39 +12,39 @@ def to_ir(self: Expression) -> ir.Expression:
 
 
 @to_ir.register(Integer)
-def to_c_code_integer(self: Integer):
+def to_ir_integer(self: Integer):
     # This is sensible as long as we only support floating point values and don't support division. If either of those
     # ceases to be true, this will need to be updated.
     return ir.IntegerLiteral(self.value)
 
 
 @to_ir.register(Float)
-def to_c_code_float(self: Float):
+def to_ir_float(self: Float):
     return ir.FloatLiteral(self.value)
 
 
 @to_ir.register(Scalar)
-def to_c_code_scalar(self: Scalar):
+def to_ir_scalar(self: Scalar):
     return ir.Variable(self.variable.name)
 
 
 @to_ir.register(Tensor)
-def to_c_code_tensor(self: Tensor):
+def to_ir_tensor(self: Tensor):
     from ..names import previous_layer_pointer, vals_name
 
     return vals_name(self.variable.name).idx(previous_layer_pointer(self.variable, self.order))
 
 
 @to_ir.register(Add)
-def to_c_code_add(self: Add):
+def to_ir_add(self: Add):
     return ir.Add(to_ir(self.left), to_ir(self.right))
 
 
 @to_ir.register(Subtract)
-def to_c_code_subtract(self: Subtract):
+def to_ir_subtract(self: Subtract):
     return ir.Subtract(to_ir(self.left), to_ir(self.right))
 
 
 @to_ir.register(Multiply)
-def to_c_code_multiply(self: Multiply):
+def to_ir_multiply(self: Multiply):
     return ir.Multiply(to_ir(self.left), to_ir(self.right))

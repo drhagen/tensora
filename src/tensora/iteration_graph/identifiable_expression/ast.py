@@ -14,7 +14,6 @@ __all__ = [
 ]
 
 from dataclasses import dataclass
-from typing import Tuple
 
 from ...format import Mode
 from .tensor_leaf import TensorLeaf
@@ -44,8 +43,8 @@ class Float(Literal):
 
 class Variable(Expression):
     variable: TensorLeaf
-    indexes: Tuple[str, ...]
-    modes: Tuple[Mode, ...]
+    indexes: tuple[str, ...]
+    modes: tuple[Mode, ...]
 
     @property
     def name(self):
@@ -72,8 +71,8 @@ class Scalar(Variable):
 @dataclass(frozen=True)
 class Tensor(Variable):
     variable: TensorLeaf
-    indexes: Tuple[str, ...]
-    modes: Tuple[Mode, ...]
+    indexes: tuple[str, ...]
+    modes: tuple[Mode, ...]
 
 
 @dataclass(frozen=True)

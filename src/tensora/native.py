@@ -5,7 +5,8 @@ from .desugar import desugar_assignment, index_dimensions, to_identifiable, to_i
 from .expression import parse_assignment
 from .format import parse_format
 from .ir import peephole
-from .iteration_graph import Definition, KernelType, generate_ir
+from .iteration_graph import Definition, generate_ir
+from .kernel_type import KernelType
 
 
 def generate_c_code(assignment: str, formats: dict[str, str], kernel_type: KernelType) -> str:
