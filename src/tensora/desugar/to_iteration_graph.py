@@ -14,16 +14,15 @@ from .collect_lattices import collect_lattices
 
 
 def to_iteration_graph(
-    assignment: ast.Assignment,
-    formats: dict[str, Format],
-    output_format: Format,
+    assignment: ast.Assignment, formats: dict[str, Format]
 ) -> graph.IterationGraph:
     lattices = collect_lattices(assignment.expression, formats)
 
     tree = to_iteration_graph_expression(assignment.expression, lattices, formats, count(1))
 
+    output_name = assignment.target.variable.name
     target_leaf = assignment.target.variable.to_tensor_leaf()
-    variable = id.Tensor(target_leaf, assignment.target.indexes, output_format.modes)
+    variable = id.Tensor(target_leaf, assignment.target.indexes, formats[output_name].modes)
     for i, index_name in enumerate(assignment.target.indexes):
         tree = graph.IterationVariable(
             index_name, LatticeLeaf(variable, i), lattices[index_name], tree

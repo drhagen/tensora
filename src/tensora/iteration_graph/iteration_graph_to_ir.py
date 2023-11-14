@@ -36,6 +36,7 @@ from ..ir.ast import (
     Variable,
 )
 from ..ir.builder import SourceBuilder
+from .definition import Definition
 from .identifiable_expression import ast as ie_ast
 from .identifiable_expression import to_ir
 from .iteration_graph import Add as GraphAdd
@@ -53,7 +54,6 @@ from .names import (
     vals_capacity_name,
     vals_name,
 )
-from .problem import Problem
 
 default_array_size = Multiply(IntegerLiteral(1024), IntegerLiteral(1024))
 
@@ -910,50 +910,43 @@ def to_c_code_terminal_expression(
     return source
 
 
-def generate_c_code(problem: Problem, graph: IterationGraph, kernel_type: KernelType):
+def generate_ir(definition: Definition, graph: IterationGraph, kernel_type: KernelType):
     source = SourceBuilder()
 
-    target_name = problem.assignment.target.name
-
-    tensor_names = [target_name] + list(problem.input_formats.keys())
-
     # Function declaration
-    parameters = {name: types.Pointer(types.tensor) for name in tensor_names}
+    parameters = {name: types.Pointer(types.tensor) for name in definition.formats.keys()}
     with source.function_definition("evaluate", parameters, types.integer):
         # Dimensions of all index variables
         with source.block("Extract dimensions"):
-            for index_name, (tensor_name, tensor_dimension) in problem.index_dimensions().items():
+            for index_name, tensor_layer in definition.indexes.items():
                 declaration = dimension_name(index_name).declare(types.integer)
-                value = Variable(tensor_name).attr("dimensions").idx(tensor_dimension)
+                value = Variable(tensor_layer.name).attr("dimensions").idx(tensor_layer.dimension)
                 source.append(declaration.assign(value))
 
         # Unpack tensors
         with source.block("Unpack tensors"):
-            for tensor_name, format in {
-                target_name: problem.output_format,
-                **problem.input_formats,
-            }.items():
+            for tensor_name, format in definition.formats.items():
                 for i, mode in enumerate(format.modes):
-                    if mode == Mode.dense:
-                        pass
-                    elif mode == Mode.compressed:
-                        pos_declaration = pos_name(tensor_name, i).declare(
-                            types.Pointer(types.integer)
-                        )
-                        pos_value = Variable(tensor_name).attr("indices").idx(i).idx(0)
-                        source.append(pos_declaration.assign(pos_value))
-                        crd_declaration = crd_name(tensor_name, i).declare(
-                            types.Pointer(types.integer)
-                        )
-                        crd_value = Variable(tensor_name).attr("indices").idx(i).idx(1)
-                        source.append(crd_declaration.assign(crd_value))
-                    else:
-                        raise NotImplementedError
+                    match mode:
+                        case Mode.dense:
+                            pass
+                        case Mode.compressed:
+                            pos_declaration = pos_name(tensor_name, i).declare(
+                                types.Pointer(types.integer)
+                            )
+                            pos_value = Variable(tensor_name).attr("indices").idx(i).idx(0)
+                            source.append(pos_declaration.assign(pos_value))
+                            crd_declaration = crd_name(tensor_name, i).declare(
+                                types.Pointer(types.integer)
+                            )
+                            crd_value = Variable(tensor_name).attr("indices").idx(i).idx(1)
+                            source.append(crd_declaration.assign(crd_value))
+
                 vals_declaration = vals_name(tensor_name).declare(types.Pointer(types.float))
                 vals_value = Variable(tensor_name).attr("vals")
                 source.append(vals_declaration.assign(vals_value))
 
-        output = AppendOutput(problem.assignment.target, 0)
+        output = AppendOutput(definition.output_variable, 0)
         source.append(output.write_declarations(kernel_type))
 
         source.append(iteration_graph_to_c_code(graph, output, kernel_type))

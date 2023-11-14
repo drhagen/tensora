@@ -1,10 +1,9 @@
-from tensora.native import KernelType, generate_code
+from tensora.native import KernelType, generate_c_code
 
 
 def test_native_codegen():
     assignment = "f(i) = A0(i) + A1(i,j) * x(j) + A2(i,k,l) * x(k) * x(l)"
-    output_format = "d"
-    input_formats = {"A0": "d", "A1": "ds", "A2": "dss", "x": "d"}
+    formats = {"f": "d", "A0": "d", "A1": "ds", "A2": "dss", "x": "d"}
     kernel_type = KernelType.compute
-    code = generate_code(assignment, output_format, input_formats, kernel_type)
+    code = generate_c_code(assignment, formats, kernel_type)
     assert isinstance(code, str)

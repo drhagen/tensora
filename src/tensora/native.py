@@ -1,31 +1,24 @@
-__all__ = ["generate_code", "KernelType"]
-
-from typing import Dict
+__all__ = ["generate_c_code", "KernelType"]
 
 from .codegen import ir_to_c
-from .desugar import desugar_assignment, to_identifiable, to_iteration_graph
+from .desugar import desugar_assignment, index_dimensions, to_identifiable, to_iteration_graph
 from .expression import parse_assignment
 from .format import parse_format
 from .ir import peephole
-from .iteration_graph import KernelType, Problem, generate_c_code
+from .iteration_graph import Definition, KernelType, generate_ir
 
 
-def generate_code(
-    assignment: str, output_format: str, input_formats: Dict[str, str], kernel_type: KernelType
-) -> str:
+def generate_c_code(assignment: str, formats: dict[str, str], kernel_type: KernelType) -> str:
     assignment_parsed = parse_assignment(assignment).unwrap()
-    input_formats_parsed = {
-        name: parse_format(format).unwrap() for name, format in input_formats.items()
-    }
-    output_format_parsed = parse_format(output_format).unwrap()
+    formats_parsed = {name: parse_format(format).unwrap() for name, format in formats.items()}
 
     desugar = desugar_assignment(assignment_parsed)
 
-    identifiable_assignment = to_identifiable(desugar, input_formats_parsed, output_format_parsed)
+    output_variable = to_identifiable(desugar.target, formats_parsed)
 
-    graph = to_iteration_graph(desugar, input_formats_parsed, output_format_parsed)
-    problem = Problem(identifiable_assignment, input_formats_parsed, output_format_parsed)
+    problem = Definition(output_variable, formats_parsed, index_dimensions(desugar))
+    graph = to_iteration_graph(desugar, formats_parsed)
 
-    ir = generate_c_code(problem, graph, kernel_type).finalize()
+    ir = generate_ir(problem, graph, kernel_type).finalize()
 
     return ir_to_c(peephole(ir))
