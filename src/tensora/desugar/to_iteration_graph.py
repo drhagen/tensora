@@ -95,6 +95,7 @@ def to_iteration_graph_add(
 ):
     left = to_iteration_graph_expression(expression.left, lattices, formats, ids)
     right = to_iteration_graph_expression(expression.right, lattices, formats, ids)
+
     match (left, right):
         case (graph.TerminalExpression(), graph.TerminalExpression()):
             return graph.TerminalExpression(id.Add(left.expression, right.expression))
@@ -117,19 +118,10 @@ def to_iteration_graph_multiply(
 ):
     left = to_iteration_graph_expression(expression.left, lattices, formats, ids)
     right = to_iteration_graph_expression(expression.right, lattices, formats, ids)
-    assert left is not None
+
     match (left, right):
         case (graph.TerminalExpression(), graph.TerminalExpression()):
             return graph.TerminalExpression(id.Multiply(left.expression, right.expression))
-        case (
-            graph.Multiply(name=name, factors=left_factors),
-            graph.Multiply(factors=right_factors),
-        ):
-            return graph.Multiply(name, left_factors + right_factors)
-        case (graph.Multiply(name=name, factors=left_factors), _):
-            return graph.Multiply(name, [*left_factors, right])
-        case (_, graph.Multiply(name=name, factors=right_factors)):
-            return graph.Multiply(name, [left, *right_factors])
         case (
             graph.IterationVariable(next=graph.TerminalExpression() as next),
             graph.TerminalExpression(),
@@ -147,7 +139,9 @@ def to_iteration_graph_multiply(
                 right, next=graph.TerminalExpression(id.Multiply(left.expression, next.expression))
             )
         case (_, _):
-            return graph.Multiply(f"product{next(ids)}", [left, right])
+            raise NotImplementedError(
+                "Multiplication of two iteration variables is not implemented"
+            )
 
 
 @to_iteration_graph_expression.register(ast.Contract)

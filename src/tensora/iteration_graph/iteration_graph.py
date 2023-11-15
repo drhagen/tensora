@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-__all__ = ["IterationGraph", "Add", "Multiply", "IterationVariable", "TerminalExpression"]
+__all__ = ["IterationGraph", "Add", "IterationVariable", "TerminalExpression"]
 
 from abc import abstractmethod
 from dataclasses import dataclass, replace
@@ -47,12 +47,6 @@ class Add(IterationGraph):
 
     def is_sparse_output(self) -> bool:
         return False
-
-
-@dataclass(frozen=True)
-class Multiply(IterationGraph):
-    name: str
-    factors: list[IterationGraph]
 
 
 @dataclass(frozen=True)
