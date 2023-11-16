@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-__all__ = ["Lattice", "LatticeLeaf", "LatticeConjuction", "LatticeDisjunction"]
+__all__ = ["Lattice", "LatticeLeaf", "LatticeConjunction", "LatticeDisjunction"]
 
 from abc import abstractmethod
 from dataclasses import dataclass
@@ -115,7 +115,7 @@ class LatticeLeaf(Lattice):
 
 
 @dataclass(frozen=True)
-class LatticeConjuction(Lattice):
+class LatticeConjunction(Lattice):
     left: Lattice
     right: Lattice
 
@@ -137,7 +137,7 @@ class LatticeConjuction(Lattice):
         elif right_exhausted is None:
             return left_exhausted
         else:
-            return LatticeConjuction(left_exhausted, right_exhausted)
+            return LatticeConjunction(left_exhausted, right_exhausted)
 
     def sparse_leaves(self) -> list[LatticeLeaf]:
         return self.left.sparse_leaves() + self.right.sparse_leaves()

@@ -3,7 +3,7 @@ __all__ = ["collect_lattices"]
 from functools import singledispatch
 
 from ..format import Format
-from ..iteration_graph import Lattice, LatticeConjuction, LatticeDisjunction, LatticeLeaf
+from ..iteration_graph import Lattice, LatticeConjunction, LatticeDisjunction, LatticeLeaf
 from ..iteration_graph.identifiable_expression import ast as id
 from . import ast
 
@@ -39,7 +39,7 @@ def collect_lattices_add(expression: ast.Add, formats: dict[str, Format]):
     lattice = collect_lattices(expression.left, formats)
     for index, lattice_i in collect_lattices(expression.right, formats).items():
         if index in lattice:
-            lattice[index] = LatticeConjuction(lattice[index], lattice_i)
+            lattice[index] = LatticeConjunction(lattice[index], lattice_i)
         else:
             lattice[index] = lattice_i
     return lattice
