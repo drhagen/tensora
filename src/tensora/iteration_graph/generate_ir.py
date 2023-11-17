@@ -4,13 +4,6 @@ __all__ = ["generate_ir"]
 
 from functools import singledispatch
 
-from tensora.iteration_graph.write_sparse_ir import (
-    write_crd_assembly,
-    write_pos_allocation,
-    write_pos_assembly,
-    write_sparse_initialization,
-)
-
 from ..format import Mode
 from ..ir import SourceBuilder, types
 from ..ir.ast import (
@@ -34,6 +27,12 @@ from .iteration_graph import Add as GraphAdd
 from .iteration_graph import IterationGraph, IterationVariable, TerminalExpression
 from .names import crd_name, dimension_name, pos_name, vals_name
 from .outputs import AppendOutput, Output
+from .write_sparse_ir import (
+    write_crd_assembly,
+    write_pos_allocation,
+    write_pos_assembly,
+    write_sparse_initialization,
+)
 
 
 @singledispatch

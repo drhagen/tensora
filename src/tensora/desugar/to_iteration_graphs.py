@@ -6,11 +6,10 @@ from itertools import count, product
 from typing import Iterator
 
 from ..format import Format, Mode
-from ..iteration_graph import Lattice, LatticeLeaf, downstream_indexes
+from ..iteration_graph import LatticeLeaf, downstream_indexes
 from ..iteration_graph import iteration_graph as ig
 from ..iteration_graph.identifiable_expression import ast as id
 from . import ast
-from .collect_lattices import collect_lattices
 
 
 def legal_iteration_orders(format: Format) -> Iterator[list[int]]:
@@ -41,7 +40,6 @@ def legal_iteration_orders(format: Format) -> Iterator[list[int]]:
 def to_iteration_graphs_expression(
     self: ast.DesugaredExpression,
     formats: dict[str, Format],
-    lattices: dict[str, Lattice],
     counter: Iterator[int],
 ) -> Iterator[ig.IterationGraph]:
     raise NotImplementedError(
@@ -53,7 +51,6 @@ def to_iteration_graphs_expression(
 def to_iteration_graphs_integer(
     self: ast.Integer,
     formats: dict[str, Format],
-    lattices: dict[str, Lattice],
     counter: Iterator[int],
 ) -> Iterator[ig.IterationGraph]:
     yield ig.TerminalExpression(id.Integer(self.value))
@@ -63,7 +60,6 @@ def to_iteration_graphs_integer(
 def to_iteration_graphs_float(
     self: ast.Float,
     formats: dict[str, Format],
-    lattices: dict[str, Lattice],
     counter: Iterator[int],
 ) -> Iterator[ig.IterationGraph]:
     yield ig.TerminalExpression(id.Float(self.value))
@@ -73,7 +69,6 @@ def to_iteration_graphs_float(
 def to_iteration_graphs_scalar(
     self: ast.Scalar,
     formats: dict[str, Format],
-    lattices: dict[str, Lattice],
     counter: Iterator[int],
 ) -> Iterator[ig.IterationGraph]:
     yield ig.TerminalExpression(id.Scalar(self.variable.to_tensor_leaf()))
@@ -83,7 +78,6 @@ def to_iteration_graphs_scalar(
 def to_iteration_graphs_tensor(
     self: ast.Tensor,
     formats: dict[str, Format],
-    lattices: dict[str, Lattice],
     counter: Iterator[int],
 ) -> Iterator[ig.IterationGraph]:
     index_variables = self.indexes
@@ -99,7 +93,6 @@ def to_iteration_graphs_tensor(
             graph = ig.IterationVariable(
                 index_variable,
                 None,
-                lattice=lattices[index_variable],
                 next=graph,
             )
         yield graph
@@ -137,12 +130,11 @@ def simplify_add(graph: ig.Add) -> ig.IterationGraph:
 def to_iteration_graphs_add(
     self: ast.Add,
     formats: dict[str, Format],
-    lattices: dict[str, Lattice],
     counter: Iterator[int],
 ) -> Iterator[ig.IterationGraph]:
     name = f"sum_{next(counter)}"
-    for left in to_iteration_graphs_expression(self.left, formats, lattices, counter):
-        for right in to_iteration_graphs_expression(self.right, formats, lattices, counter):
+    for left in to_iteration_graphs_expression(self.left, formats, counter):
+        for right in to_iteration_graphs_expression(self.right, formats, counter):
             # Always simplify Add within Add
             match (left, right):
                 case (ig.Add(), ig.Add()):
@@ -194,11 +186,10 @@ def merge_multiply(
 def to_iteration_graphs_multiply(
     self: ast.Multiply,
     formats: dict[str, Format],
-    lattices: dict[str, Lattice],
     counter: Iterator[int],
 ) -> Iterator[ig.IterationGraph]:
-    for left in to_iteration_graphs_expression(self.left, formats, lattices, counter):
-        for right in to_iteration_graphs_expression(self.right, formats, lattices, counter):
+    for left in to_iteration_graphs_expression(self.left, formats, counter):
+        for right in to_iteration_graphs_expression(self.right, formats, counter):
             yield from merge_multiply(left, right)
 
 
@@ -206,10 +197,9 @@ def to_iteration_graphs_multiply(
 def to_iteration_graphs_contract(
     self: ast.Contract,
     formats: dict[str, Format],
-    lattices: dict[str, Lattice],
     counter: Iterator[int],
 ) -> Iterator[ig.IterationGraph]:
-    yield from to_iteration_graphs_expression(self.expression, formats, lattices, counter)
+    yield from to_iteration_graphs_expression(self.expression, formats, counter)
 
 
 def merge_assignment(
@@ -244,7 +234,6 @@ def merge_assignment(
 def to_iteration_graphs(
     assignment: ast.Assignment, formats: dict[str, Format]
 ) -> Iterator[ig.IterationGraph]:
-    lattices = collect_lattices(assignment.expression, formats)
     output_layers = {
         index_variable: LatticeLeaf(
             id.Tensor(
@@ -258,10 +247,8 @@ def to_iteration_graphs(
     }
 
     for expression_graph in to_iteration_graphs_expression(
-        assignment.expression, formats, lattices, count(1)
+        assignment.expression, formats, count(1)
     ):
-        for target_graph in to_iteration_graphs_expression(
-            assignment.target, formats, lattices, []
-        ):
+        for target_graph in to_iteration_graphs_expression(assignment.target, formats, []):
             for graph in merge_assignment(target_graph, expression_graph, output_layers):
                 yield graph

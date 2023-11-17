@@ -6,12 +6,17 @@ from abc import abstractmethod
 from dataclasses import dataclass, replace
 
 from ..format import Mode
+from .build_lattice import build_lattice
 from .identifiable_expression import TensorLeaf, exhaust_tensor
 from .identifiable_expression.ast import Expression
-from .merge_lattice import Lattice, LatticeLeaf
+from .merge_lattice import Lattice, LatticeConjunction, LatticeLeaf
 
 
 class IterationGraph:
+    @abstractmethod
+    def build_lattice(self, index: str) -> Lattice | None:
+        raise NotImplementedError()
+
     @abstractmethod
     def exhaust_tensor(self, tensor: TensorLeaf) -> IterationGraph | None:
         raise NotImplementedError()
@@ -27,21 +32,18 @@ class IterationGraph:
 
 
 @dataclass(frozen=True)
-class Add(IterationGraph):
-    name: str
-    terms: list[IterationGraph]
+class TerminalExpression(IterationGraph):
+    expression: Expression
+
+    def build_lattice(self, index: str) -> Lattice | None:
+        return build_lattice(self.expression, index)
 
     def exhaust_tensor(self, tensor: TensorLeaf) -> IterationGraph | None:
-        new_terms = []
-        for term in self.terms:
-            new_term = term.exhaust_tensor(tensor)
-            if new_term is not None:
-                new_terms.append(new_term)
-
-        if len(new_terms) == 0:
+        expression = exhaust_tensor(self.expression, tensor)
+        if expression is None:
             return None
         else:
-            return replace(self, terms=new_terms)
+            return TerminalExpression(expression)
 
     def all_dense(self) -> bool:
         return True
@@ -54,18 +56,19 @@ class Add(IterationGraph):
 class IterationVariable(IterationGraph):
     index_variable: str
     output: LatticeLeaf | None
-    lattice: Lattice
     next: IterationGraph
 
+    def __post_init__(self):
+        self.lattice: Lattice
+        object.__setattr__(self, "lattice", self.build_lattice(self.index_variable))
+
+    def build_lattice(self, index: str) -> Lattice | None:
+        return self.next.build_lattice(index)
+
     def exhaust_tensor(self, tensor: TensorLeaf) -> IterationGraph | None:
-        new_lattice = self.lattice.exhaust_tensor(tensor)
-        if new_lattice is not None:
-            new_next = self.next.exhaust_tensor(tensor)
-            if new_next is not None:
-                return replace(self, lattice=new_lattice, next=new_next)
-            else:
-                # I'm not sure if this is possible
-                return None
+        new_next = self.next.exhaust_tensor(tensor)
+        if new_next is not None:
+            return replace(self, next=new_next)
         else:
             return None
 
@@ -77,15 +80,35 @@ class IterationVariable(IterationGraph):
 
 
 @dataclass(frozen=True)
-class TerminalExpression(IterationGraph):
-    expression: Expression
+class Add(IterationGraph):
+    name: str
+    terms: list[IterationGraph]
+
+    def build_lattice(self, index: str) -> Lattice | None:
+        lattice = None
+        for term in self.terms:
+            lattice_i = term.build_lattice(index)
+            if lattice_i is None:
+                pass
+            elif lattice is None:
+                lattice = lattice_i
+            else:
+                lattice = LatticeConjunction(lattice, lattice_i)
+        return lattice
 
     def exhaust_tensor(self, tensor: TensorLeaf) -> IterationGraph | None:
-        expression = exhaust_tensor(self.expression, tensor)
-        if expression is None:
+        new_terms = []
+        for term in self.terms:
+            new_term = term.exhaust_tensor(tensor)
+            if new_term is not None:
+                new_terms.append(new_term)
+
+        if len(new_terms) == 0:
             return None
+        elif len(new_terms) == 1:
+            return new_terms[0]
         else:
-            return TerminalExpression(expression)
+            return replace(self, terms=new_terms)
 
     def all_dense(self) -> bool:
         return True
