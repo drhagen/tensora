@@ -3,7 +3,7 @@ __all__ = ["to_ir"]
 from functools import singledispatch
 
 from ...ir import ast as ir
-from .ast import Add, Expression, Float, Integer, Multiply, Scalar, Subtract, Tensor
+from .ast import Add, Expression, Float, Integer, Multiply, Scalar, Tensor
 
 
 @singledispatch
@@ -38,11 +38,6 @@ def to_ir_tensor(self: Tensor):
 @to_ir.register(Add)
 def to_ir_add(self: Add):
     return ir.Add(to_ir(self.left), to_ir(self.right))
-
-
-@to_ir.register(Subtract)
-def to_ir_subtract(self: Subtract):
-    return ir.Subtract(to_ir(self.left), to_ir(self.right))
 
 
 @to_ir.register(Multiply)

@@ -2,7 +2,7 @@ __all__ = ["exhaust_tensor"]
 
 from functools import singledispatch
 
-from .ast import Add, Expression, Literal, Multiply, Scalar, Subtract, Tensor
+from .ast import Add, Expression, Literal, Multiply, Scalar, Tensor
 from .tensor_leaf import TensorLeaf
 
 
@@ -43,22 +43,6 @@ def exhaust_tensor_add(self: Add, tensor: TensorLeaf):
         return left_exhausted
     else:
         return Add(left_exhausted, right_exhausted)
-
-
-@exhaust_tensor.register(Subtract)
-def exhaust_tensor_subtract(self: Subtract, tensor: TensorLeaf):
-    left_exhausted = exhaust_tensor(self.left, tensor)
-    right_exhausted = exhaust_tensor(self.right, tensor)
-    if left_exhausted is self.left and right_exhausted is self.right:
-        # Short circuit when there are no changes
-        return self
-    elif left_exhausted is None:
-        # Covers the case where both are exhausted
-        return right_exhausted
-    elif right_exhausted is None:
-        return left_exhausted
-    else:
-        return Subtract(left_exhausted, right_exhausted)
 
 
 @exhaust_tensor.register(Multiply)

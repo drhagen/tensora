@@ -7,7 +7,6 @@ __all__ = [
     "Scalar",
     "Tensor",
     "Add",
-    "Subtract",
     "Multiply",
     "Assignment",
     "Node",
@@ -77,12 +76,6 @@ class Tensor(Variable):
 
 @dataclass(frozen=True)
 class Add(Expression):
-    left: Expression
-    right: Expression
-
-
-@dataclass(frozen=True)
-class Subtract(Expression):
     left: Expression
     right: Expression
 
