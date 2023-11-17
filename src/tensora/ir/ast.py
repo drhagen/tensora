@@ -148,7 +148,7 @@ class Add(Expression):
     @staticmethod
     def join(terms: list[Expression | int | str]) -> Expression:
         terms = map(to_expression, terms)
-        return reduce(And, terms, IntegerLiteral(0))
+        return reduce(Add, terms, IntegerLiteral(0))
 
 
 @dataclass(frozen=True, slots=True)

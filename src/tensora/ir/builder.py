@@ -95,7 +95,7 @@ class SourceBuilder:
                     self._stack[-1].lines.extend(statement.statements)
 
     def add_dependency(self, name: str):
-        self._dependencies[name] = None
+        self._dependencies.add(name)
 
     @contextmanager
     def block(self, comment: str | None = None):

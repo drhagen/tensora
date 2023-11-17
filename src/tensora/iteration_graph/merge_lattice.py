@@ -26,7 +26,7 @@ from .names import (
 
 class Lattice:
     @abstractmethod
-    def is_dense(self):
+    def is_dense(self) -> bool:
         pass
 
     @abstractmethod

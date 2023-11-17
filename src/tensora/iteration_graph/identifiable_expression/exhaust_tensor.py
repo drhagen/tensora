@@ -8,7 +8,7 @@ from .tensor_leaf import TensorLeaf
 
 @singledispatch
 def exhaust_tensor(self, tensor: TensorLeaf) -> Expression | None:
-    pass
+    raise NotImplementedError(f"exhaust_tensor not implemented for {type(self)}: {self}")
 
 
 @exhaust_tensor.register(Literal)

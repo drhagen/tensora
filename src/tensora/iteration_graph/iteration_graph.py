@@ -80,7 +80,11 @@ class TerminalExpression(IterationGraph):
     expression: Expression
 
     def exhaust_tensor(self, tensor: TensorLeaf) -> IterationGraph | None:
-        return TerminalExpression(exhaust_tensor(self.expression, tensor))
+        expression = exhaust_tensor(self.expression, tensor)
+        if expression is None:
+            return None
+        else:
+            return TerminalExpression(expression)
 
     def all_dense(self) -> bool:
         return True
