@@ -9,9 +9,17 @@ def test_copy():
     assert isinstance(code, str)
 
 
-def test_matrix_vector_product():
+def test_csr_vector_product():
     assignment = "y(i) = A(i,j) * x(j)"
     formats = {"y": "d", "A": "ds", "x": "d"}
+    kernel_type = KernelType.compute
+    code = generate_c_code(assignment, formats, kernel_type)
+    assert isinstance(code, str)
+
+
+def test_csc_vector_product():
+    assignment = "y(i) = A(i,j) * x(j)"
+    formats = {"y": "d", "A": "d1s0", "x": "d"}
     kernel_type = KernelType.compute
     code = generate_c_code(assignment, formats, kernel_type)
     assert isinstance(code, str)

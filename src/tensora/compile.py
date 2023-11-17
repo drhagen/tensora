@@ -11,11 +11,16 @@ import re
 import subprocess
 import tempfile
 import threading
+from enum import Enum, auto
 from pathlib import Path
-from typing import Any, FrozenSet, List, Tuple
+from typing import Any, List, Tuple
 from weakref import WeakKeyDictionary
 
 from cffi import FFI
+
+from .expression.ast import Assignment
+from .format import Format
+from .native import generate_c_code_from_parsed
 
 lock = threading.Lock()
 
@@ -71,8 +76,8 @@ taco_type_header = """
       int32_t      csize;         // component size
       int32_t*     mode_ordering; // mode storage ordering
       taco_mode_t* mode_types;    // mode storage types
-      uint8_t***   indices;       // tensor index data (per mode)
-      uint8_t*     vals;          // tensor values
+      int32_t***   indices;       // tensor index data (per mode)
+      double*     vals;          // tensor values
       int32_t      vals_size;     // values array size
     } taco_tensor_t;
 
@@ -91,7 +96,24 @@ tensor_cdefs.set_source("_main", "")
 tensor_lib = tensor_cdefs.dlopen(None)
 
 
-def taco_kernel(expression: str, formats: FrozenSet[Tuple[str, str]]) -> Tuple[List[str], Any]:
+def format_to_taco_format(format: Format):
+    return (
+        "".join(mode.character for mode in format.modes)
+        + ":"
+        + ",".join(map(str, format.ordering))
+    )
+
+
+class TensorCompiler(Enum):
+    taco = auto()
+    tensora = auto()
+
+
+def taco_kernel(
+    expression: Assignment,
+    formats: dict[str, Format],
+    compiler: TensorCompiler = TensorCompiler.taco,
+) -> Tuple[List[str], Any]:
     """Call taco with expression and compile resulting function.
 
     Given an expression and a set of formats:
@@ -115,26 +137,36 @@ def taco_kernel(expression: str, formats: FrozenSet[Tuple[str, str]]) -> Tuple[L
         signature, and the second element is the compiled FFILibrary which has a single method `evaluate` which expects
         cffi pointers to taco_tensor_t instances in order specified by the list of variable names.
     """
-    # Call taco to write the kernels to standard out
-    result = subprocess.run(
-        [taco_binary, expression, "-print-evaluate", "-print-nocolor"]
-        + [f"-f={name}:{format}" for name, format in formats],
-        capture_output=True,
-        text=True,
-    )
+    match compiler:
+        case TensorCompiler.taco:
+            expression_string = expression.deparse()
+            format_strings = frozenset(
+                (parameter_name, format_to_taco_format(format))
+                for parameter_name, format in formats.items()
+                if format.order != 0  # Taco does not like formats for scalars
+            )
+            # Call taco to write the kernels to standard out
+            result = subprocess.run(
+                [taco_binary, expression_string, "-print-evaluate", "-print-nocolor"]
+                + [f"-f={name}:{format}" for name, format in format_strings],
+                capture_output=True,
+                text=True,
+            )
 
-    if result.returncode != 0:
-        raise RuntimeError(result.stderr)
+            if result.returncode != 0:
+                raise RuntimeError(result.stderr)
 
-    source = result.stdout
+            source = result.stdout
+        case TensorCompiler.tensora:
+            source = generate_c_code_from_parsed(expression, formats)
 
     # Determine signature
     # 1) Find function by name and capture its parameter list
     # 2) Find each parameter by `*` and capture its name
-    signature_match = re.search(r"int evaluate\(([^)]*)\)", source)
+    signature_match = re.search(r"int(32_t)? evaluate\(([^)]*)\)", source)
     signature = signature_match.group(0)
-    parameter_list_matches = re.finditer(r"\*([^,]*)", signature_match.group(1))
-    parameter_names = [match.group(1) for match in parameter_list_matches]
+    parameter_list_matches = re.finditer(r"\*([ ]*restrict[ ]*)?([^,]*)", signature_match.group(2))
+    parameter_names = [match.group(2) for match in parameter_list_matches]
 
     # Use cffi to compile the kernels
     ffibuilder = FFI()
@@ -240,7 +272,7 @@ def allocate_taco_structure(
     memory_holder["indices"] = cffi_levels
     memory_holder["*indices"] = memory_holder_levels
     memory_holder["**indices"] = memory_holder_levels_arrays
-    cffi_tensor.indices = tensor_cdefs.cast("uint8_t***", cffi_levels)
+    cffi_tensor.indices = tensor_cdefs.cast("int32_t***", cffi_levels)
 
     cffi_tensor.vals = tensor_cdefs.NULL
 
@@ -347,7 +379,7 @@ def taco_structure_to_cffi(
 
     cffi_vals = tensor_cdefs.new("double[]", vals)
     memory_holder["vals"] = cffi_vals
-    cffi_tensor.vals = tensor_cdefs.cast("uint8_t*", cffi_vals)
+    cffi_tensor.vals = tensor_cdefs.cast("double*", cffi_vals)
 
     cffi_tensor.vals_size = len(vals)
 

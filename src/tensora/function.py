@@ -1,10 +1,10 @@
-__all__ = ["tensor_method", "evaluate", "PureTensorMethod"]
+__all__ = ["tensor_method", "evaluate", "PureTensorMethod", "TensorCompiler"]
 
 from functools import lru_cache
 from inspect import Parameter, Signature
 from typing import Dict, Tuple
 
-from .compile import allocate_taco_structure, taco_kernel, take_ownership_of_arrays
+from .compile import TensorCompiler, allocate_taco_structure, taco_kernel, take_ownership_of_arrays
 from .expression import Assignment
 from .format import Format, parse_format
 from .tensor import Tensor
@@ -14,7 +14,11 @@ class PureTensorMethod:
     """A function taking specific tensor arguments."""
 
     def __init__(
-        self, assignment: Assignment, input_formats: Dict[str, Format], output_format: Format
+        self,
+        assignment: Assignment,
+        input_formats: Dict[str, Format],
+        output_format: Format,
+        compiler: TensorCompiler = TensorCompiler.taco,
     ):
         if assignment.is_mutating():
             raise ValueError(f"{assignment} mutates its target and is so is not a pure function")
@@ -62,12 +66,7 @@ class PureTensorMethod:
 
         # Compile taco function
         all_formats = {self.assignment.target.name: output_format, **input_formats}
-        format_strings = frozenset(
-            (parameter_name, format_to_taco_format(format))
-            for parameter_name, format in all_formats.items()
-            if format.order != 0
-        )  # Taco does not like formats for scalars
-        self.parameter_order, self.cffi_lib = taco_kernel(assignment.deparse(), format_strings)
+        self.parameter_order, self.cffi_lib = taco_kernel(assignment, all_formats, compiler)
 
     def __call__(self, *args, **kwargs):
         # Handle arguments like normal Python function
@@ -144,14 +143,22 @@ class PureTensorMethod:
 
 
 def tensor_method(
-    assignment: str, input_formats: Dict[str, str], output_format: str
+    assignment: str,
+    input_formats: Dict[str, str],
+    output_format: str,
+    compiler: TensorCompiler = TensorCompiler.taco,
 ) -> PureTensorMethod:
-    return cachable_tensor_method(assignment, tuple(input_formats.items()), output_format)
+    return cachable_tensor_method(
+        assignment, tuple(input_formats.items()), output_format, compiler
+    )
 
 
 @lru_cache()
 def cachable_tensor_method(
-    assignment: str, input_formats: Tuple[Tuple[str, str], ...], output_format: str
+    assignment: str,
+    input_formats: Tuple[Tuple[str, str], ...],
+    output_format: str,
+    compiler: TensorCompiler,
 ) -> PureTensorMethod:
     from .expression.parser import parse_assignment
 
@@ -166,20 +173,24 @@ def cachable_tensor_method(
             f"Mutating tensor assignments like {assignment} not implemented yet."
         )
     else:
-        return PureTensorMethod(parsed_assignment, parsed_input_formats, parsed_output)
+        return PureTensorMethod(parsed_assignment, parsed_input_formats, parsed_output, compiler)
 
 
-def evaluate(assignment: str, output_format: str, **inputs: Tensor) -> Tensor:
+def evaluate_taco(assignment: str, output_format: str, **inputs: Tensor) -> Tensor:
     input_formats = {name: tensor.format.deparse() for name, tensor in inputs.items()}
 
-    function = tensor_method(assignment, input_formats, output_format)
+    function = tensor_method(assignment, input_formats, output_format, TensorCompiler.taco)
 
     return function(**inputs)
 
 
-def format_to_taco_format(format: Format):
-    return (
-        "".join(mode.character for mode in format.modes)
-        + ":"
-        + ",".join(map(str, format.ordering))
-    )
+def evaluate_tensora(assignment: str, output_format: str, **inputs: Tensor) -> Tensor:
+    input_formats = {name: tensor.format.deparse() for name, tensor in inputs.items()}
+
+    function = tensor_method(assignment, input_formats, output_format, TensorCompiler.tensora)
+
+    return function(**inputs)
+
+
+def evaluate(assignment: str, output_format: str, **inputs: Tensor) -> Tensor:
+    return evaluate_taco(assignment, output_format, **inputs)

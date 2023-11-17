@@ -1,9 +1,10 @@
-__all__ = ["generate_c_code", "KernelType"]
+__all__ = ["generate_c_code", "generate_c_code_from_parsed", "KernelType"]
 
 from .codegen import ir_to_c
 from .desugar import desugar_assignment, index_dimensions, to_identifiable, to_iteration_graphs
 from .expression import parse_assignment
-from .format import parse_format
+from .expression.ast import Assignment
+from .format import Format, parse_format
 from .ir import peephole
 from .iteration_graph import Definition, generate_ir
 from .kernel_type import KernelType
@@ -13,13 +14,21 @@ def generate_c_code(assignment: str, formats: dict[str, str], kernel_type: Kerne
     assignment_parsed = parse_assignment(assignment).unwrap()
     formats_parsed = {name: parse_format(format).unwrap() for name, format in formats.items()}
 
-    desugar = desugar_assignment(assignment_parsed)
+    return generate_c_code_from_parsed(assignment_parsed, formats_parsed, kernel_type)
 
-    output_variable = to_identifiable(desugar.target, formats_parsed)
 
-    problem = Definition(output_variable, formats_parsed, index_dimensions(desugar))
+def generate_c_code_from_parsed(
+    assignment: Assignment,
+    formats: dict[str, Format],
+    kernel_type: KernelType = KernelType.evaluate,
+) -> str:
+    desugar = desugar_assignment(assignment)
 
-    graph = next(to_iteration_graphs(desugar, formats_parsed))
+    output_variable = to_identifiable(desugar.target, formats)
+
+    problem = Definition(output_variable, formats, index_dimensions(desugar))
+
+    graph = next(to_iteration_graphs(desugar, formats))
 
     ir = generate_ir(problem, graph, kernel_type).finalize()
 
