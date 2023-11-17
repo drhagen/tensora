@@ -144,9 +144,8 @@ class AppendOutput(Output):
                 next_output = BucketOutput(
                     self.output, list(range(self.next_layer, len(self.output.modes)))
                 )
-                dense_product = Multiply.join(next_output.dimension_names())
                 bucket = vals_name(self.output.variable.name).plus(
-                    self.vals_pointer().times(dense_product)
+                    previous_layer_pointer(self.output.variable, self.next_layer)
                 )
                 return next_output, next_output.write_declarations(bucket), SourceBuilder()
             else:

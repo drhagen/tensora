@@ -8,7 +8,7 @@ from ...ir.ast import Add, Expression, LessThan, Multiply, Variable
 from ...kernel_type import KernelType
 from ..identifiable_expression import ast as ie_ast
 from ..merge_lattice import LatticeLeaf
-from ..names import dimension_name, layer_pointer, tensor_to_string
+from ..names import dimension_name, tensor_to_string
 from .base import Output
 
 
@@ -50,7 +50,7 @@ class BucketOutput(Output):
         source = SourceBuilder()
         bucket_index = self.ravel_indexes(
             self.dimension_names(),
-            [layer_pointer(self.output.variable, layer) for layer in self.layers],
+            [Variable(self.output.indexes[layer]) for layer in self.layers],
         )
         source.append(self.name().idx(bucket_index).increment(right_hand_side))
         return source

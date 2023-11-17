@@ -44,6 +44,15 @@ def to_ir_iteration_graph(
     )
 
 
+@to_ir_iteration_graph.register(TerminalExpression)
+def to_ir_terminal_expression(self: TerminalExpression, output: Output, kernel_type: KernelType):
+    source = SourceBuilder("*** Computation of expression ***")
+
+    source.append(output.write_assignment(to_ir(self.expression), kernel_type))
+
+    return source
+
+
 def generate_subgraphs(graph: IterationVariable) -> list[IterationVariable]:
     # The 0th element is just the full lattice
     # Each element is derived from a previous element by zeroing a tensor
@@ -262,15 +271,6 @@ def to_ir_add(self: GraphAdd, output: Output, kernel_type: KernelType):
 
     for term in self.terms:
         source.append(to_ir_iteration_graph(term, next_output, kernel_type))
-
-    return source
-
-
-@to_ir_iteration_graph.register(TerminalExpression)
-def to_ir_terminal_expression(self: TerminalExpression, output: Output, kernel_type: KernelType):
-    source = SourceBuilder("*** Computation of expression ***")
-
-    source.append(output.write_assignment(to_ir(self.expression), kernel_type))
 
     return source
 
