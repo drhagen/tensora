@@ -6,7 +6,8 @@ from abc import abstractmethod
 from dataclasses import dataclass, replace
 
 from ..format import Mode
-from .identifiable_expression import Expression, TensorLeaf, exhaust_tensor
+from .identifiable_expression import TensorLeaf, exhaust_tensor
+from .identifiable_expression.ast import Expression
 from .merge_lattice import Lattice, LatticeLeaf
 
 

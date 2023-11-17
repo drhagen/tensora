@@ -8,8 +8,6 @@ __all__ = [
     "Tensor",
     "Add",
     "Multiply",
-    "Assignment",
-    "Node",
 ]
 
 from dataclasses import dataclass
@@ -18,11 +16,7 @@ from ...format import Mode
 from .tensor_leaf import TensorLeaf
 
 
-class Node:
-    pass
-
-
-class Expression(Node):
+class Expression:
     pass
 
 
@@ -84,9 +78,3 @@ class Add(Expression):
 class Multiply(Expression):
     left: Expression
     right: Expression
-
-
-@dataclass(frozen=True)
-class Assignment(Node):
-    target: Variable
-    expression: Expression
