@@ -7,7 +7,7 @@ from .ast import (
     Add,
     Assignment,
     Contract,
-    DesugaredExpression,
+    Expression,
     Float,
     Integer,
     Multiply,
@@ -17,7 +17,7 @@ from .ast import (
 
 
 @singledispatch
-def index_dimensions_expression(self: DesugaredExpression) -> dict[str, TensorLayer]:
+def index_dimensions_expression(self: Expression) -> dict[str, TensorLayer]:
     raise NotImplementedError(f"index_dimensions not implemented for {self}")
 
 

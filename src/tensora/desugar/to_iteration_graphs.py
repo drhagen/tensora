@@ -38,7 +38,7 @@ def legal_iteration_orders(format: Format) -> Iterator[list[int]]:
 
 @singledispatch
 def to_iteration_graphs_expression(
-    self: ast.DesugaredExpression,
+    self: ast.Expression,
     formats: dict[str, Format],
     counter: Iterator[int],
 ) -> Iterator[ig.IterationGraph]:

@@ -1,5 +1,5 @@
 __all__ = [
-    "DesugaredExpression",
+    "Expression",
     "Literal",
     "Integer",
     "Float",
@@ -18,11 +18,11 @@ from typing import List
 from .id import Id
 
 
-class DesugaredExpression:
+class Expression:
     pass
 
 
-class Literal(DesugaredExpression):
+class Literal(Expression):
     pass
 
 
@@ -36,7 +36,7 @@ class Float(Literal):
     value: float
 
 
-class Variable(DesugaredExpression):
+class Variable(Expression):
     variable: Id
     indexes: List[str]
 
@@ -57,24 +57,24 @@ class Tensor(Variable):
 
 
 @dataclass(frozen=True)
-class Add(DesugaredExpression):
-    left: DesugaredExpression
-    right: DesugaredExpression
+class Add(Expression):
+    left: Expression
+    right: Expression
 
 
 @dataclass(frozen=True)
-class Multiply(DesugaredExpression):
-    left: DesugaredExpression
-    right: DesugaredExpression
+class Multiply(Expression):
+    left: Expression
+    right: Expression
 
 
 @dataclass(frozen=True)
-class Contract(DesugaredExpression):
+class Contract(Expression):
     index: str
-    expression: DesugaredExpression
+    expression: Expression
 
 
 @dataclass(frozen=True)
 class Assignment:
     target: Variable
-    expression: DesugaredExpression
+    expression: Expression
