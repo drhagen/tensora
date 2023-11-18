@@ -155,9 +155,7 @@ def to_ir_iteration_variable(self: IterationVariable, output: Output, kernel_typ
             # Compute dense indexes #
             #########################
             maybe_dense_output = (
-                [self.output]
-                if self.output is not None and isinstance(next_output, AppendOutput)
-                else []
+                [self.output] if self.output is not None and self.output.mode == Mode.dense else []
             )
             for leaf in maybe_dense_output + dense_subnode_leaves:
                 pointer = leaf.layer_pointer()

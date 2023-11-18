@@ -57,7 +57,7 @@ def write_pos_assembly(output: LatticeLeaf) -> SourceBuilder:
 
 def write_pos_allocation(output: LatticeLeaf) -> SourceBuilder:
     dense_dimensions = []
-    for i_layer in range(output.layer):
+    for i_layer in range(output.layer + 1, output.tensor.order):
         index_variable_i = output.tensor.indexes[i_layer]
         mode_i = output.tensor.modes[i_layer]
         if mode_i == Mode.compressed:
