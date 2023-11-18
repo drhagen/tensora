@@ -1,4 +1,4 @@
-__all__ = ["Definition", "TensorLayer"]
+__all__ = ["Definition", "TensorDimension"]
 
 from dataclasses import dataclass
 
@@ -7,7 +7,7 @@ from .identifiable_expression.ast import Variable
 
 
 @dataclass(frozen=True, slots=True)
-class TensorLayer:
+class TensorDimension:
     name: str
     dimension: int
 
@@ -16,4 +16,4 @@ class TensorLayer:
 class Definition:
     output_variable: Variable
     formats: dict[str, Format]
-    indexes: dict[str, TensorLayer]
+    indexes: dict[str, TensorDimension]

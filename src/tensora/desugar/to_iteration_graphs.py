@@ -13,7 +13,7 @@ from . import ast
 
 
 def legal_iteration_orders(format: Format) -> Iterator[list[int]]:
-    """Legal iteration orders for indexes of a tensor of a given format.
+    """Legal iteration orders for layers of a tensor of a given format.
 
     Zero is the first index, not the first layer. For example, a ds format has
     one legal iteration order (i.e. [1, 0]) and a d1s0 format has a different
@@ -32,8 +32,7 @@ def legal_iteration_orders(format: Format) -> Iterator[list[int]]:
                 reorderable_groups.append([i])
                 restart = True
 
-    for layer_order in product(*reorderable_groups):
-        yield [format.ordering[i_layer] for i_layer in layer_order]
+    yield from product(*reorderable_groups)
 
 
 @singledispatch
@@ -80,12 +79,13 @@ def to_iteration_graphs_tensor(
     formats: dict[str, Format],
     counter: Iterator[int],
 ) -> Iterator[ig.IterationGraph]:
-    index_variables = self.indexes
+    format = formats[self.variable.name]
+    index_variables = tuple(self.indexes[i_index] for i_index in format.ordering)
     modes = formats[self.variable.name].modes
 
-    for index_order in legal_iteration_orders(formats[self.variable.name]):
+    for index_order in legal_iteration_orders(format):
         graph = ig.TerminalExpression(
-            id.Tensor(self.variable.to_tensor_leaf(), tuple(index_variables), modes)
+            id.Tensor(self.variable.to_tensor_leaf(), index_variables, modes)
         )
         # Build iteration order bottom up
         for i_index in reversed(index_order):

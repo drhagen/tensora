@@ -26,8 +26,8 @@ def test_csc_vector_product():
 
 
 def test_csr_addition():
-    assignment = "A(i,j) = B(i,j) + C(i,j)"
-    formats = {"A": "ds", "B": "ds", "C": "ds"}
+    assignment = "C(i,j) = A(i,j) + B(i,j)"
+    formats = {"C": "ds", "A": "ds", "B": "ds"}
     kernel_type = KernelType.compute
     code = generate_c_code(assignment, formats, kernel_type)
     assert isinstance(code, str)

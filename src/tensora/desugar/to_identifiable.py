@@ -21,8 +21,9 @@ def to_identifiable_scalar(expression: desugar.Scalar, formats: dict[str, Format
 
 @to_identifiable.register(desugar.Tensor)
 def to_identifiable_tensor(expression: desugar.Tensor, formats: dict[str, Format]):
+    format = formats[expression.variable.name]
     return id.Tensor(
         expression.variable.to_tensor_leaf(),
-        expression.indexes,
-        formats[expression.variable.name].modes,
+        tuple(expression.indexes[i_index] for i_index in format.ordering),
+        format.modes,
     )
