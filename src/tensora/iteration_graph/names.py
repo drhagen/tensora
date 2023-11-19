@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 __all__ = [
     "dimension_name",
     "pos_name",
@@ -13,8 +15,12 @@ __all__ = [
     "value_from_crd",
 ]
 
+from typing import TYPE_CHECKING
+
 from ..ir.ast import Expression, IntegerLiteral, Variable
-from .identifiable_expression import TensorLeaf
+
+if TYPE_CHECKING:
+    from .identifiable_expression import TensorLeaf
 
 
 def dimension_name(index_variable: str) -> Variable:

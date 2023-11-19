@@ -7,7 +7,7 @@ from abc import abstractmethod
 from ...ir import SourceBuilder
 from ...ir.ast import Expression
 from ...kernel_type import KernelType
-from ..merge_lattice import LatticeLeaf
+from ..identifiable_expression import TensorLayer
 
 
 class Output:
@@ -19,6 +19,6 @@ class Output:
 
     @abstractmethod
     def next_output(
-        self, iteration_output: LatticeLeaf | None, kernel_type: KernelType
+        self, iteration_output: TensorLayer | None, kernel_type: KernelType
     ) -> tuple[Output, SourceBuilder, SourceBuilder]:
         raise NotImplementedError()

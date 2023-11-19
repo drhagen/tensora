@@ -6,8 +6,9 @@ from itertools import count, product
 from typing import Iterator
 
 from ..format import Format, Mode
-from ..iteration_graph import LatticeLeaf, downstream_indexes
+from ..iteration_graph import downstream_indexes
 from ..iteration_graph import iteration_graph as ig
+from ..iteration_graph.identifiable_expression import TensorLayer
 from ..iteration_graph.identifiable_expression import ast as id
 from . import ast
 
@@ -203,7 +204,7 @@ def to_iteration_graphs_contract(
 
 
 def merge_assignment(
-    target: ig.IterationGraph, expression: ig.IterationGraph, output_layers: dict[str, LatticeLeaf]
+    target: ig.IterationGraph, expression: ig.IterationGraph, output_layers: dict[str, TensorLayer]
 ) -> Iterator[ig.IterationGraph]:
     match (target, expression):
         case (ig.TerminalExpression(), _):
@@ -235,7 +236,7 @@ def to_iteration_graphs(
     assignment: ast.Assignment, formats: dict[str, Format]
 ) -> Iterator[ig.IterationGraph]:
     output_layers = {
-        index_variable: LatticeLeaf(
+        index_variable: TensorLayer(
             id.Tensor(
                 assignment.target.variable.to_tensor_leaf(),
                 tuple(assignment.target.indexes),

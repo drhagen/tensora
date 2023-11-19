@@ -19,8 +19,8 @@ from ...ir.ast import (
     Variable,
 )
 from ...kernel_type import KernelType
+from ..identifiable_expression import TensorLayer
 from ..identifiable_expression import ast as ie_ast
-from ..merge_lattice import LatticeLeaf
 from ..names import dimension_name, layer_pointer, previous_layer_pointer, vals_name
 from ..write_sparse_ir import write_crd_assembly, write_pos_assembly
 from .base import Output
@@ -198,14 +198,14 @@ class HashOutput(Output):
                     source.append(self.write_layer_cleanup(layer + 1, kernel_type))
 
                     if kernel_type.is_assembly():
-                        source.append(write_crd_assembly(LatticeLeaf(self.output, layer)))
+                        source.append(write_crd_assembly(TensorLayer(self.output, layer)))
                     source.append(position.increment())
 
                     if layer == self.final_dense_index() - 1:
                         source.append(self.extract_index_name().increment())
 
             if kernel_type.is_assembly():
-                source.append(write_pos_assembly(LatticeLeaf(self.output, layer)))
+                source.append(write_pos_assembly(TensorLayer(self.output, layer)))
         elif layer < self.output.order:
             # Bucket phase
             layer_index = Variable(self.output.indexes[layer])
@@ -242,7 +242,7 @@ class HashOutput(Output):
         return source
 
     def next_output(
-        self, iteration_output: LatticeLeaf | None, kernel_type: KernelType
+        self, iteration_output: TensorLayer | None, kernel_type: KernelType
     ) -> tuple[Output, SourceBuilder, SourceBuilder]:
         if iteration_output is None:
             return self, SourceBuilder(), SourceBuilder()

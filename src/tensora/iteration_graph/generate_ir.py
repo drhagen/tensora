@@ -54,35 +54,33 @@ def to_ir_terminal_expression(self: TerminalExpression, output: Output, kernel_t
 
 
 def generate_subgraphs(graph: IterationVariable) -> list[IterationVariable]:
-    # The 0th element is just the full lattice
+    # The 0th element is just the full graph
     # Each element is derived from a previous element by zeroing a tensor
-    # Zeroing a tensor always results in a strictly smaller lattice
+    # Zeroing a tensor always results in a strictly simpler graph
     # Zeroing a tensor will cause tensors multiplied by it to be zeroed as well
-    # This means that zeroing two different tensors can result in the same lattice
-    # Lattices can be keyed by their set of remaining sparse tensors to eliminate duplicates
-    all_lattices = {graph.lattice.compressed_dimensions(): graph}
-    old_lattices = {graph.lattice.compressed_dimensions(): graph}
+    # This means that zeroing two different tensors can result in the same graph
+    # Subgraphs can be keyed by their set of remaining sparse tensors to eliminate duplicates
+    all_subgraphs = {graph.compressed_dimensions(): graph}
+    old_subgraphs = all_subgraphs.copy()
 
     while True:
-        new_lattices = {}
+        new_graphs = {}
 
-        for old_graph in old_lattices.values():
-            sparse_dimensions = old_graph.lattice.compressed_dimensions()
-
+        for sparse_layers, old_graph in old_subgraphs.items():
             # Reverse sparse_dimensions so that last values dropped first
-            for sparse_dimension in reversed(sparse_dimensions):
+            for sparse_dimension in reversed(sparse_layers):
                 new_graph = old_graph.exhaust_tensor(sparse_dimension)
 
                 if new_graph is not None:
-                    new_lattices[new_graph.lattice.compressed_dimensions()] = new_graph
+                    new_graphs[new_graph.compressed_dimensions()] = new_graph
 
-        if len(new_lattices) == 0:
+        if len(new_graphs) == 0:
             break
         else:
-            all_lattices.update(new_lattices)
-            old_lattices = new_lattices
+            all_subgraphs.update(new_graphs)
+            old_subgraphs = new_graphs
 
-    return list(all_lattices.values())
+    return list(all_subgraphs.values())
 
 
 @to_ir_iteration_graph.register(IterationVariable)
@@ -92,7 +90,7 @@ def to_ir_iteration_variable(self: IterationVariable, output: Output, kernel_typ
     loop_variable = Variable(self.index_variable)
 
     # If this node is_dense, then every index needs to be iterated over
-    is_dense = self.lattice.is_dense()
+    is_dense = self.is_dense()
 
     # Compute the next output
     next_output, next_output_declarations, next_output_cleanup = output.next_output(
@@ -106,7 +104,7 @@ def to_ir_iteration_variable(self: IterationVariable, output: Output, kernel_typ
     if is_dense:
         source.append(loop_variable.declare(types.integer).assign(0))
 
-    for leaf in self.lattice.sparse_leaves():
+    for leaf in self.sparse_leaves():
         source.append(write_sparse_initialization(leaf))
 
     ############
@@ -114,8 +112,8 @@ def to_ir_iteration_variable(self: IterationVariable, output: Output, kernel_typ
     ############
     subnodes = generate_subgraphs(self)
     for subnode in subnodes:
-        sparse_subnode_leaves = subnode.lattice.sparse_leaves()
-        dense_subnode_leaves = subnode.lattice.dense_leaves()
+        sparse_subnode_leaves = subnode.sparse_leaves()
+        dense_subnode_leaves = subnode.dense_leaves()
 
         ########
         # Loop #
@@ -174,7 +172,7 @@ def to_ir_iteration_variable(self: IterationVariable, output: Output, kernel_typ
                 ############################
                 # Branch on sparse matches #
                 ############################
-                sparse_subsubnode_leaves = subsubnode.lattice.sparse_leaves()
+                sparse_subsubnode_leaves = subsubnode.sparse_leaves()
                 condition = And.join(
                     [
                         Equal(leaf.value_from_crd(), loop_variable)
@@ -240,7 +238,7 @@ def to_ir_iteration_variable(self: IterationVariable, output: Output, kernel_typ
                         BooleanToInteger(Equal(leaf.value_from_crd(), loop_variable))
                     )
                 )
-            if self.lattice.is_dense():
+            if is_dense:
                 source.append(loop_variable.increment())
 
     ################################

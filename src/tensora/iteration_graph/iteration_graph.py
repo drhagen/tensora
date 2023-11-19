@@ -6,15 +6,20 @@ from abc import abstractmethod
 from dataclasses import dataclass, replace
 
 from ..format import Mode
-from .build_lattice import build_lattice
-from .identifiable_expression import TensorLeaf, exhaust_tensor
+from ..stable_set import StableFrozenSet
+from .identifiable_expression import (
+    Context,
+    TensorLayer,
+    TensorLeaf,
+    exhaust_tensor,
+    extract_context,
+)
 from .identifiable_expression.ast import Expression
-from .merge_lattice import Lattice, LatticeConjunction, LatticeLeaf
 
 
 class IterationGraph:
     @abstractmethod
-    def build_lattice(self, index: str) -> Lattice | None:
+    def extract_context(self, index: str) -> Context:
         raise NotImplementedError()
 
     @abstractmethod
@@ -35,8 +40,8 @@ class IterationGraph:
 class TerminalExpression(IterationGraph):
     expression: Expression
 
-    def build_lattice(self, index: str) -> Lattice | None:
-        return build_lattice(self.expression, index)
+    def extract_context(self, index: str) -> Context:
+        return extract_context(self.expression, index)
 
     def exhaust_tensor(self, tensor: TensorLeaf) -> IterationGraph | None:
         expression = exhaust_tensor(self.expression, tensor)
@@ -55,15 +60,15 @@ class TerminalExpression(IterationGraph):
 @dataclass(frozen=True)
 class IterationVariable(IterationGraph):
     index_variable: str
-    output: LatticeLeaf | None
+    output: TensorLayer | None
     next: IterationGraph
 
     def __post_init__(self):
-        self.lattice: Lattice
-        object.__setattr__(self, "lattice", self.build_lattice(self.index_variable))
+        self.context: Context
+        object.__setattr__(self, "context", self.extract_context(self.index_variable))
 
-    def build_lattice(self, index: str) -> Lattice | None:
-        return self.next.build_lattice(index)
+    def extract_context(self, index: str) -> Context:
+        return self.next.extract_context(index)
 
     def exhaust_tensor(self, tensor: TensorLeaf) -> IterationGraph | None:
         new_next = self.next.exhaust_tensor(tensor)
@@ -72,8 +77,23 @@ class IterationVariable(IterationGraph):
         else:
             return None
 
+    def is_dense(self) -> bool:
+        return self.context.is_dense or self.output is not None and self.output.mode == Mode.dense
+
+    def compressed_dimensions(self) -> StableFrozenSet[TensorLeaf]:
+        return StableFrozenSet(*(leaf.tensor.variable for leaf in self.context.sparse_leaves))
+
+    def sparse_leaves(self) -> list[TensorLayer]:
+        return [TensorLayer(leaf.tensor, leaf.layer) for leaf in self.context.sparse_leaves]
+
+    def dense_leaves(self) -> list[TensorLayer]:
+        return [TensorLayer(leaf.tensor, leaf.layer) for leaf in self.context.dense_leaves]
+
     def all_dense(self) -> bool:
-        return self.lattice.is_dense() and self.next.all_dense()
+        return self.context.is_dense and self.next.all_dense()
+
+    def is_dense_output(self) -> bool:
+        return self.output is not None and self.output.mode == Mode.dense
 
     def is_sparse_output(self) -> bool:
         return self.output is not None and self.output.mode == Mode.compressed
@@ -84,17 +104,11 @@ class Add(IterationGraph):
     name: str
     terms: list[IterationGraph]
 
-    def build_lattice(self, index: str) -> Lattice | None:
-        lattice = None
+    def extract_context(self, index: str) -> Context:
+        context = Context(False, [], [])
         for term in self.terms:
-            lattice_i = term.build_lattice(index)
-            if lattice_i is None:
-                pass
-            elif lattice is None:
-                lattice = lattice_i
-            else:
-                lattice = LatticeConjunction(lattice, lattice_i)
-        return lattice
+            context = context.add(term.extract_context(index))
+        return context
 
     def exhaust_tensor(self, tensor: TensorLeaf) -> IterationGraph | None:
         new_terms = []

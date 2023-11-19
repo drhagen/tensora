@@ -6,8 +6,8 @@ from ...format import Mode
 from ...ir import SourceBuilder, types
 from ...ir.ast import ArrayAllocate, Expression, IntegerLiteral, Multiply, Variable
 from ...kernel_type import KernelType
+from ..identifiable_expression import TensorLayer
 from ..identifiable_expression import ast as ie_ast
-from ..merge_lattice import LatticeLeaf
 from ..names import (
     crd_capacity_name,
     crd_name,
@@ -131,7 +131,7 @@ class AppendOutput(Output):
         return source
 
     def next_output(
-        self, iteration_output: LatticeLeaf | None, kernel_type: KernelType
+        self, iteration_output: TensorLayer | None, kernel_type: KernelType
     ) -> tuple[Output, SourceBuilder, SourceBuilder]:
         if iteration_output is not None and self.next_layer == iteration_output.layer:
             return AppendOutput(self.output, self.next_layer + 1), SourceBuilder(), SourceBuilder()

@@ -8,11 +8,11 @@ __all__ = [
 from ..format import Mode
 from ..ir import SourceBuilder, types
 from ..ir.ast import ArrayReallocate, GreaterThanOrEqual, Max, Multiply, Variable
-from .merge_lattice import LatticeLeaf
+from .identifiable_expression import TensorLayer
 from .names import dimension_name
 
 
-def write_sparse_initialization(leaf: LatticeLeaf) -> SourceBuilder:
+def write_sparse_initialization(leaf: TensorLayer) -> SourceBuilder:
     source = SourceBuilder()
 
     index_variable = leaf.layer_pointer()
@@ -26,7 +26,7 @@ def write_sparse_initialization(leaf: LatticeLeaf) -> SourceBuilder:
     return source
 
 
-def write_crd_assembly(output: LatticeLeaf) -> SourceBuilder:
+def write_crd_assembly(output: TensorLayer) -> SourceBuilder:
     source = SourceBuilder("crd assembly")
 
     pointer = output.layer_pointer()
@@ -43,7 +43,7 @@ def write_crd_assembly(output: LatticeLeaf) -> SourceBuilder:
     return source
 
 
-def write_pos_assembly(output: LatticeLeaf) -> SourceBuilder:
+def write_pos_assembly(output: TensorLayer) -> SourceBuilder:
     source = SourceBuilder("pos assembly")
 
     pointer = output.layer_pointer()
@@ -55,7 +55,7 @@ def write_pos_assembly(output: LatticeLeaf) -> SourceBuilder:
     return source
 
 
-def write_pos_allocation(output: LatticeLeaf) -> SourceBuilder:
+def write_pos_allocation(output: TensorLayer) -> SourceBuilder:
     dense_dimensions = []
     for i_layer in range(output.layer + 1, output.tensor.order):
         index_variable_i = output.tensor.indexes[i_layer]
@@ -73,7 +73,7 @@ def write_pos_allocation(output: LatticeLeaf) -> SourceBuilder:
         bonus = 0
     else:
         comment = "pos allocation for next sparse layer"
-        target_leaf = LatticeLeaf(output.tensor, output.layer + len(dense_dimensions) + 1)
+        target_leaf = TensorLayer(output.tensor, output.layer + len(dense_dimensions) + 1)
         capacity = target_leaf.pos_capacity_name()
         array = target_leaf.pos_name()
         type = types.integer
