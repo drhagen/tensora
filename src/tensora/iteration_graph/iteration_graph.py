@@ -14,7 +14,7 @@ from .identifiable_expression import (
     exhaust_tensor,
     extract_context,
 )
-from .identifiable_expression.ast import Expression
+from .identifiable_expression.ast import Expression, Integer
 
 
 class IterationGraph:
@@ -23,7 +23,7 @@ class IterationGraph:
         raise NotImplementedError()
 
     @abstractmethod
-    def exhaust_tensor(self, tensor: TensorLeaf) -> IterationGraph | None:
+    def exhaust_tensor(self, tensor: TensorLeaf) -> IterationGraph:
         raise NotImplementedError()
 
     @abstractmethod
@@ -35,6 +35,11 @@ class IterationGraph:
         # Needed by assembly to determine if next layer is guaranteed to advance position or not
         raise NotImplementedError()
 
+    @abstractmethod
+    def compressed_dimensions(self) -> StableFrozenSet[TensorLeaf]:
+        # Needed when empty subgraphs simplify
+        raise NotImplementedError()
+
 
 @dataclass(frozen=True)
 class TerminalExpression(IterationGraph):
@@ -43,18 +48,18 @@ class TerminalExpression(IterationGraph):
     def extract_context(self, index: str) -> Context:
         return extract_context(self.expression, index)
 
-    def exhaust_tensor(self, tensor: TensorLeaf) -> IterationGraph | None:
-        expression = exhaust_tensor(self.expression, tensor)
-        if expression is None:
-            return None
-        else:
-            return TerminalExpression(expression)
+    def exhaust_tensor(self, tensor: TensorLeaf) -> IterationGraph:
+        return TerminalExpression(exhaust_tensor(self.expression, tensor))
 
     def all_dense(self) -> bool:
         return True
 
     def is_sparse_output(self) -> bool:
         return False
+
+    def compressed_dimensions(self) -> StableFrozenSet[TensorLeaf]:
+        # Needed when empty subgraphs simplify
+        return StableFrozenSet()
 
 
 @dataclass(frozen=True)
@@ -70,12 +75,16 @@ class IterationVariable(IterationGraph):
     def extract_context(self, index: str) -> Context:
         return self.next.extract_context(index)
 
-    def exhaust_tensor(self, tensor: TensorLeaf) -> IterationGraph | None:
+    def exhaust_tensor(self, tensor: TensorLeaf) -> IterationGraph:
         new_next = self.next.exhaust_tensor(tensor)
-        if new_next is not None:
-            return replace(self, next=new_next)
+
+        new = replace(self, next=new_next)
+
+        if len(new.compressed_dimensions()) == 0 and self.output is None:
+            # Drop contraction nodes when empty
+            return new_next
         else:
-            return None
+            return new
 
     def is_dense(self) -> bool:
         return self.context.is_dense or self.output is not None and self.output.mode == Mode.dense
@@ -110,15 +119,15 @@ class Add(IterationGraph):
             context = context.add(term.extract_context(index))
         return context
 
-    def exhaust_tensor(self, tensor: TensorLeaf) -> IterationGraph | None:
+    def exhaust_tensor(self, tensor: TensorLeaf) -> IterationGraph:
         new_terms = []
         for term in self.terms:
             new_term = term.exhaust_tensor(tensor)
-            if new_term is not None:
-                new_terms.append(new_term)
+            # TODO: Simplify empty terms
+            new_terms.append(new_term)
 
         if len(new_terms) == 0:
-            return None
+            return TerminalExpression(Integer(0))
         elif len(new_terms) == 1:
             return new_terms[0]
         else:
@@ -129,3 +138,7 @@ class Add(IterationGraph):
 
     def is_sparse_output(self) -> bool:
         return False
+
+    def compressed_dimensions(self) -> StableFrozenSet[TensorLeaf]:
+        # Needed when empty subgraphs simplify
+        return StableFrozenSet()

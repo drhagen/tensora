@@ -3,7 +3,7 @@ from tensora.native import KernelType, generate_c_code
 
 def test_copy():
     assignment = "a(i) = b(i)"
-    formats = {"a": "d", "b": "d"}
+    formats = {"a": "d", "b": "s"}
     kernel_type = KernelType.compute
     code = generate_c_code(assignment, formats, kernel_type)
     assert isinstance(code, str)
@@ -20,6 +20,14 @@ def test_csr_vector_product():
 def test_csc_vector_product():
     assignment = "y(i) = A(i,j) * x(j)"
     formats = {"y": "d", "A": "d1s0", "x": "d"}
+    kernel_type = KernelType.compute
+    code = generate_c_code(assignment, formats, kernel_type)
+    assert isinstance(code, str)
+
+
+def test_fortran_vector_product():
+    assignment = "y(i) = A(i,j) * x(j)"
+    formats = {"y": "d", "A": "d1d0", "x": "d"}
     kernel_type = KernelType.compute
     code = generate_c_code(assignment, formats, kernel_type)
     assert isinstance(code, str)

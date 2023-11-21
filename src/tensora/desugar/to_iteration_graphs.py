@@ -2,7 +2,7 @@ __all__ = ["to_iteration_graphs"]
 
 from dataclasses import replace
 from functools import reduce, singledispatch
-from itertools import count, product
+from itertools import chain, count, permutations, product
 from typing import Iterator
 
 from ..format import Format, Mode
@@ -16,9 +16,9 @@ from . import ast
 def legal_iteration_orders(format: Format) -> Iterator[list[int]]:
     """Legal iteration orders for layers of a tensor of a given format.
 
-    Zero is the first index, not the first layer. For example, a ds format has
-    one legal iteration order (i.e. [1, 0]) and a d1s0 format has a different
-    legal iteration order (i.e. [0, 1])."""
+    Zero is the first layer, not the first index. For example, a ds format has
+    one legal iteration order (i.e. [0, 1]) and a d1s0 format has a different
+    legal iteration order (i.e. [1, 0])."""
     reorderable_groups = []
     restart = True
     for i, mode in enumerate(format.modes):
@@ -33,7 +33,8 @@ def legal_iteration_orders(format: Format) -> Iterator[list[int]]:
                 reorderable_groups.append([i])
                 restart = True
 
-    yield from product(*reorderable_groups)
+    for group_order in product(*(permutations(group) for group in reorderable_groups)):
+        yield list(chain(*group_order))
 
 
 @singledispatch
@@ -115,9 +116,16 @@ def simplify_add(graph: ig.Add) -> ig.IterationGraph:
         unique_terms = {term.index_variable for term in graph.terms}
         if len(unique_terms) == 1:
             head = graph.terms[0]
-            return replace(
-                head, next=simplify_add(ig.Add(graph.name, [term.next for term in graph.terms]))
-            )
+
+            # Flatten nested Adds
+            terms = []
+            for term in graph.terms:
+                if isinstance(term.next, ig.Add):
+                    terms.extend(term.next.terms)
+                else:
+                    terms.append(term.next)
+
+            return replace(head, next=simplify_add(ig.Add(graph.name, terms)))
         else:
             return graph
     elif all(isinstance(term, ig.TerminalExpression) for term in graph.terms):

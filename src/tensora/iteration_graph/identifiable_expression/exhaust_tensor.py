@@ -2,12 +2,12 @@ __all__ = ["exhaust_tensor"]
 
 from functools import singledispatch
 
-from .ast import Add, Expression, Literal, Multiply, Scalar, Tensor
+from .ast import Add, Expression, Integer, Literal, Multiply, Scalar, Tensor
 from .tensor_leaf import TensorLeaf
 
 
 @singledispatch
-def exhaust_tensor(self, tensor: TensorLeaf) -> Expression | None:
+def exhaust_tensor(self, tensor: TensorLeaf) -> Expression:
     raise NotImplementedError(f"exhaust_tensor not implemented for {type(self)}: {self}")
 
 
@@ -24,7 +24,7 @@ def exhaust_tensor_scalar(self: Scalar, tensor: TensorLeaf):
 @exhaust_tensor.register(Tensor)
 def exhaust_tensor_tensor(self: Tensor, tensor: TensorLeaf):
     if self.variable == tensor:
-        return None
+        return Integer(0)
     else:
         return self
 
@@ -36,10 +36,10 @@ def exhaust_tensor_add(self: Add, tensor: TensorLeaf):
     if left_exhausted is self.left and right_exhausted is self.right:
         # Short circuit when there are no changes
         return self
-    elif left_exhausted is None:
+    elif left_exhausted == Integer(0):
         # Covers the case where both are exhausted
         return right_exhausted
-    elif right_exhausted is None:
+    elif right_exhausted == Integer(0):
         return left_exhausted
     else:
         return Add(left_exhausted, right_exhausted)
@@ -52,7 +52,7 @@ def exhaust_tensor_multiply(self: Multiply, tensor: TensorLeaf):
     if left_exhausted is self.left and right_exhausted is self.right:
         # Short circuit when there are no changes
         return self
-    elif left_exhausted is None or right_exhausted is None:
-        return None
+    elif left_exhausted == Integer(0) or right_exhausted == Integer(0):
+        return Integer(0)
     else:
         return Multiply(left_exhausted, right_exhausted)

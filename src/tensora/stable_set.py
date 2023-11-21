@@ -33,6 +33,9 @@ class StableSet(MutableSet[Element]):
         else:
             return NotImplemented
 
+    def __repr__(self) -> str:
+        return f"StableSet({', '.join(repr(item) for item in self._items)})"
+
     def add(self, element: Element, /) -> None:
         self._items[element] = None
 
@@ -74,3 +77,6 @@ class StableFrozenSet(AbstractSet[Element]):
 
     def __hash__(self):
         return hash(self._set)
+
+    def __repr__(self) -> str:
+        return f"StableFrozenSet({', '.join(repr(item) for item in self._items)})"

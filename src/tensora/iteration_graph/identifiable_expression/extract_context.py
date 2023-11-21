@@ -39,7 +39,10 @@ def extract_context(self: ast.Expression, index: str) -> Context:
 @extract_context.register(ast.Literal)
 @extract_context.register(ast.Scalar)
 def extract_context_scalar(self: ast.Literal, index: str) -> Context:
-    return Context(True, [], [])
+    if self == ast.Integer(0) or self == ast.Float(0.0):
+        return Context(False, [], [])
+    else:
+        return Context(True, [], [])
 
 
 @extract_context.register(ast.Tensor)

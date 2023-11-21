@@ -90,6 +90,8 @@ def to_ir_iteration_variable(self: IterationVariable, output: Output, kernel_typ
     loop_variable = Variable(self.index_variable)
 
     # If this node is_dense, then every index needs to be iterated over
+    # Dense graphs always produce dense dense subgraphs, sparse graphs always
+    # produce sparse subgraphs, so density is a constant for this iteration.
     is_dense = self.is_dense()
 
     # Compute the next output
@@ -102,6 +104,7 @@ def to_ir_iteration_variable(self: IterationVariable, output: Output, kernel_typ
     # Initialization #
     ##################
     if is_dense:
+        # If this loop is dense, we need to initialize the index variable
         source.append(loop_variable.declare(types.integer).assign(0))
 
     for leaf in self.sparse_leaves():
@@ -112,22 +115,29 @@ def to_ir_iteration_variable(self: IterationVariable, output: Output, kernel_typ
     ############
     subnodes = generate_subgraphs(self)
     for subnode in subnodes:
+        if not is_dense and len(subnode.compressed_dimensions()) == 0:
+            # If the loop is sparse and the subnode has no sparse leaves, then
+            # it is a sparse zero and should be skipped. Such node is
+            # necessarily the last one, so break or continue would do the same
+            # thing.
+            continue
+
         sparse_subnode_leaves = subnode.sparse_leaves()
         dense_subnode_leaves = subnode.dense_leaves()
 
         ########
         # Loop #
         ########
-        if len(sparse_subnode_leaves) == 0:
-            # If there are no sparse dimensions, the only thing to stop iteration is the dense dimension
-            while_criteria = LessThan(loop_variable, dimension_name(self.index_variable))
-        else:
+        if len(sparse_subnode_leaves) > 0:
             while_criteria = And.join(
                 [
                     LessThan(leaf.layer_pointer(), leaf.sparse_end_name())
                     for leaf in sparse_subnode_leaves
                 ]
             )
+        else:
+            # Last subnode may be dense, so the last loop should finish out the index variable
+            while_criteria = LessThan(loop_variable, dimension_name(self.index_variable))
 
         with source.loop(while_criteria):
             ##########################
@@ -143,8 +153,9 @@ def to_ir_iteration_variable(self: IterationVariable, output: Output, kernel_typ
                     )
                 )
 
-            # Print closest index
             if not is_dense:
+                # If the loop is not dense, the index variable is the closest value
+                # among all the sparse layers
                 source.append(
                     loop_variable.declare(types.integer).assign(Min.join(index_variables))
                 )
@@ -152,9 +163,8 @@ def to_ir_iteration_variable(self: IterationVariable, output: Output, kernel_typ
             #########################
             # Compute dense indexes #
             #########################
-            maybe_dense_output = (
-                [self.output] if self.output is not None and self.output.mode == Mode.dense else []
-            )
+            # TODO: This does not appear to be correct when using a bucket
+            maybe_dense_output = [self.output] if self.is_dense_output() else []
             for leaf in maybe_dense_output + dense_subnode_leaves:
                 pointer = leaf.layer_pointer()
                 previous_pointer = leaf.previous_layer_pointer()
@@ -169,10 +179,18 @@ def to_ir_iteration_variable(self: IterationVariable, output: Output, kernel_typ
             subsubnodes = generate_subgraphs(subnode)
             subsubnode_leaves: list[tuple[Expression, Block]] = []
             for subsubnode in subsubnodes:
+                if not is_dense and len(subsubnode.compressed_dimensions()) == 0:
+                    # If the loop is sparse and the subsubnode has no sparse
+                    # leaves, then it is a sparse zero and should be skipped.
+                    # Such node is necessarily the last one, so break or
+                    # continue would do the same thing.
+                    continue
+
+                sparse_subsubnode_leaves = subsubnode.sparse_leaves()
+
                 ############################
                 # Branch on sparse matches #
                 ############################
-                sparse_subsubnode_leaves = subsubnode.sparse_leaves()
                 condition = And.join(
                     [
                         Equal(leaf.value_from_crd(), loop_variable)
@@ -184,6 +202,9 @@ def to_ir_iteration_variable(self: IterationVariable, output: Output, kernel_typ
                 ###################################
                 # Allocate space for pos and vals #
                 ###################################
+                # This is done at this level, rather than up a level, because none
+                # of the if-statements may hit. In that case, no allocation should
+                # be done.
                 if (
                     kernel_type.is_assembly()
                     and self.is_sparse_output()
@@ -239,6 +260,7 @@ def to_ir_iteration_variable(self: IterationVariable, output: Output, kernel_typ
                     )
                 )
             if is_dense:
+                # If this loop is dense, we need to increment the index variable
                 source.append(loop_variable.increment())
 
     ################################
