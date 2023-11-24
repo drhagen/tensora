@@ -155,8 +155,7 @@ def to_iteration_graphs_add(
                 case (_, _):
                     graph = ig.Add(name, [left, right])
 
-            while True:
-                yield simplify_add(graph)
+            yield simplify_add(graph)
 
 
 def merge_multiply(
@@ -255,9 +254,9 @@ def to_iteration_graphs(
         for i, index_variable in enumerate(assignment.target.indexes)
     }
 
-    for expression_graph in to_iteration_graphs_expression(
-        assignment.expression, formats, count(1)
-    ):
-        for target_graph in to_iteration_graphs_expression(assignment.target, formats, []):
+    for target_graph in to_iteration_graphs_expression(assignment.target, formats, []):
+        for expression_graph in to_iteration_graphs_expression(
+            assignment.expression, formats, count(1)
+        ):
             for graph in merge_assignment(target_graph, expression_graph, output_layers):
                 yield graph
