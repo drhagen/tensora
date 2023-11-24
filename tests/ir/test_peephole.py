@@ -56,6 +56,15 @@ changed = [
     (Block([Block([], "comment"), Return(IntegerLiteral(0))]), Block([Return(IntegerLiteral(0))])),
     (Branch(Variable("t"), Block([], "comment1"), Block([], "comment2")), Block([])),
     (Loop(Variable("t"), Block([], "comment")), Block([])),
+    # Redundant assignment
+    (Assignment(Variable("x"), Variable("x")), Block([])),
+    (
+        Assignment(
+            ArrayIndex(Variable("x"), IntegerLiteral(0)),
+            ArrayIndex(Variable("x"), IntegerLiteral(0)),
+        ),
+        Block([]),
+    ),
     # Pass through
     (
         ArrayIndex(
@@ -112,8 +121,15 @@ changed = [
         DeclarationAssignment(Declaration(Variable("x"), float), Variable("y")),
     ),
     (
-        Block([Assignment(Variable("x"), Add(IntegerLiteral(0), Variable("x")))], "test block"),
-        Block([Assignment(Variable("x"), Variable("x"))], "test block"),
+        Block(
+            [
+                Assignment(
+                    Variable("x"), Add(Add(IntegerLiteral(0), Variable("x")), IntegerLiteral(1))
+                )
+            ],
+            "test block",
+        ),
+        Block([Assignment(Variable("x"), Add(Variable("x"), IntegerLiteral(1)))], "test block"),
     ),
     (
         Branch(Variable("t"), Variable("x"), Add(IntegerLiteral(0), Variable("y"))),

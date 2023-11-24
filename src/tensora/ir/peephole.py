@@ -16,6 +16,7 @@ Current optimization implemented:
 * branch_false: if (false) then block1 else block2 => block2
 * loop_false: while(false) block => {}
 * empty_block: empty blocks get deleted in blocks, branches, and loops
+* redundant_assignment: a = a => {}
 """
 
 __all__ = ["peephole"]
@@ -268,7 +269,11 @@ def peephole_free(self: Free) -> Statement:
 def peephole_assignment(self: Assignment) -> Statement:
     target = peephole_assignable(self.target)
     value = peephole_expression(self.value)
-    return Assignment(target, value)
+
+    if target == value:
+        return Block([])
+    else:
+        return Assignment(target, value)
 
 
 @peephole.register(DeclarationAssignment)
