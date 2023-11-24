@@ -27,10 +27,6 @@ class IterationGraph:
         raise NotImplementedError()
 
     @abstractmethod
-    def all_dense(self) -> bool:
-        raise NotImplementedError()
-
-    @abstractmethod
     def is_sparse_output(self) -> bool:
         # Needed by assembly to determine if next layer is guaranteed to advance position or not
         raise NotImplementedError()
@@ -54,9 +50,6 @@ class TerminalExpression(IterationGraph):
 
     def exhaust_tensor(self, tensor: TensorLeaf) -> IterationGraph:
         return TerminalExpression(exhaust_tensor(self.expression, tensor))
-
-    def all_dense(self) -> bool:
-        return True
 
     def is_sparse_output(self) -> bool:
         return False
@@ -92,9 +85,6 @@ class IterationVariable(IterationGraph):
 
         return replace(self, next=new_next)
 
-    def is_dense(self) -> bool:
-        return self.context.is_dense or self.output is not None and self.output.mode == Mode.dense
-
     def compressed_dimensions(self) -> StableFrozenSet[TensorLeaf]:
         return StableFrozenSet(*(leaf.tensor.variable for leaf in self.context.sparse_leaves))
 
@@ -104,8 +94,8 @@ class IterationVariable(IterationGraph):
     def dense_leaves(self) -> list[TensorLayer]:
         return [TensorLayer(leaf.tensor, leaf.layer) for leaf in self.context.dense_leaves]
 
-    def all_dense(self) -> bool:
-        return self.context.is_dense and self.next.all_dense()
+    def is_sparse_input(self) -> bool:
+        return self.context.is_sparse
 
     def is_dense_output(self) -> bool:
         return self.output is not None and self.output.mode == Mode.dense
@@ -126,7 +116,7 @@ class Add(IterationGraph):
     terms: list[IterationGraph]
 
     def extract_context(self, index: str) -> Context:
-        context = Context(False, [], [])
+        context = Context(is_sparse=True)
         for term in self.terms:
             context = context.add(term.extract_context(index))
         return context
@@ -144,9 +134,6 @@ class Add(IterationGraph):
             return new_terms[0]
         else:
             return replace(self, terms=new_terms)
-
-    def all_dense(self) -> bool:
-        return True
 
     def is_sparse_output(self) -> bool:
         return False

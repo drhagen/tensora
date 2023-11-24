@@ -2,7 +2,7 @@ from __future__ import annotations
 
 __all__ = ["extract_context"]
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from functools import singledispatch
 
 from ...format import Mode
@@ -10,30 +10,30 @@ from . import ast
 from .tensor_layer import TensorLayer
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True, slots=True, kw_only=True)
 class Context:
-    is_dense: bool
-    sparse_leaves: list[TensorLayer]
-    dense_leaves: list[TensorLayer]
+    is_sparse: bool
+    sparse_leaves: list[TensorLayer] = field(default_factory=list)
+    dense_leaves: list[TensorLayer] = field(default_factory=list)
     indexes: frozenset[str] = frozenset()
     has_output: bool = False
 
     def add(self, other: Context) -> Context:
         return Context(
-            self.is_dense or other.is_dense,
-            self.sparse_leaves + other.sparse_leaves,
-            self.dense_leaves + other.dense_leaves,
-            self.indexes | other.indexes,
-            self.has_output or other.has_output,
+            is_sparse=self.is_sparse and other.is_sparse,
+            sparse_leaves=self.sparse_leaves + other.sparse_leaves,
+            dense_leaves=self.dense_leaves + other.dense_leaves,
+            indexes=self.indexes | other.indexes,
+            has_output=self.has_output or other.has_output,
         )
 
     def multiply(self, other: Context) -> Context:
         return Context(
-            self.is_dense and other.is_dense,
-            self.sparse_leaves + other.sparse_leaves,
-            self.dense_leaves + other.dense_leaves,
-            self.indexes | other.indexes,
-            self.has_output or other.has_output,
+            is_sparse=self.is_sparse or other.is_sparse,
+            sparse_leaves=self.sparse_leaves + other.sparse_leaves,
+            dense_leaves=self.dense_leaves + other.dense_leaves,
+            indexes=self.indexes | other.indexes,
+            has_output=self.has_output or other.has_output,
         )
 
 
@@ -46,9 +46,9 @@ def extract_context(self: ast.Expression, index: str) -> Context:
 @extract_context.register(ast.Scalar)
 def extract_context_scalar(self: ast.Literal, index: str) -> Context:
     if self == ast.Integer(0) or self == ast.Float(0.0):
-        return Context(False, [], [])
+        return Context(is_sparse=True)
     else:
-        return Context(True, [], [])
+        return Context(is_sparse=False)
 
 
 @extract_context.register(ast.Tensor)
@@ -56,12 +56,12 @@ def extract_context_tensor(self: ast.Tensor, index: str) -> Context:
     try:
         maybe_layer = self.indexes.index(index)
     except ValueError:
-        return Context(True, [], [])
+        return Context(is_sparse=False)
 
     if self.modes[maybe_layer] == Mode.dense:
-        return Context(True, [], [TensorLayer(self, maybe_layer)])
+        return Context(is_sparse=False, dense_leaves=[TensorLayer(self, maybe_layer)])
     else:
-        return Context(False, [TensorLayer(self, maybe_layer)], [])
+        return Context(is_sparse=True, sparse_leaves=[TensorLayer(self, maybe_layer)])
 
 
 @extract_context.register(ast.Add)
