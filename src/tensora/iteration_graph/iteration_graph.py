@@ -73,18 +73,15 @@ class IterationVariable(IterationGraph):
         object.__setattr__(self, "context", self.extract_context(self.index_variable))
 
     def extract_context(self, index: str) -> Context:
-        return self.next.extract_context(index)
+        next_context = self.next.extract_context(index)
+        return replace(
+            next_context, indexes=next_context.indexes | frozenset([self.index_variable])
+        )
 
     def exhaust_tensor(self, tensor: TensorLeaf) -> IterationGraph:
         new_next = self.next.exhaust_tensor(tensor)
 
-        new = replace(self, next=new_next)
-
-        if len(new.compressed_dimensions()) == 0 and self.output is None:
-            # Drop contraction nodes when empty
-            return new_next
-        else:
-            return new
+        return replace(self, next=new_next)
 
     def is_dense(self) -> bool:
         return self.context.is_dense or self.output is not None and self.output.mode == Mode.dense
@@ -106,6 +103,9 @@ class IterationVariable(IterationGraph):
 
     def is_sparse_output(self) -> bool:
         return self.output is not None and self.output.mode == Mode.compressed
+
+    def later_indexes(self) -> frozenset[str]:
+        return self.context.indexes
 
 
 @dataclass(frozen=True)

@@ -23,6 +23,7 @@ from ..ir.ast import (
 from ..kernel_type import KernelType
 from .definition import Definition
 from .identifiable_expression import to_ir
+from .identifiable_expression.tensor_layer import TensorLayer
 from .iteration_graph import Add as GraphAdd
 from .iteration_graph import IterationGraph, IterationVariable, TerminalExpression
 from .names import crd_name, dimension_name, pos_name, vals_name
@@ -163,15 +164,45 @@ def to_ir_iteration_variable(self: IterationVariable, output: Output, kernel_typ
             #########################
             # Compute dense indexes #
             #########################
+            # Earlier layers may not be iterated over yet if they are dense. The position of
+            # earlier layers are prerequisite for computing the position of this layer. Defer
+            # computing the position of this layer until all earlier layers have been iterated.
+            # This means that we must check if later layers have already been iterated over and can
+            # now be satisfied. If so, compute the position of those layers now.
             # TODO: This does not appear to be correct when using a bucket
-            maybe_dense_output = [self.output] if self.is_dense_output() else []
+            maybe_dense_output: list[TensorLayer] = [self.output] if self.is_dense_output() else []
             for leaf in maybe_dense_output + dense_subnode_leaves:
-                pointer = leaf.layer_pointer()
-                previous_pointer = leaf.previous_layer_pointer()
-                pointer_value = previous_pointer.times(dimension_name(self.index_variable)).plus(
-                    loop_variable
-                )
-                source.append(pointer.declare(types.integer).assign(pointer_value))
+                needed_indexes: set[str] = set()
+                for i_layer in reversed(range(0, leaf.layer)):
+                    if leaf.tensor.modes[i_layer] == Mode.dense:
+                        needed_indexes.add(leaf.tensor.indexes[i_layer])
+                    else:
+                        break
+
+                layers_to_write = []
+                for i_layer in range(leaf.layer, leaf.tensor.order):
+                    if leaf.tensor.modes[i_layer] != Mode.dense:
+                        # Only consider adjacent dense layers
+                        break
+
+                    needed_indexes.add(leaf.tensor.indexes[i_layer])
+                    available_before_here = needed_indexes - self.later_indexes()
+                    available_after_here = available_before_here | {self.index_variable}
+
+                    if not needed_indexes.issubset(
+                        available_before_here
+                    ) and needed_indexes.issubset(available_after_here):
+                        # Layers whose prerequisites are satisfied with this layer, but not
+                        # satisfied without it are written now.
+                        layers_to_write.append(TensorLayer(leaf.tensor, i_layer))
+
+                for layer in layers_to_write:
+                    pointer = layer.layer_pointer()
+                    previous_pointer = layer.previous_layer_pointer()
+                    pointer_value = previous_pointer.times(
+                        dimension_name(layer.tensor.indexes[layer.layer])
+                    ).plus(loop_variable)
+                    source.append(pointer.declare(types.integer).assign(pointer_value))
 
             ###############
             # Subsubnodes #
