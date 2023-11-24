@@ -2,7 +2,7 @@ __all__ = ["parse_assignment"]
 
 from functools import reduce
 
-from parsita import ParserContext, Result, lit, reg, rep, rep1sep
+from parsita import ParserContext, Result, lit, reg, rep, rep1sep, repsep
 from parsita.util import splat
 
 from .ast import Add, Assignment, Float, Integer, Multiply, Scalar, Subtract, Tensor
@@ -26,9 +26,8 @@ class TensorExpressionParsers(ParserContext, whitespace=r"[ ]*"):
     integer = reg(r"[0-9]+") > (lambda x: Integer(int(x)))
     number = floating_point | integer
 
-    # taco requires at least one index; scalar tensors are not parsed as `a()`
     # taco also allows for `y_{i}` and `y_i` to mean `y(i)`, but that is not supported here
-    tensor = name & "(" >> rep1sep(name, ",") << ")" > splat(Tensor)
+    tensor = name & "(" >> repsep(name, ",") << ")" > splat(Tensor)
     scalar = name > Scalar
     variable = tensor | scalar
 

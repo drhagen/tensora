@@ -16,6 +16,7 @@ class Context:
     sparse_leaves: list[TensorLayer]
     dense_leaves: list[TensorLayer]
     indexes: frozenset[str] = frozenset()
+    has_output: bool = False
 
     def add(self, other: Context) -> Context:
         return Context(
@@ -23,6 +24,7 @@ class Context:
             self.sparse_leaves + other.sparse_leaves,
             self.dense_leaves + other.dense_leaves,
             self.indexes | other.indexes,
+            self.has_output or other.has_output,
         )
 
     def multiply(self, other: Context) -> Context:
@@ -31,6 +33,7 @@ class Context:
             self.sparse_leaves + other.sparse_leaves,
             self.dense_leaves + other.dense_leaves,
             self.indexes | other.indexes,
+            self.has_output or other.has_output,
         )
 
 

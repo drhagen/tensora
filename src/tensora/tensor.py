@@ -474,7 +474,7 @@ def evaluate_binary_operator(
 
         indexes = indexes_string(left)
         return evaluate(
-            f"output({indexes}) = left({indexes}) {operator} right",
+            f"output({indexes}) = left({indexes}) {operator} right()",
             output_format,
             left=left,
             right=Tensor.from_scalar(float(right)),
@@ -492,7 +492,7 @@ def evaluate_binary_operator(
 
         indexes = indexes_string(right)
         return evaluate(
-            f"output({indexes}) = left {operator} right({indexes})",
+            f"output({indexes}) = left() {operator} right({indexes})",
             output_format,
             left=Tensor.from_scalar(float(left)),
             right=right,

@@ -40,6 +40,10 @@ class IterationGraph:
         # Needed when empty subgraphs simplify
         raise NotImplementedError()
 
+    @abstractmethod
+    def has_output(self) -> bool:
+        raise NotImplementedError()
+
 
 @dataclass(frozen=True)
 class TerminalExpression(IterationGraph):
@@ -61,6 +65,9 @@ class TerminalExpression(IterationGraph):
         # Needed when empty subgraphs simplify
         return StableFrozenSet()
 
+    def has_output(self) -> bool:
+        return False
+
 
 @dataclass(frozen=True)
 class IterationVariable(IterationGraph):
@@ -75,7 +82,9 @@ class IterationVariable(IterationGraph):
     def extract_context(self, index: str) -> Context:
         next_context = self.next.extract_context(index)
         return replace(
-            next_context, indexes=next_context.indexes | frozenset([self.index_variable])
+            next_context,
+            indexes=next_context.indexes | frozenset([self.index_variable]),
+            has_output=next_context.has_output or self.output is not None,
         )
 
     def exhaust_tensor(self, tensor: TensorLeaf) -> IterationGraph:
@@ -106,6 +115,9 @@ class IterationVariable(IterationGraph):
 
     def later_indexes(self) -> frozenset[str]:
         return self.context.indexes
+
+    def has_output(self) -> bool:
+        return self.context.has_output
 
 
 @dataclass(frozen=True)
@@ -142,3 +154,6 @@ class Add(IterationGraph):
     def compressed_dimensions(self) -> StableFrozenSet[TensorLeaf]:
         # Needed when empty subgraphs simplify
         return StableFrozenSet()
+
+    def has_output(self) -> bool:
+        return any(term.has_output() for term in self.terms)

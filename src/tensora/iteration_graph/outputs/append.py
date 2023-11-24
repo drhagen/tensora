@@ -11,6 +11,7 @@ from ..identifiable_expression import ast as ie_ast
 from ..names import (
     crd_capacity_name,
     crd_name,
+    dimension_name,
     layer_pointer,
     pos_capacity_name,
     pos_name,
@@ -144,8 +145,13 @@ class AppendOutput(Output):
                 next_output = BucketOutput(
                     self.output, list(range(self.next_layer, len(self.output.modes)))
                 )
+                dimension_names = [
+                    dimension_name(index) for index in self.output.indexes[self.next_layer :]
+                ]
                 bucket = vals_name(self.output.variable.name).plus(
-                    previous_layer_pointer(self.output.variable, self.next_layer)
+                    previous_layer_pointer(self.output.variable, self.next_layer).times(
+                        Multiply.join(dimension_names)
+                    )
                 )
                 return next_output, next_output.write_declarations(bucket), SourceBuilder()
             else:

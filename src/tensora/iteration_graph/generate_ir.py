@@ -93,6 +93,7 @@ def to_ir_iteration_variable(self: IterationVariable, output: Output, kernel_typ
     # If this node is_dense, then every index needs to be iterated over
     # Dense graphs always produce dense dense subgraphs, sparse graphs always
     # produce sparse subgraphs, so density is a constant for this iteration.
+    # TODO: Do not do dense iteration if the output is a bucket and the input is sparse
     is_dense = self.is_dense()
 
     # Compute the next output
@@ -169,7 +170,7 @@ def to_ir_iteration_variable(self: IterationVariable, output: Output, kernel_typ
             # computing the position of this layer until all earlier layers have been iterated.
             # This means that we must check if later layers have already been iterated over and can
             # now be satisfied. If so, compute the position of those layers now.
-            # TODO: This does not appear to be correct when using a bucket
+            # TODO: Do not emit output layer pointers when in a bucket
             maybe_dense_output: list[TensorLayer] = [self.output] if self.is_dense_output() else []
             for leaf in maybe_dense_output + dense_subnode_leaves:
                 needed_indexes: set[str] = set()

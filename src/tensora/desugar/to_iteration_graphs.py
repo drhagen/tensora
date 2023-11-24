@@ -100,7 +100,7 @@ def to_iteration_graphs_tensor(
         yield graph
 
 
-def simplify_add(graph: ig.Add) -> ig.IterationGraph:
+def simplify_add(graph: ig.Add) -> Iterator[ig.IterationGraph]:
     """Simplify an Add by combining terms with the same index variable.
 
     An Add node can be simplified if all its terms are `IterationVariable`s with
@@ -125,14 +125,17 @@ def simplify_add(graph: ig.Add) -> ig.IterationGraph:
                 else:
                     terms.append(term.next)
 
-            return replace(head, next=simplify_add(ig.Add(graph.name, terms)))
+            for next_graph in simplify_add(ig.Add(graph.name, terms)):
+                yield replace(head, next=next_graph)
         else:
-            return graph
+            yield graph
     elif all(isinstance(term, ig.TerminalExpression) for term in graph.terms):
         expression = reduce(id.Add, [term.expression for term in graph.terms])
-        return ig.TerminalExpression(expression)
+        yield ig.TerminalExpression(expression)
     else:
-        return graph
+        if not any(term.has_output() for term in graph.terms):
+            # Output iterations are not permitted downstream of an Add
+            yield graph
 
 
 @to_iteration_graphs_expression.register(ast.Add)
@@ -155,7 +158,7 @@ def to_iteration_graphs_add(
                 case (_, _):
                     graph = ig.Add(name, [left, right])
 
-            yield simplify_add(graph)
+            yield from simplify_add(graph)
 
 
 def merge_multiply(
@@ -234,9 +237,11 @@ def merge_assignment(
                 if expression.index_variable not in downstream_indexes(target.next):
                     for tail in merge_assignment(target, expression.next, output_layers):
                         yield replace(expression, next=tail)
-        case (ig.IterationVariable(), ig.Add()):
-            # No iteration variables allowed downstream of an Add
-            pass
+        case (ig.IterationVariable(), ig.Add(name=name, terms=terms)):
+            for merged_terms in product(
+                *(merge_assignment(target, term, output_layers) for term in terms)
+            ):
+                yield from simplify_add(ig.Add(name, list(merged_terms)))
 
 
 def to_iteration_graphs(
