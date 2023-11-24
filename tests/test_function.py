@@ -1,17 +1,24 @@
 from multiprocessing.pool import ThreadPool
 from random import randrange
 
-from tensora import Tensor, evaluate, tensor_method
+import pytest
+
+from tensora import Tensor, TensorCompiler, evaluate_taco, evaluate_tensora, tensor_method
+
+pytestmark = pytest.mark.parametrize(
+    ("evaluate", "compiler"),
+    [(evaluate_taco, TensorCompiler.taco), (evaluate_tensora, TensorCompiler.tensora)],
+)
 
 
-def test_csr_matrix_vector_product():
+def test_csr_matrix_vector_product(evaluate, compiler):
     A = Tensor.from_aos([[1, 0], [0, 1], [1, 2]], [2.0, -2.0, 4.0], dimensions=(2, 3), format="ds")
 
     x = Tensor.from_aos([[0], [1], [2]], [3.0, 2.5, 2.0], dimensions=(3,), format="d")
 
     expected = Tensor.from_aos([[0], [1]], [-5.0, 14.0], dimensions=(2,), format="d")
 
-    function = tensor_method("y(i) = A(i,j) * x(j)", dict(A="ds", x="d"), "d")
+    function = tensor_method("y(i) = A(i,j) * x(j)", dict(A="ds", x="d"), "d", compiler=compiler)
 
     actual = function(A, x)
 
@@ -22,7 +29,7 @@ def test_csr_matrix_vector_product():
     assert actual == expected
 
 
-def test_csc_matrix_vector_product():
+def test_csc_matrix_vector_product(evaluate, compiler):
     A = Tensor.from_aos(
         [[1, 0], [0, 1], [1, 2]], [2.0, -2.0, 4.0], dimensions=(2, 3), format="d1s0"
     )
@@ -31,7 +38,7 @@ def test_csc_matrix_vector_product():
 
     expected = Tensor.from_aos([[0], [1]], [-5.0, 14.0], dimensions=(2,), format="d")
 
-    function = tensor_method("y(i) = A(i,j) * x(j)", dict(A="d1s0", x="d"), "d")
+    function = tensor_method("y(i) = A(i,j) * x(j)", dict(A="d1s0", x="d"), "d", compiler=compiler)
 
     actual = function(A, x)
 
@@ -42,7 +49,7 @@ def test_csc_matrix_vector_product():
     assert actual == expected
 
 
-def test_csr_matrix_plus_csr_matrix():
+def test_csr_matrix_plus_csr_matrix(evaluate, compiler):
     A = Tensor.from_aos([[1, 0], [0, 1], [1, 2]], [2.0, -2.0, 4.0], dimensions=(2, 3), format="ds")
 
     B = Tensor.from_aos([[1, 1], [1, 2], [0, 2]], [-3.0, 4.0, 3.5], dimensions=(2, 3), format="ds")
@@ -54,7 +61,9 @@ def test_csr_matrix_plus_csr_matrix():
         format="ds",
     )
 
-    function = tensor_method("C(i,j) = A(i,j) + B(i,j)", dict(A="ds", B="ds"), "ds")
+    function = tensor_method(
+        "C(i,j) = A(i,j) + B(i,j)", dict(A="ds", B="ds"), "ds", compiler=compiler
+    )
 
     actual = function(A, B)
 
@@ -65,7 +74,7 @@ def test_csr_matrix_plus_csr_matrix():
     assert actual == expected
 
 
-def test_multithread_evaluation():
+def test_multithread_evaluation(evaluate, compiler):
     # As of version 1.14.4 of cffi, the FFI.compile method is not thread safe. This tests that evaluation of different
     # kernels is thread safe.
     A = Tensor.from_aos([[1, 0], [0, 1], [1, 2]], [2.0, -2.0, 4.0], dimensions=(2, 3), format="ds")

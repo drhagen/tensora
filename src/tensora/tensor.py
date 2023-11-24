@@ -427,7 +427,7 @@ def tree_to_indices_and_values(
 def evaluate_binary_operator(
     left: Union[Tensor, Real], right: Union[Tensor, Real], operator: str
 ) -> Tensor:
-    from .function import evaluate
+    from .function import evaluate_tensora
 
     def indexes_string(tensor):
         return ",".join(f"i{i}" for i in range(tensor.order))
@@ -455,7 +455,7 @@ def evaluate_binary_operator(
             raise NotImplementedError()
 
         indexes = indexes_string(left)
-        return evaluate(
+        return evaluate_tensora(
             f"output({indexes}) = left({indexes}) {operator} right({indexes})",
             output_format,
             left=left,
@@ -473,7 +473,7 @@ def evaluate_binary_operator(
             raise NotImplementedError()
 
         indexes = indexes_string(left)
-        return evaluate(
+        return evaluate_tensora(
             f"output({indexes}) = left({indexes}) {operator} right()",
             output_format,
             left=left,
@@ -491,7 +491,7 @@ def evaluate_binary_operator(
             raise NotImplementedError()
 
         indexes = indexes_string(right)
-        return evaluate(
+        return evaluate_tensora(
             f"output({indexes}) = left() {operator} right({indexes})",
             output_format,
             left=Tensor.from_scalar(float(left)),
@@ -503,22 +503,24 @@ def evaluate_binary_operator(
 
 
 def evaluate_matrix_multiplication_operator(left: Tensor, right: Tensor):
-    from .function import evaluate
+    from .function import evaluate_tensora
 
     if isinstance(left, Tensor) and isinstance(right, Tensor):
         if left.order == 1 and right.order == 1:
-            scalar_tensor = evaluate("output = left(i) * right(i)", "", left=left, right=right)
+            scalar_tensor = evaluate_tensora(
+                "output = left(i) * right(i)", "", left=left, right=right
+            )
             return float(scalar_tensor)
         elif left.order == 2 and right.order == 1:
             # Output format is the uncontracted dimension of the matrix
             output_format = left.format.modes[left.format.ordering[0]].character
-            return evaluate(
+            return evaluate_tensora(
                 "output(i) = left(i,j) * right(j)", output_format, left=left, right=right
             )
         elif left.order == 1 and right.order == 2:
             # Output format is the uncontracted dimension of the matrix
             output_format = right.format.modes[right.format.ordering[1]].character
-            return evaluate(
+            return evaluate_tensora(
                 "output(j) = left(i) * right(i,j)", output_format, left=left, right=right
             )
         elif left.order == 2 and right.order == 2:
@@ -526,7 +528,7 @@ def evaluate_matrix_multiplication_operator(left: Tensor, right: Tensor):
             left_output_format = left.format.modes[left.format.ordering[0]].character
             right_output_format = right.format.modes[right.format.ordering[1]].character
             output_format = left_output_format + right_output_format
-            return evaluate(
+            return evaluate_tensora(
                 "output(i,k) = left(i,j) * right(j,k)", output_format, left=left, right=right
             )
         else:
