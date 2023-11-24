@@ -248,11 +248,9 @@ def to_ir_iteration_variable(self: IterationVariable, output: Output, kernel_typ
                 ################################
                 # Store position of next layer #
                 ################################
-                if (
-                    kernel_type.is_assembly()
-                    and self.is_sparse_output()
-                    and self.next.is_sparse_output()
-                ):
+                # This allows the current sparse layer to remember if the next sparse layer
+                # had any nonzeros.
+                if self.is_sparse_output() and self.next.is_sparse_output():
                     with block.block("Save next layer's position"):
                         next_pointer = self.next.output.layer_pointer()
                         next_pointer_begin = self.next.output.layer_begin_name().declare(
@@ -270,6 +268,8 @@ def to_ir_iteration_variable(self: IterationVariable, output: Output, kernel_typ
                 ########################################################
                 if self.is_sparse_output() and isinstance(next_output, AppendOutput):
                     if self.next.is_sparse_output():
+                        # Only advance the index for this sparse layer if the next sparse layer
+                        # had any nonzeros.
                         next_pointer = self.next.output.layer_pointer()
                         next_pointer_begin = self.next.output.layer_begin_name()
                         with block.branch(GreaterThan(next_pointer, next_pointer_begin)):
