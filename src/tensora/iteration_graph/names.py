@@ -70,5 +70,9 @@ def sparse_end_name(tensor: TensorLeaf, layer: int) -> Variable:
     return Variable(f"p_{tensor_to_string(tensor)}_{layer}_end")
 
 
+def layer_begin_name(tensor: TensorLeaf, layer: int) -> Variable:
+    return Variable(f"p_{tensor_to_string(tensor)}_{layer}_begin")
+
+
 def value_from_crd(tensor: TensorLeaf, layer: int) -> Variable:
     return Variable(f"i_{tensor_to_string(tensor)}_{layer}")

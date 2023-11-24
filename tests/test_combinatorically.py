@@ -26,10 +26,9 @@ def test_copy_1(evaluate, dense, format_in, format_out):
     assert actual == a
 
 
-@pytest.mark.skip("taco fails to compile most of these")
 @pytest.mark.parametrize("dense", [[[0, 2, 4], [0, -1, 0]], [[0, 0, 0], [0, 0, 0]]])
-@pytest.mark.parametrize("format_in", ["ss", "dd", "sd", "ds", "s1s0", "d1d0", "s1d0", "d1s0"])
-@pytest.mark.parametrize("format_out", ["ss", "dd", "sd", "ds", "s1s0", "d1d0", "s1d0", "d1s0"])
+@pytest.mark.parametrize("format_in", ["ss", "dd", "sd", "ds", "d1d0"])
+@pytest.mark.parametrize("format_out", ["ss", "dd", "sd", "ds", "d1d0"])
 def test_copy_2(evaluate, dense, format_in, format_out):
     a = Tensor.from_lol(dense, format=format_in)
     actual = evaluate("b(i,j) = a(i,j)", format_out, a=a)

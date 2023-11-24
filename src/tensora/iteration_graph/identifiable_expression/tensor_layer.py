@@ -6,6 +6,7 @@ from ...ir import ast as ir
 from ..names import (
     crd_capacity_name,
     crd_name,
+    layer_begin_name,
     layer_pointer,
     pos_capacity_name,
     pos_name,
@@ -56,3 +57,6 @@ class TensorLayer:
 
     def vals_name(self) -> ir.Variable:
         return vals_name(self.tensor.variable.name)
+
+    def layer_begin_name(self) -> ir.Variable:
+        return layer_begin_name(self.tensor.variable, self.layer)

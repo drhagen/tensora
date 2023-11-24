@@ -200,9 +200,10 @@ def to_ir_iteration_variable(self: IterationVariable, output: Output, kernel_typ
                 for layer in layers_to_write:
                     pointer = layer.layer_pointer()
                     previous_pointer = layer.previous_layer_pointer()
-                    pointer_value = previous_pointer.times(
-                        dimension_name(layer.tensor.indexes[layer.layer])
-                    ).plus(loop_variable)
+                    index_variable_i = layer.tensor.indexes[layer.layer]
+                    pointer_value = previous_pointer.times(dimension_name(index_variable_i)).plus(
+                        index_variable_i
+                    )
                     source.append(pointer.declare(types.integer).assign(pointer_value))
 
             ###############
@@ -254,7 +255,9 @@ def to_ir_iteration_variable(self: IterationVariable, output: Output, kernel_typ
                 ):
                     with block.block("Save next layer's position"):
                         next_pointer = self.next.output.layer_pointer()
-                        next_pointer_begin = self.next.output.layer_begin_name()
+                        next_pointer_begin = self.next.output.layer_begin_name().declare(
+                            types.integer
+                        )
                         block.append(next_pointer_begin.assign(next_pointer))
 
                 #####################

@@ -247,16 +247,17 @@ def merge_assignment(
 def to_iteration_graphs(
     assignment: ast.Assignment, formats: dict[str, Format]
 ) -> Iterator[ig.IterationGraph]:
+    output_format = formats[assignment.target.variable.name]
     output_layers = {
-        index_variable: TensorLayer(
+        assignment.target.indexes[i_dimension]: TensorLayer(
             id.Tensor(
                 assignment.target.variable.to_tensor_leaf(),
-                tuple(assignment.target.indexes),
-                formats[assignment.target.variable.name].modes,
+                tuple(assignment.target.indexes[i] for i in output_format.ordering),
+                output_format.modes,
             ),
-            i,
+            i_layer,
         )
-        for i, index_variable in enumerate(assignment.target.indexes)
+        for i_layer, i_dimension in enumerate(output_format.ordering)
     }
 
     for target_graph in to_iteration_graphs_expression(assignment.target, formats, []):
