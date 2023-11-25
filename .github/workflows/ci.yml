@@ -33,6 +33,9 @@ jobs:
           nox -s 
           test-${{ matrix.python-version }}
           test_numpy-${{ matrix.python-version }}
+      - name: Delete extraneous Mac files
+        # I have no idea where these come from, but they break report generation
+        run: find . -name ".coverage.*.Mac-*" -delete
       - name: Store coverage
         uses: actions/upload-artifact@v3
         with:
