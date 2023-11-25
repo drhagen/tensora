@@ -27,11 +27,12 @@ class PureTensorMethod:
         output_format: Format,
         compiler: TensorCompiler = TensorCompiler.taco,
     ):
-        variable_orders = assignment.expression.variable_orders()
+        target_name = assignment.target.name
+        variable_orders = assignment.variable_orders()
 
         # Ensure that all parameters are defined
         for variable_name in variable_orders.keys():
-            if variable_name not in input_formats:
+            if variable_name != target_name and variable_name not in input_formats:
                 raise ValueError(
                     f"Variable {variable_name} in {assignment} not listed in parameters"
                 )

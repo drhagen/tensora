@@ -4,7 +4,8 @@ from parsita import ParseError, ParserContext, lit, reg, rep
 from parsita.util import constant
 from returns import result
 
-from .format import Format, InvalidModeOrderingError, Mode
+from .exceptions import InvalidModeOrderingError
+from .format import Format, Mode
 
 
 def make_format_with_orderings(dims):

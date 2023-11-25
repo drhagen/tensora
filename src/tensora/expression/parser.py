@@ -2,10 +2,12 @@ __all__ = ["parse_assignment"]
 
 from functools import reduce
 
-from parsita import ParserContext, Result, lit, reg, rep, rep1sep, repsep
+from parsita import ParseError, ParserContext, lit, reg, rep, rep1sep, repsep
 from parsita.util import splat
+from returns import result
 
 from .ast import Add, Assignment, Float, Integer, Multiply, Scalar, Subtract, Tensor
+from .exceptions import InconsistentVariableSizeError, MutatingAssignmentError
 
 
 def make_expression(first, rest):
@@ -41,5 +43,12 @@ class TensorExpressionParsers(ParserContext, whitespace=r"[ ]*"):
     assignment = variable & "=" >> expression > splat(Assignment)
 
 
-def parse_assignment(string: str) -> Result[Assignment]:
-    return TensorExpressionParsers.assignment.parse(string)
+def parse_assignment(
+    string: str
+) -> result.Result[
+    Assignment, ParseError | MutatingAssignmentError | InconsistentVariableSizeError
+]:
+    try:
+        return TensorExpressionParsers.assignment.parse(string)
+    except (MutatingAssignmentError, InconsistentVariableSizeError) as e:
+        return result.Failure(e)
