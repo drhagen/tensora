@@ -9,8 +9,9 @@ def assert_same_as_dense(expression, format_out, evaluate, **tensor_pairs):
     }
     tensors_as_dense = {name: Tensor.from_lol(data) for name, (data, _) in tensor_pairs.items()}
 
+    dense_format = "d" * (format_out.count("d") + format_out.count("s"))
     actual = evaluate(expression, format_out, **tensors_in_format)
-    expected = evaluate(expression, "d" * len(format_out), **tensors_as_dense)
+    expected = evaluate(expression, dense_format, **tensors_as_dense)
     assert actual == expected
 
 
@@ -35,14 +36,13 @@ def test_copy_2(evaluate, dense, format_in, format_out):
     assert actual == a
 
 
-@pytest.mark.skip("taco fails on all of these")
-@pytest.mark.parametrize(
-    "dense", [[[0, 2, 4], [0, -1, 0], [2, 0, 3]], [[0, 0, 0], [0, 0, 0], [0, 0, 0]]]
-)
-@pytest.mark.parametrize("format_in", ["ss", "dd", "sd", "ds", "s1s0", "d1d0", "s1d0", "d1s0"])
-@pytest.mark.parametrize("format_out", ["s", "d"])
-def test_diag(evaluate, dense, format_in, format_out):
-    assert_same_as_dense("diagA(i) = A(i,i)", format_out, A=(dense, format_in), evaluate=evaluate)
+@pytest.mark.parametrize("dense", [[[0, 2, 4], [0, -1, 0]], [[0, 0, 0], [0, 0, 0]]])
+@pytest.mark.parametrize("format_in", ["s1s0", "d1d0", "s1d0", "d1s0", "dd"])
+@pytest.mark.parametrize("format_out", ["s1s0", "d1d0", "s1d0", "d1s0", "dd"])
+def test_copy_2_backwards(evaluate, dense, format_in, format_out):
+    a = Tensor.from_lol(dense, format=format_in)
+    actual = evaluate("b(i,j) = a(i,j)", format_out, a=a)
+    assert actual == a
 
 
 @pytest.mark.parametrize("dense1", [[0, 2, 4, 0], [0, 0, 0, 0]])
@@ -75,12 +75,11 @@ def test_vector_binary(evaluate, operator, dense1, dense2, format1, format2, for
     )
 
 
-@pytest.mark.skip("taco fails to compile most of these")
 @pytest.mark.parametrize("dense1", [[[0, 2, 4], [0, -1, 0]], [[0, 0, 0], [0, 0, 0]]])
 @pytest.mark.parametrize("dense2", [[[-1, 3.5], [0, 0], [4, 0]], [[0, 0], [0, 0], [0, 0]]])
-@pytest.mark.parametrize("format1", ["ss", "dd", "sd", "ds", "s1s0", "d1d0", "s1d0", "d1s0"])
-@pytest.mark.parametrize("format2", ["ss", "dd", "sd", "ds", "s1s0", "d1d0", "s1d0", "d1s0"])
-@pytest.mark.parametrize("format_out", ["ss", "dd", "sd", "ds", "s1s0", "d1d0", "s1d0", "d1s0"])
+@pytest.mark.parametrize("format1", ["ss", "dd", "sd", "ds", "d1d0"])
+@pytest.mark.parametrize("format2", ["ss", "dd", "sd", "ds", "d1d0"])
+@pytest.mark.parametrize("format_out", ["dd", "d1d0"])
 def test_matrix_dot(evaluate, dense1, dense2, format1, format2, format_out):
     assert_same_as_dense(
         "out(i,k) = in1(i,j) * in2(j,k)",
@@ -122,5 +121,47 @@ def test_matrix_multiply_add(
         in1=(dense1, format1),
         in2=(dense2, format2),
         in3=(dense3, format3),
+        evaluate=evaluate,
+    )
+
+
+@pytest.mark.parametrize(
+    "dense_b",
+    [
+        [
+            [[0, 2, 4, 0], [0, -1, 0, 3], [1, -1, 0, 0]],
+            [[-2, 4, 0, 0], [0, 0, 0, 3], [1, 1, 0, 0]],
+        ],
+        [
+            [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
+            [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
+        ],
+    ],
+)
+@pytest.mark.parametrize(
+    "dense_d",
+    [
+        [[-1, 3.5, 1, 2, 0], [0, 2, 6, 3, 0], [4, 0, 0, 1, -1], [0, 0, 3, 6, 9]],
+        [[0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]],
+    ],
+)
+@pytest.mark.parametrize(
+    "dense_c",
+    [
+        [[0, 0, 1, 2, 7], [7, 0, 5, 2, 0], [-1, 0, 0, 2, 1]],
+        [[0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]],
+    ],
+)
+@pytest.mark.parametrize("format_b", ["ddd", "dss", "sss", "ssd", "d1d0s2", "s0d2d1"])
+@pytest.mark.parametrize("format_d", ["dd", "ds", "ss"])
+@pytest.mark.parametrize("format_c", ["dd", "ds", "ss"])
+@pytest.mark.parametrize("format_out", ["dd", "d1d0"])
+def test_mttkrp(evaluate, dense_b, dense_d, dense_c, format_b, format_d, format_c, format_out):
+    assert_same_as_dense(
+        "A(i,j) = B(i,k,l) * D(l,j) * C(k,j)",
+        format_out,
+        B=(dense_b, format_b),
+        D=(dense_d, format_d),
+        C=(dense_c, format_c),
         evaluate=evaluate,
     )

@@ -74,6 +74,33 @@ def test_csr_matrix_plus_csr_matrix(evaluate, compiler):
     assert actual == expected
 
 
+def test_rhs(evaluate, compiler):
+    if compiler == TensorCompiler.taco:
+        pytest.skip("Taco does not support this")
+
+    A0 = Tensor.from_lol([2, -3, 0])
+    A1 = Tensor.from_aos([(0, 2), (1, 2), (2, 2)], [3, 3, -3], dimensions=(3, 3), format="ds")
+    A2 = Tensor.from_aos(
+        [(0, 0, 1), (1, 0, 1), (2, 0, 1)], [-2, -2, 2], dimensions=(3, 3, 3), format="dss"
+    )
+    x = Tensor.from_lol([2, 3, 5])
+
+    expected = Tensor.from_lol([5, 0, -3])
+
+    assignment = "f(i) = A0(i) + A1(i,j) * x(j) + A2(i,k,l) * x(k) * x(l)"
+    formats = {"A0": "d", "A1": "ds", "A2": "dss", "x": "d"}
+
+    function = tensor_method(assignment, formats, "d", compiler=compiler)
+
+    actual = function(A0, A1, A2, x)
+
+    assert actual == expected
+
+    actual = evaluate(assignment, "d", A0=A0, A1=A1, A2=A2, x=x)
+
+    assert actual == expected
+
+
 def test_multithread_evaluation(evaluate, compiler):
     # As of version 1.14.4 of cffi, the FFI.compile method is not thread safe. This tests that evaluation of different
     # kernels is thread safe.
