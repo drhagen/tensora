@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 __all__ = ["Tensor"]
 
 import itertools
@@ -24,7 +26,7 @@ class Tensor:
         *,
         dimensions: Optional[Tuple[int, ...]] = None,
         format: Union[Format, str, None] = None,
-    ) -> "Tensor":
+    ) -> Tensor:
         if dimensions is None:
             dimensions = default_lol_dimensions(lol)
 
@@ -43,7 +45,7 @@ class Tensor:
         *,
         dimensions: Optional[Tuple[int, ...]] = None,
         format: Union[Format, str, None] = None,
-    ) -> "Tensor":
+    ) -> Tensor:
         return Tensor.from_aos(
             dictionary.keys(), dictionary.values(), dimensions=dimensions, format=format
         )
@@ -55,7 +57,7 @@ class Tensor:
         *,
         dimensions: Optional[Tuple[int, ...]] = None,
         format: Union[Format, str, None] = None,
-    ) -> "Tensor":
+    ) -> Tensor:
         # Lengths of modes, dimensions, and elements in coordinates must be equal. Lengths of coordinates and values
         # must be equal
         if dimensions is None:
@@ -96,7 +98,7 @@ class Tensor:
         *,
         dimensions: Optional[Tuple[int, ...]] = None,
         format: Union[Format, str, None] = None,
-    ) -> "Tensor":
+    ) -> Tensor:
         # Lengths of coordinates, modes, and dimensions must be equal. Lengths of elements of coordinates and values
         # must be equal
 
@@ -144,7 +146,7 @@ class Tensor:
         )
 
     @staticmethod
-    def from_scalar(scalar: float) -> "Tensor":
+    def from_scalar(scalar: float) -> Tensor:
         return Tensor(
             taco_structure_to_cffi([], [scalar], mode_types=(), dimensions=(), mode_ordering=())
         )
@@ -264,22 +266,22 @@ class Tensor:
 
         return array
 
-    def __add__(self, other) -> "Tensor":
+    def __add__(self, other) -> Tensor:
         return evaluate_binary_operator(self, other, "+")
 
-    def __radd__(self, other) -> "Tensor":
+    def __radd__(self, other) -> Tensor:
         return evaluate_binary_operator(other, self, "+")
 
-    def __sub__(self, other) -> "Tensor":
+    def __sub__(self, other) -> Tensor:
         return evaluate_binary_operator(self, other, "-")
 
-    def __rsub__(self, other) -> "Tensor":
+    def __rsub__(self, other) -> Tensor:
         return evaluate_binary_operator(other, self, "-")
 
-    def __mul__(self, other) -> "Tensor":
+    def __mul__(self, other) -> Tensor:
         return evaluate_binary_operator(self, other, "*")
 
-    def __rmul__(self, other) -> "Tensor":
+    def __rmul__(self, other) -> Tensor:
         return evaluate_binary_operator(other, self, "*")
 
     def __matmul__(self, other):

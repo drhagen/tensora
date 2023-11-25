@@ -11,22 +11,23 @@ from .ast import Add, Assignment, Float, Integer, Multiply, Scalar, Subtract, Te
 def make_expression(first, rest):
     value = first
     for op, term in rest:
-        if op == "+":
-            value = Add(value, term)
-        else:
-            value = Subtract(value, term)
+        match op:
+            case "+":
+                value = Add(value, term)
+            case "-":
+                value = Subtract(value, term)
     return value
 
 
 class TensorExpressionParsers(ParserContext, whitespace=r"[ ]*"):
     name = reg(r"[A-Za-z][A-Za-z0-9]*")
 
-    # taco does not support negatives or exponents
-    floating_point = reg(r"[0-9]+\.[0-9]+") > (lambda x: Float(float(x)))
+    floating_point = reg(r"\d+((\.\d+([Ee][+-]?\d+)?)|((\.\d+)?[Ee][+-]?\d+))") > (
+        lambda x: Float(float(x))
+    )
     integer = reg(r"[0-9]+") > (lambda x: Integer(int(x)))
     number = floating_point | integer
 
-    # taco also allows for `y_{i}` and `y_i` to mean `y(i)`, but that is not supported here
     tensor = name & "(" >> repsep(name, ",") << ")" > splat(Tensor)
     scalar = name > Scalar
     variable = tensor | scalar

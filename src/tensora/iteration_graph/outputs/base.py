@@ -11,6 +11,8 @@ from ..identifiable_expression import TensorLayer
 
 
 class Output:
+    __slots__ = ()
+
     @abstractmethod
     def write_assignment(
         self, right_hand_side: Expression, kernel_type: KernelType

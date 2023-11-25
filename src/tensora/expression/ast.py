@@ -15,17 +15,18 @@ __all__ = [
 
 from abc import abstractmethod
 from dataclasses import dataclass
-from typing import Dict, List, Set, Tuple
 
 
 class Node:
+    __slots__ = ()
+
     @abstractmethod
     def deparse(self) -> str:
         """Convert the assignment back into a string."""
         pass
 
     @abstractmethod
-    def variable_orders(self) -> Dict[str, int]:
+    def variable_orders(self) -> dict[str, int]:
         """Number of dimensions of each variable.
 
         Returns:
@@ -35,7 +36,7 @@ class Node:
         pass
 
     @abstractmethod
-    def index_participants(self) -> Dict[str, Set[Tuple[str, int]]]:
+    def index_participants(self) -> dict[str, set[tuple[str, int]]]:
         """Map of index name to tensors and dimensions it exists in.
 
         Returns:
@@ -49,18 +50,20 @@ class Node:
 
 
 class Expression(Node):
-    pass
+    __slots__ = ()
 
 
 class Literal(Expression):
-    def variable_orders(self) -> Dict[str, int]:
+    __slots__ = ()
+
+    def variable_orders(self) -> dict[str, int]:
         return {}
 
-    def index_participants(self) -> Dict[str, Set[Tuple[str, int]]]:
+    def index_participants(self) -> dict[str, set[tuple[str, int]]]:
         return {}
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Integer(Literal):
     value: int
 
@@ -68,7 +71,7 @@ class Integer(Literal):
         return str(self.value)
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Float(Literal):
     value: float
 
@@ -77,24 +80,26 @@ class Float(Literal):
 
 
 class Variable(Expression):
+    __slots__ = ()
+
     name: str
-    indexes: List[str]
+    indexes: list[str]
 
     @property
     def order(self):
         return len(self.indexes)
 
-    def variable_orders(self) -> Dict[str, int]:
+    def variable_orders(self) -> dict[str, int]:
         return {self.name: self.order}
 
-    def index_participants(self) -> Dict[str, Set[Tuple[str, int]]]:
+    def index_participants(self) -> dict[str, set[tuple[str, int]]]:
         participants = {}
         for i, index_name in enumerate(self.indexes):
             participants[index_name] = participants.get(index_name, set()) | {(self.name, i)}
         return participants
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Scalar(Variable):
     name: str
 
@@ -106,10 +111,10 @@ class Scalar(Variable):
         return self.name
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Tensor(Variable):
     name: str
-    indexes: List[str]
+    indexes: list[str]
 
     def deparse(self):
         return self.name + "(" + ",".join(self.indexes) + ")"
@@ -124,7 +129,7 @@ def merge_index_participants(left: Expression, right: Expression):
     }
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Add(Expression):
     left: Expression
     right: Expression
@@ -132,14 +137,14 @@ class Add(Expression):
     def deparse(self):
         return self.left.deparse() + " + " + self.right.deparse()
 
-    def variable_orders(self) -> Dict[str, int]:
+    def variable_orders(self) -> dict[str, int]:
         return {**self.left.variable_orders(), **self.right.variable_orders()}
 
-    def index_participants(self) -> Dict[str, Set[Tuple[str, int]]]:
+    def index_participants(self) -> dict[str, set[tuple[str, int]]]:
         return merge_index_participants(self.left, self.right)
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Subtract(Expression):
     left: Expression
     right: Expression
@@ -147,14 +152,14 @@ class Subtract(Expression):
     def deparse(self):
         return self.left.deparse() + " - " + self.right.deparse()
 
-    def variable_orders(self) -> Dict[str, int]:
+    def variable_orders(self) -> dict[str, int]:
         return {**self.left.variable_orders(), **self.right.variable_orders()}
 
-    def index_participants(self) -> Dict[str, Set[Tuple[str, int]]]:
+    def index_participants(self) -> dict[str, set[tuple[str, int]]]:
         return merge_index_participants(self.left, self.right)
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Multiply(Expression):
     left: Expression
     right: Expression
@@ -172,14 +177,14 @@ class Multiply(Expression):
 
         return left_string + " * " + right_string
 
-    def variable_orders(self) -> Dict[str, int]:
+    def variable_orders(self) -> dict[str, int]:
         return {**self.left.variable_orders(), **self.right.variable_orders()}
 
-    def index_participants(self) -> Dict[str, Set[Tuple[str, int]]]:
+    def index_participants(self) -> dict[str, set[tuple[str, int]]]:
         return merge_index_participants(self.left, self.right)
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Assignment(Node):
     target: Variable
     expression: Expression
@@ -187,8 +192,8 @@ class Assignment(Node):
     def deparse(self) -> str:
         return self.target.deparse() + " = " + self.expression.deparse()
 
-    def variable_orders(self) -> Dict[str, int]:
+    def variable_orders(self) -> dict[str, int]:
         return {**self.target.variable_orders(), **self.expression.variable_orders()}
 
-    def index_participants(self) -> Dict[str, Set[Tuple[str, int]]]:
+    def index_participants(self) -> dict[str, set[tuple[str, int]]]:
         return merge_index_participants(self.target, self.expression)

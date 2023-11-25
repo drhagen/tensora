@@ -12,7 +12,7 @@ from ..names import dimension_name, tensor_to_string
 from .base import Output
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class BucketOutput(Output):
     output: ie_ast.Variable
     layers: list[int]

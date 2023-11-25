@@ -3,7 +3,7 @@ __all__ = ["Id"]
 from dataclasses import dataclass
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Id:
     name: str
     instance: int

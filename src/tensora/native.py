@@ -1,20 +1,12 @@
-__all__ = ["generate_c_code", "generate_c_code_from_parsed", "KernelType"]
+__all__ = ["generate_c_code_from_parsed"]
 
 from .codegen import ir_to_c
 from .desugar import desugar_assignment, index_dimensions, to_identifiable, to_iteration_graphs
-from .expression import parse_assignment
 from .expression.ast import Assignment
-from .format import Format, parse_format
+from .format import Format
 from .ir import SourceBuilder, peephole
 from .iteration_graph import Definition, generate_ir
 from .kernel_type import KernelType
-
-
-def generate_c_code(assignment: str, formats: dict[str, str], kernel_type: KernelType) -> str:
-    assignment_parsed = parse_assignment(assignment).unwrap()
-    formats_parsed = {name: parse_format(format).unwrap() for name, format in formats.items()}
-
-    return generate_c_code_from_parsed(assignment_parsed, formats_parsed, kernel_type)
 
 
 def generate_c_code_from_parsed(
