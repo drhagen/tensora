@@ -1,8 +1,8 @@
 import pytest
-from parsita import Failure
+from returns.result import Failure
 
 from tensora import Format, Mode
-from tensora.format import parse_format
+from tensora.format import InvalidModeOrderingError, parse_format
 
 format_strings = [
     ("", Format((), ())),
@@ -58,5 +58,5 @@ def test_mode_from_illegal_int():
 
 
 def test_differing_sizes():
-    with pytest.raises(ValueError):
+    with pytest.raises(InvalidModeOrderingError):
         _ = Format((Mode.dense,), (0, 1))
