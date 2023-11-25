@@ -83,4 +83,5 @@ setup(
         "bdist_wheel": TensoraBdistWheel,
     },
     zip_safe=False,
+    entry_points={"console_scripts": ["tensora=tensora.cli:app"]},
 )

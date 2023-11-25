@@ -5,7 +5,7 @@ from .desugar import desugar_assignment, index_dimensions, to_identifiable, to_i
 from .expression import parse_assignment
 from .expression.ast import Assignment
 from .format import Format, parse_format
-from .ir import peephole
+from .ir import SourceBuilder, peephole
 from .iteration_graph import Definition, generate_ir
 from .kernel_type import KernelType
 
@@ -20,7 +20,7 @@ def generate_c_code(assignment: str, formats: dict[str, str], kernel_type: Kerne
 def generate_c_code_from_parsed(
     assignment: Assignment,
     formats: dict[str, Format],
-    kernel_type: KernelType = KernelType.evaluate,
+    kernel_types: list[KernelType] = [KernelType.evaluate],
 ) -> str:
     desugar = desugar_assignment(assignment)
 
@@ -30,6 +30,8 @@ def generate_c_code_from_parsed(
 
     graph = next(to_iteration_graphs(desugar, formats))
 
-    ir = generate_ir(problem, graph, kernel_type).finalize()
+    ir = SourceBuilder()
+    for kernel_type in kernel_types:
+        ir.append(generate_ir(problem, graph, kernel_type).finalize())
 
-    return ir_to_c(peephole(ir))
+    return ir_to_c(peephole(ir.finalize()))

@@ -341,7 +341,7 @@ def generate_ir(definition: Definition, graph: IterationGraph, kernel_type: Kern
 
     # Function declaration
     parameters = {name: types.Pointer(types.tensor) for name in definition.formats.keys()}
-    with source.function_definition("evaluate", parameters, types.integer):
+    with source.function_definition(kernel_type.name, parameters, types.integer):
         # Dimensions of all index variables
         with source.block("Extract dimensions"):
             for index_name, tensor_layer in definition.indexes.items():
