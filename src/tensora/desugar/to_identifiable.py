@@ -10,7 +10,7 @@ from . import ast as desugar
 @singledispatch
 def to_identifiable(expression: desugar.Variable, formats: dict[str, Format]) -> id.Expression:
     raise NotImplementedError(
-        f"to_identifiable not implemented for type {type(expression)}: {expression}"
+        f"to_identifiable not implemented for {type(expression)}: {expression}"
     )
 
 

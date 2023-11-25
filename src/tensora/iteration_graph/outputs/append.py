@@ -75,7 +75,7 @@ class AppendOutput(Output):
 
                 all_dense = False
             else:
-                raise NotImplementedError
+                raise NotImplementedError()
 
         if kernel_type.is_assembly():
             if all_dense:
@@ -126,7 +126,7 @@ class AppendOutput(Output):
                         .assign(crd_name(target_name, i))
                     )
                 else:
-                    raise NotImplementedError
+                    raise NotImplementedError()
             source.append(output_tensor.attr("vals").assign(vals_name(target_name)))
 
         return source

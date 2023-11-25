@@ -126,7 +126,7 @@ def desugar_assignment(assignment: sugar.Assignment) -> desugar.Assignment:
             id.Id(assignment.target.name, 0), assignment.target.indexes
         )
     else:
-        raise NotImplementedError
+        raise NotImplementedError()
 
     all_indexes = set(assignment.index_participants().keys())
     contract_indexes = all_indexes - set(assignment.target.indexes)

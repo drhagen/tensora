@@ -70,19 +70,19 @@ from .ast import (
 
 @singledispatch
 def peephole(self: Statement) -> Statement:
-    raise NotImplementedError(f"No implementation of peephole_statement: {self}")
+    raise NotImplementedError(f"peephole not implemented for {type(self)}: {self}")
 
 
 @peephole.register(Expression)
 @singledispatch
 def peephole_expression(self: Expression) -> Expression:
-    raise NotImplementedError(f"No implementation of peephole_expression: {self}")
+    raise NotImplementedError(f"peephole_expression not implemented for {type(self)}: {self}")
 
 
 @peephole_expression.register(Assignable)
 @singledispatch
 def peephole_assignable(self: Assignable) -> Assignable:
-    raise NotImplementedError(f"No implementation of peephole_assignable: {self}")
+    raise NotImplementedError(f"peephole_assignable not implemented for {type(self)}: {self}")
 
 
 @peephole_assignable.register(Variable)

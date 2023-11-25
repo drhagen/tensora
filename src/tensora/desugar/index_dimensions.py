@@ -18,7 +18,7 @@ from .ast import (
 
 @singledispatch
 def index_dimensions_expression(self: Expression) -> dict[str, TensorDimension]:
-    raise NotImplementedError(f"index_dimensions not implemented for {self}")
+    raise NotImplementedError(f"index_dimensions not implemented for {type(self)}: {self}")
 
 
 @index_dimensions_expression.register(Integer)

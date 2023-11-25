@@ -14,7 +14,7 @@ def space_variable(variable: str | None = None) -> str:
 
 @singledispatch
 def type_to_c(self: Type, variable: str | None = None) -> str:
-    raise NotImplementedError(f"No implementation of type_to_c: {self}")
+    raise NotImplementedError(f"type_to_c not implemented for {type(self)}: {self}")
 
 
 @type_to_c.register(Integer)

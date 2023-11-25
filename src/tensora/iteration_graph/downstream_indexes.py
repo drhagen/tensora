@@ -7,7 +7,7 @@ from . import iteration_graph as ig
 
 @singledispatch
 def downstream_indexes(self: ig.IterationGraph) -> set[str]:
-    return self.indexes
+    raise NotImplementedError(f"downstream_indexes not implemented for {type(self)}: {self}")
 
 
 @downstream_indexes.register(ig.TerminalExpression)

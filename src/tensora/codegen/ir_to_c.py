@@ -60,7 +60,7 @@ def indent_lines(lines: list[str]) -> list[str]:
 
 @singledispatch
 def ir_to_c_expression(self: Expression) -> str:
-    raise NotImplementedError(f"No implementation of ir_to_c_expression: {self}")
+    raise NotImplementedError(f"ir_to_c_expression not implemented for {type(self)}: {self}")
 
 
 @ir_to_c_expression.register(Variable)
@@ -211,7 +211,7 @@ def ir_to_c_declaration(self: Declaration) -> str:
 
 @singledispatch
 def ir_to_c_statement(self: Statement) -> list[str]:
-    raise NotImplementedError(f"No implementation of ir_to_c_statement: {self}")
+    raise NotImplementedError(f"ir_to_c_statement not implemented for {type(self)}: {self}")
 
 
 @ir_to_c_statement.register(Expression)

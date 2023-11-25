@@ -44,7 +44,7 @@ def to_iteration_graphs_expression(
     counter: Iterator[int],
 ) -> Iterator[ig.IterationGraph]:
     raise NotImplementedError(
-        f"to_iteration_graphs_expression not implemented for type {type(self)}: {self}"
+        f"to_iteration_graphs_expression not implemented for {type(self)}: {self}"
     )
 
 

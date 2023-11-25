@@ -41,7 +41,7 @@ def to_ir_iteration_graph(
     self: IterationGraph, output: Output, kernel_type: KernelType
 ) -> SourceBuilder:
     raise NotImplementedError(
-        f"iteration_graph_to_c_code not implemented for type {type(self)}: {self}"
+        f"iteration_graph_to_c_code not implemented for {type(self)}: {self}"
     )
 
 
