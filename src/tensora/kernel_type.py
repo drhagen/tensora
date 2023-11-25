@@ -1,9 +1,9 @@
 __all__ = ["KernelType"]
 
-from enum import Enum, auto
+from enum import StrEnum, auto
 
 
-class KernelType(Enum):
+class KernelType(StrEnum):
     assembly = auto()
     compute = auto()
     evaluate = auto()

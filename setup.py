@@ -1,6 +1,7 @@
 import platform
 import subprocess
 from distutils.command.build import build
+from importlib.metadata import entry_points
 from pathlib import Path
 
 from setuptools import find_packages, setup
@@ -83,4 +84,5 @@ setup(
         "bdist_wheel": TensoraBdistWheel,
     },
     zip_safe=False,
+    entry_points={"console_scripts": ["tensora=tensora.cli:app"]},
 )
