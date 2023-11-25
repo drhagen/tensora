@@ -32,6 +32,9 @@ extend-select = [
 # Allow glob imports and uppercase identifiers in tests
 "tests/*" = ["F403", "F405", "N802", "N806"]
 
+# F401: Allow unused imports in __init__.py
+"__init__.py" = ["F401"]
+
 [build-system]
 requires = ["setuptools >= 68.2.2", "wheel >= 0.41.3"]
 build-backend = "setuptools.build_meta"
