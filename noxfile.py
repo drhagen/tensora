@@ -1,3 +1,5 @@
+import platform
+
 from nox import Session, options, parametrize, session
 
 options.sessions = ["test", "test_numpy", "coverage", "lint"]
@@ -6,14 +8,14 @@ options.sessions = ["test", "test_numpy", "coverage", "lint"]
 @session(python=["3.10", "3.11"])
 def test(s: Session):
     s.install(".", "pytest", "pytest-cov")
-    s.env["COVERAGE_FILE"] = f".coverage.{s.python}"
+    s.env["COVERAGE_FILE"] = f".coverage.{s.python}.{platform.system()}"
     s.run("python", "-m", "pytest", "--cov", "tensora", "tests")
 
 
 @session(python=["3.10", "3.11"])
 def test_numpy(s: Session):
     s.install(".[numpy]", "pytest", "pytest-cov")
-    s.env["COVERAGE_FILE"] = f".coverage.pandas.{s.python}"
+    s.env["COVERAGE_FILE"] = f".coverage.numpy.{s.python}.{platform.system()}"
     s.run("python", "-m", "pytest", "--cov", "tensora", "tests/test_numpy.py")
 
 

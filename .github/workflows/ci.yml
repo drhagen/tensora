@@ -14,7 +14,8 @@ jobs:
     strategy:
       matrix:
         python-version: ["3.10", "3.11"]
-    runs-on: ubuntu-22.04
+        os: ["ubuntu-22.04", "macos-12"]
+    runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -32,6 +33,9 @@ jobs:
           nox -s 
           test-${{ matrix.python-version }}
           test_numpy-${{ matrix.python-version }}
+      - name: Delete extraneous Mac files
+        # I have no idea where these come from, but they break report generation
+        run: find . -name ".coverage.*.Mac-*" -delete
       - name: Store coverage
         uses: actions/upload-artifact@v3
         with:
