@@ -37,10 +37,7 @@ class TensorExpressionParsers(ParserContext, whitespace=r"[ ]*"):
     term = rep1sep(factor, "*") > (lambda x: reduce(Multiply, x))
     expression = term & rep(lit("+", "-") & term) > splat(make_expression)
 
-    simple_assignment = variable & "=" >> expression > splat(Assignment)
-    add_assignment = variable & "+=" >> expression > splat(lambda v, e: Assignment(v, Add(v, e)))
-
-    assignment = simple_assignment | add_assignment
+    assignment = variable & "=" >> expression > splat(Assignment)
 
 
 def parse_assignment(string: str) -> Result[Assignment]:

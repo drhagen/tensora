@@ -192,11 +192,3 @@ class Assignment(Node):
 
     def index_participants(self) -> Dict[str, Set[Tuple[str, int]]]:
         return merge_index_participants(self.target, self.expression)
-
-    def is_mutating(self) -> bool:
-        """Does the target participate in the expression.
-
-        Returns:
-            True if the target appears in the expression; false otherwise.
-        """
-        return self.target.name in self.expression.variable_orders()

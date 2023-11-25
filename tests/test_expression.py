@@ -65,18 +65,6 @@ def test_assignment_to_string():
 @pytest.mark.parametrize(
     "string,output",
     [
-        ("A(i) = B(i,j) * C(j)", False),
-        ("y(i) = X(i,j) * y(i)", True),
-        ("z(i) += X(i,j) * y(i)", True),
-    ],
-)
-def test_is_mutating(string, output):
-    assert parse(string).is_mutating() == output
-
-
-@pytest.mark.parametrize(
-    "string,output",
-    [
         (
             "y(i) = 0.5 * (b - a) * (x1(i,j) + x2(i,j)) * z(j)",
             {"y": 1, "b": 0, "a": 0, "x1": 2, "x2": 2, "z": 1},
