@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Sequence
+
 __all__ = [
     "Statement",
     "Expression",
@@ -137,7 +139,7 @@ class ModeLiteral(Expression):
 
 @dataclass(frozen=True, slots=True)
 class ArrayLiteral(Expression):
-    elements: list[Expression]
+    elements: Sequence[Expression]
 
 
 @dataclass(frozen=True, slots=True)
@@ -146,9 +148,9 @@ class Add(Expression):
     right: Expression
 
     @staticmethod
-    def join(terms: list[Expression | int | str]) -> Expression:
-        terms = map(to_expression, terms)
-        return reduce(Add, terms, IntegerLiteral(0))
+    def join(operands: Sequence[Expression | int | str]) -> Expression:
+        expression_operands = [to_expression(operand) for operand in operands]
+        return reduce(Add, expression_operands, IntegerLiteral(0))
 
 
 @dataclass(frozen=True, slots=True)
@@ -163,9 +165,9 @@ class Multiply(Expression):
     right: Expression
 
     @staticmethod
-    def join(factors: list[Expression | int | str]) -> Expression:
-        factors = map(to_expression, factors)
-        return reduce(Multiply, factors, IntegerLiteral(1))
+    def join(operands: Sequence[Expression | int | str]) -> Expression:
+        expression_operands = [to_expression(operand) for operand in operands]
+        return reduce(Multiply, expression_operands, IntegerLiteral(1))
 
 
 @dataclass(frozen=True, slots=True)
@@ -210,9 +212,9 @@ class And(Expression):
     right: Expression
 
     @staticmethod
-    def join(operands: list[Expression | int | str]) -> Expression:
-        operands = map(to_expression, operands)
-        return reduce(And, operands, BooleanLiteral(True))
+    def join(operands: Sequence[Expression | int | str]) -> Expression:
+        expression_operands = [to_expression(operand) for operand in operands]
+        return reduce(And, expression_operands, BooleanLiteral(True))
 
 
 @dataclass(frozen=True, slots=True)
@@ -221,9 +223,9 @@ class Or(Expression):
     right: Expression
 
     @staticmethod
-    def join(operands: list[Expression | int | str]) -> Expression:
-        operands = map(to_expression, operands)
-        return reduce(Or, operands, BooleanLiteral(False))
+    def join(operands: Sequence[Expression | int | str]) -> Expression:
+        expression_operands = [to_expression(operand) for operand in operands]
+        return reduce(Or, expression_operands, BooleanLiteral(False))
 
 
 @dataclass(frozen=True, slots=True)
@@ -238,9 +240,9 @@ class Max(Expression):
     right: Expression
 
     @staticmethod
-    def join(operands: list[Expression | int | str]) -> Expression:
-        operands = map(to_expression, operands)
-        return reduce(Max, operands)
+    def join(operands: Sequence[Expression | int | str]) -> Expression:
+        expression_operands = [to_expression(operand) for operand in operands]
+        return reduce(Max, expression_operands)
 
 
 @dataclass(frozen=True, slots=True)
@@ -249,9 +251,9 @@ class Min(Expression):
     right: Expression
 
     @staticmethod
-    def join(operands: list[Expression | int | str]) -> Expression:
-        operands = map(to_expression, operands)
-        return reduce(Min, operands)
+    def join(operands: Sequence[Expression | int | str]) -> Expression:
+        expression_operands = [to_expression(operand) for operand in operands]
+        return reduce(Min, expression_operands)
 
 
 @dataclass(frozen=True, slots=True)
@@ -325,7 +327,7 @@ class Branch(Statement):
     if_false: Statement
 
     @staticmethod
-    def join(leaves: list[tuple[Expression | int | str, Statement]]) -> Statement:
+    def join(leaves: Sequence[tuple[Expression | int | str, Statement]]) -> Statement:
         # This is a fold right operation
         return reduce(
             lambda previous, leaf: Branch(to_expression(leaf[0]), leaf[1], previous),

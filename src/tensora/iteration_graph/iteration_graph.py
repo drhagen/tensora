@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-__all__ = ["IterationGraph", "Add", "IterationVariable", "TerminalExpression"]
+__all__ = ["IterationGraph", "Sum", "IterationVariable", "TerminalExpression"]
 
 from abc import abstractmethod
 from dataclasses import dataclass, replace
@@ -37,6 +37,10 @@ class IterationGraph:
         raise NotImplementedError()
 
     @abstractmethod
+    def later_indexes(self) -> frozenset[str]:
+        raise NotImplementedError()
+
+    @abstractmethod
     def has_output(self) -> bool:
         raise NotImplementedError()
 
@@ -57,6 +61,9 @@ class TerminalExpression(IterationGraph):
     def compressed_dimensions(self) -> StableFrozenSet[TensorLeaf]:
         # Needed when empty subgraphs simplify
         return StableFrozenSet()
+
+    def later_indexes(self) -> frozenset[str]:
+        return frozenset()
 
     def has_output(self) -> bool:
         return False
@@ -111,7 +118,7 @@ class IterationVariable(IterationGraph):
 
 
 @dataclass(frozen=True)
-class Add(IterationGraph):
+class Sum(IterationGraph):
     name: str
     terms: list[IterationGraph]
 
@@ -141,6 +148,9 @@ class Add(IterationGraph):
     def compressed_dimensions(self) -> StableFrozenSet[TensorLeaf]:
         # Needed when empty subgraphs simplify
         return StableFrozenSet()
+
+    def later_indexes(self) -> frozenset[str]:
+        return frozenset.union(*(term.later_indexes() for term in self.terms))
 
     def has_output(self) -> bool:
         return any(term.has_output() for term in self.terms)

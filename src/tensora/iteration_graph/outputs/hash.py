@@ -33,7 +33,9 @@ class HashOutput(Output):
     starting_layer: int
     unfulfilled: set[int]
 
-    def __init__(self, output: ie_ast.Variable, starting_layer: int, unfulfilled: set[int] = None):
+    def __init__(
+        self, output: ie_ast.Variable, starting_layer: int, unfulfilled: set[int] | None = None
+    ):
         object.__setattr__(self, "output", output)
         object.__setattr__(self, "starting_layer", starting_layer)
         if unfulfilled is not None:

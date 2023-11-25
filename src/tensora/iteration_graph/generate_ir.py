@@ -24,8 +24,8 @@ from ..kernel_type import KernelType
 from .definition import Definition
 from .identifiable_expression import to_ir
 from .identifiable_expression.tensor_layer import TensorLayer
-from .iteration_graph import Add as GraphAdd
 from .iteration_graph import IterationGraph, IterationVariable, TerminalExpression
+from .iteration_graph import Sum as GraphAdd
 from .names import crd_name, dimension_name, pos_name, vals_name
 from .outputs import AppendOutput, Output
 from .write_sparse_ir import (
@@ -69,11 +69,9 @@ def generate_subgraphs(graph: IterationVariable) -> list[IterationVariable]:
 
         for sparse_layers, old_graph in old_subgraphs.items():
             # Reverse sparse_dimensions so that last values dropped first
-            for sparse_dimension in reversed(sparse_layers):
-                new_graph = old_graph.exhaust_tensor(sparse_dimension)
-
-                if new_graph is not None:
-                    new_graphs[new_graph.compressed_dimensions()] = new_graph
+            for sparse_layer in reversed(sparse_layers):
+                new_graph = old_graph.exhaust_tensor(sparse_layer)
+                new_graphs[new_graph.compressed_dimensions()] = new_graph
 
         if len(new_graphs) == 0:
             break
@@ -260,8 +258,9 @@ def to_ir_iteration_variable(self: IterationVariable, output: Output, kernel_typ
                 # by this layer's crd assembly, so we put it here.
                 if self.is_sparse_output() and self.next.is_sparse_output():
                     with block.block("Save next layer's position"):
-                        next_pointer = self.next.output.layer_pointer()
-                        next_pointer_begin = self.next.output.layer_begin_name().declare(
+                        next_output_layer: TensorLayer = self.next.output
+                        next_pointer = next_output_layer.layer_pointer()
+                        next_pointer_begin = next_output_layer.layer_begin_name().declare(
                             types.integer
                         )
                         block.append(next_pointer_begin.assign(next_pointer))
@@ -278,8 +277,9 @@ def to_ir_iteration_variable(self: IterationVariable, output: Output, kernel_typ
                     if self.next.is_sparse_output():
                         # Only advance the index for this sparse layer if the next sparse layer
                         # had any nonzeros.
-                        next_pointer = self.next.output.layer_pointer()
-                        next_pointer_begin = self.next.output.layer_begin_name()
+                        next_output_layer: TensorLayer = self.next.output
+                        next_pointer = next_output_layer.layer_pointer()
+                        next_pointer_begin = next_output_layer.layer_begin_name()
                         with block.branch(GreaterThan(next_pointer, next_pointer_begin)):
                             if kernel_type.is_assembly():
                                 block.append(write_crd_assembly(self.output))

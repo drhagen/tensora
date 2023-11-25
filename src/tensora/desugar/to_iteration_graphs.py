@@ -6,7 +6,6 @@ from itertools import chain, count, permutations, product
 from typing import Iterator
 
 from ..format import Format, Mode
-from ..iteration_graph import downstream_indexes
 from ..iteration_graph import iteration_graph as ig
 from ..iteration_graph.identifiable_expression import TensorLayer
 from ..iteration_graph.identifiable_expression import ast as id
@@ -100,7 +99,7 @@ def to_iteration_graphs_tensor(
         yield graph
 
 
-def simplify_add(graph: ig.Add) -> Iterator[ig.IterationGraph]:
+def simplify_add(graph: ig.Sum) -> Iterator[ig.IterationGraph]:
     """Simplify an Add by combining terms with the same index variable.
 
     An Add node can be simplified if all its terms are `IterationVariable`s with
@@ -120,12 +119,12 @@ def simplify_add(graph: ig.Add) -> Iterator[ig.IterationGraph]:
             # Flatten nested Adds
             terms = []
             for term in graph.terms:
-                if isinstance(term.next, ig.Add):
+                if isinstance(term.next, ig.Sum):
                     terms.extend(term.next.terms)
                 else:
                     terms.append(term.next)
 
-            for next_graph in simplify_add(ig.Add(graph.name, terms)):
+            for next_graph in simplify_add(ig.Sum(graph.name, terms)):
                 yield replace(head, next=next_graph)
         else:
             yield graph
@@ -149,14 +148,14 @@ def to_iteration_graphs_add(
         for right in to_iteration_graphs_expression(self.right, formats, counter):
             # Always simplify Add within Add
             match (left, right):
-                case (ig.Add(), ig.Add()):
-                    graph = ig.Add(name, [*left.terms, *right.terms])
-                case (ig.Add(), _):
-                    graph = ig.Add(name, [*left.terms, right])
-                case (_, ig.Add()):
-                    graph = ig.Add(name, [left, *right.terms])
+                case (ig.Sum(), ig.Sum()):
+                    graph = ig.Sum(name, [*left.terms, *right.terms])
+                case (ig.Sum(), _):
+                    graph = ig.Sum(name, [*left.terms, right])
+                case (_, ig.Sum()):
+                    graph = ig.Sum(name, [left, *right.terms])
                 case (_, _):
-                    graph = ig.Add(name, [left, right])
+                    graph = ig.Sum(name, [left, right])
 
             yield from simplify_add(graph)
 
@@ -178,19 +177,19 @@ def merge_multiply(
                 for tail in merge_multiply(left.next, right.next):
                     yield replace(left, next=tail)
             else:
-                if left.index_variable not in downstream_indexes(right.next):
+                if left.index_variable not in right.next.later_indexes():
                     for tail in merge_multiply(left.next, right):
                         yield replace(left, next=tail)
 
-                if right.index_variable not in downstream_indexes(left.next):
+                if right.index_variable not in left.next.later_indexes():
                     for tail in merge_multiply(left, right.next):
                         yield replace(right, next=tail)
-        case (ig.Add(), _):
+        case (ig.Sum(), _):
             for terms in product(*[merge_multiply(term, right) for term in left.terms]):
-                yield ig.Add(left.name, list(terms))
-        case (_, ig.Add()):
+                yield ig.Sum(left.name, list(terms))
+        case (_, ig.Sum()):
             for terms in product(*[merge_multiply(left, term) for term in right.terms]):
-                yield ig.Add(right.name, list(terms))
+                yield ig.Sum(right.name, list(terms))
 
 
 @to_iteration_graphs_expression.register(ast.Multiply)
@@ -229,19 +228,19 @@ def merge_assignment(
                 for tail in merge_assignment(target.next, expression.next, output_layers):
                     yield replace(target, output=output_leaf, next=tail)
             else:
-                if target.index_variable not in downstream_indexes(expression.next):
+                if target.index_variable not in expression.next.later_indexes():
                     output_leaf = output_layers[target.index_variable]
                     for tail in merge_assignment(target.next, expression, output_layers):
                         yield replace(target, output=output_leaf, next=tail)
 
-                if expression.index_variable not in downstream_indexes(target.next):
+                if expression.index_variable not in target.next.later_indexes():
                     for tail in merge_assignment(target, expression.next, output_layers):
                         yield replace(expression, next=tail)
-        case (ig.IterationVariable(), ig.Add(name=name, terms=terms)):
+        case (ig.IterationVariable(), ig.Sum(name=name, terms=terms)):
             for merged_terms in product(
                 *(merge_assignment(target, term, output_layers) for term in terms)
             ):
-                yield from simplify_add(ig.Add(name, list(merged_terms)))
+                yield from simplify_add(ig.Sum(name, list(merged_terms)))
 
 
 def to_iteration_graphs(

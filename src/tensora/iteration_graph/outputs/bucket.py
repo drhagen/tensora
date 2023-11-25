@@ -18,7 +18,9 @@ class BucketOutput(Output):
     layers: list[int]
     unfulfilled: set[int]
 
-    def __init__(self, output: ie_ast.Variable, layers: list[int], unfulfilled: set[int] = None):
+    def __init__(
+        self, output: ie_ast.Variable, layers: list[int], unfulfilled: set[int] | None = None
+    ):
         object.__setattr__(self, "output", output)
         object.__setattr__(self, "layers", layers)
         if unfulfilled is not None:

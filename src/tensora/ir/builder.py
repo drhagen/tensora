@@ -4,6 +4,7 @@ __all__ = ["SourceBuilder"]
 
 from abc import abstractmethod
 from contextlib import contextmanager
+from typing import Mapping
 
 from ..stable_set import StableSet
 from .ast import (
@@ -56,7 +57,7 @@ class LoopBuilder(Builder):
 
 
 class FunctionDefinitionBuilder(Builder):
-    def __init__(self, name: str, parameters: dict[str, Type], return_type: Type):
+    def __init__(self, name: str, parameters: Mapping[str, Type], return_type: Type):
         super().__init__()
         self._name = name
         self._parameters = parameters
@@ -116,7 +117,7 @@ class SourceBuilder:
         self.append(self._stack.pop().finalize())
 
     @contextmanager
-    def function_definition(self, name: str, parameters: dict[str, Type], return_type: Type):
+    def function_definition(self, name: str, parameters: Mapping[str, Type], return_type: Type):
         self._stack.append(FunctionDefinitionBuilder(name, parameters, return_type))
         yield None
         self.append(self._stack.pop().finalize())
