@@ -1,7 +1,6 @@
 import platform
 import subprocess
 from distutils.command.build import build
-from importlib.metadata import entry_points
 from pathlib import Path
 
 from setuptools import find_packages, setup

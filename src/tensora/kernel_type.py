@@ -1,12 +1,13 @@
 __all__ = ["KernelType"]
 
-from enum import StrEnum, auto
+from enum import Enum
 
 
-class KernelType(StrEnum):
-    assembly = auto()
-    compute = auto()
-    evaluate = auto()
+class KernelType(str, Enum):
+    # Python 3.10 does not support StrEnum, so do it manually
+    assembly = "assembly"
+    compute = "compute"
+    evaluate = "evaluate"
 
     def is_assembly(self):
         return self == KernelType.assembly or self == KernelType.evaluate
