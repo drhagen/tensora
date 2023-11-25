@@ -36,5 +36,5 @@ extend-select = [
 "__init__.py" = ["F401"]
 
 [build-system]
-requires = ["setuptools >= 68.2.2", "wheel >= 0.41.3"]
+requires = ["setuptools >= 68.2.2", "wheel >= 0.41.3", "cmake >= 3.13.3"]
 build-backend = "setuptools.build_meta"
