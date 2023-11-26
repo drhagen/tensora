@@ -85,6 +85,7 @@ class IterationVariable(IterationGraph):
             next_context,
             indexes=next_context.indexes | frozenset([self.index_variable]),
             has_output=next_context.has_output or self.output is not None,
+            has_assemble=next_context.has_assemble or self.is_sparse_output(),
         )
 
     def exhaust_tensor(self, tensor: TensorLeaf) -> IterationGraph:
@@ -115,6 +116,9 @@ class IterationVariable(IterationGraph):
 
     def has_output(self) -> bool:
         return self.context.has_output
+
+    def has_assemble(self) -> bool:
+        return self.context.has_assemble
 
 
 @dataclass(frozen=True)

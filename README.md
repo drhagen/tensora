@@ -166,32 +166,36 @@ tensora 'y(i) = A(i,j) * x(j)' -f A:ds -t compute -o kernel.c
 Here is the output of `tensora --help` for reference:
 
 ```
- Usage: tensora [OPTIONS] ASSIGNMENT                                                                     
-                                                                                                         
-╭─ Arguments ───────────────────────────────────────────────────────────────────────────────────────────╮
-│ *    assignment      TEXT  The assignment for which to generate code, e.g. y(i) = A(i,j) * x(j).      │
-│                            [required]                                                                 │
-╰───────────────────────────────────────────────────────────────────────────────────────────────────────╯
-╭─ Options ─────────────────────────────────────────────────────────────────────────────────────────────╮
-│ --format              -f      TEXT                             A tensor and its format separated by a │
-│                                                                colon, e.g. A:d1s0 for CSC matrix.     │
-│                                                                Unmentioned tensors are be assumed to  │
-│                                                                be all dense.                          │
-│ --type                -t      [assembly|compute|evaluate]      The type of kernel that will be        │
-│                                                                generated. Can be mentioned multiple   │
-│                                                                times.                                 │
-│                                                                [default: KernelType.compute]          │
-│ --output              -o      PATH                             The file to which the kernel will be   │
-│                                                                written. If not specified, prints to   │
-│                                                                standard out.                          │
-│                                                                [default: None]                        │
-│ --install-completion          [bash|zsh|fish|powershell|pwsh]  Install completion for the specified   │
-│                                                                shell.                                 │
-│                                                                [default: None]                        │
-│ --show-completion             [bash|zsh|fish|powershell|pwsh]  Show completion for the specified      │
-│                                                                shell, to copy it or customize the     │
-│                                                                installation.                          │
-│                                                                [default: None]                        │
-│ --help                                                         Show this message and exit.            │
-╰───────────────────────────────────────────────────────────────────────────────────────────────────────╯
-``````
+ Usage: tensora [OPTIONS] ASSIGNMENT
+
+╭─ Arguments ──────────────────────────────────────────────────────────────────────────────╮
+│ *    assignment      TEXT  The assignment for which to generate code, e.g. y(i) = A(i,j) │
+│                            * x(j).                                                       │
+│                            [required]                                                    │
+╰──────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ────────────────────────────────────────────────────────────────────────────────╮
+│ --format              -f      TEXT                         A tensor and its format       │
+│                                                            separated by a colon, e.g.    │
+│                                                            A:d1s0 for CSC matrix.        │
+│                                                            Unmentioned tensors are be    │
+│                                                            assumed to be all dense.      │
+│ --type                -t      [assemble|compute|evaluate]  The type of kernel that will  │
+│                                                            be generated. Can be          │
+│                                                            mentioned multiple times.     │
+│                                                            [default: compute]            │
+│ --output              -o      PATH                         The file to which the kernel  │
+│                                                            will be written. If not       │
+│                                                            specified, prints to standard │
+│                                                            out.                          │
+│                                                            [default: None]               │
+│ --install-completion          [bash|zsh|fish|powershell|p  Install completion for the    │
+│                               wsh]                         specified shell.              │
+│                                                            [default: None]               │
+│ --show-completion             [bash|zsh|fish|powershell|p  Show completion for the       │
+│                               wsh]                         specified shell, to copy it   │
+│                                                            or customize the              │
+│                                                            installation.                 │
+│                                                            [default: None]               │
+│ --help                                                     Show this message and exit.   │
+╰──────────────────────────────────────────────────────────────────────────────────────────╯
+```

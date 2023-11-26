@@ -50,7 +50,7 @@ class AppendOutput(Output):
                     if all_dense:
                         # If the previous dimensions were all dense, then the size of pos in this dimension is fixed
                         pos_size = Multiply.join(
-                            [output_tensor.attr("dimensions").idx(i_prev) for i_prev in range(i)]
+                            [dimension_name(self.output.indexes[i_prev]) for i_prev in range(i)]
                         ).plus(1)
                     else:
                         # Otherwise, the value will change, so provide a good default
