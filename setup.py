@@ -50,7 +50,7 @@ class TensoraBdistWheel(bdist_wheel):
 
 setup(
     name="tensora",
-    version="0.0.8",
+    version="0.1.0",
     description="Library for dense and sparse tensors built on the tensor algebra compiler.",
     long_description=Path("README.md").read_text(encoding="utf-8"),
     long_description_content_type="text/markdown",
@@ -65,7 +65,7 @@ setup(
     install_requires=Path("requirements.txt").read_text(encoding="utf-8").splitlines(),
     extras_require={"numpy": ["numpy"], "scipy": ["scipy"]},
     classifiers=[
-        "Development Status :: 3 - Alpha",
+        "Development Status :: 4 - Beta",
         "Intended Audience :: Science/Research",
         "Intended Audience :: Developers",
         "Topic :: Software Development :: Libraries",

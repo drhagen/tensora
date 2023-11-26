@@ -1,6 +1,9 @@
 include README.md
 include requirements.txt
 
+# Exclude tests
+recursive-exclude tests/ *
+
 # Include taco source in sdist
 recursive-include src/taco/ *
 exclude src/taco/.git
