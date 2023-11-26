@@ -29,7 +29,7 @@ def tensora(
             "--format",
             "-f",
             help=(
-                "A tensor and its format separated by a colon, e.g. A:d1s0 for CSR matrix. "
+                "A tensor and its format separated by a colon, e.g. A:d1s0 for CSC matrix. "
                 "Unmentioned tensors are be assumed to be all dense."
             ),
         ),
