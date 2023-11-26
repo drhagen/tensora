@@ -1,7 +1,7 @@
 __all__ = ["generate_c_code_from_parsed"]
 
 from .codegen import ir_to_c
-from .desugar import desugar_assignment, index_dimensions, to_identifiable, to_iteration_graphs
+from .desugar import best_algorithm, desugar_assignment, index_dimensions, to_identifiable
 from .expression.ast import Assignment
 from .format import Format
 from .ir import SourceBuilder, peephole
@@ -20,7 +20,7 @@ def generate_c_code_from_parsed(
 
     problem = Definition(output_variable, formats, index_dimensions(desugar))
 
-    graph = next(to_iteration_graphs(desugar, formats))
+    graph = best_algorithm(desugar, formats)
 
     ir = SourceBuilder()
     for kernel_type in kernel_types:
