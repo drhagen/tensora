@@ -14,3 +14,6 @@ class KernelType(str, Enum):
 
     def is_compute(self):
         return self == KernelType.compute or self == KernelType.evaluate
+
+    def __str__(self) -> str:
+        return self.name
