@@ -25,13 +25,13 @@ def test_cli():
 
 def test_multiple_kernels():
     result = runner.invoke(
-        app, ["y(i) = A(i,j) * x(j)", "-t", "compute", "-t", "evaluate", "-t", "assembly"]
+        app, ["y(i) = A(i,j) * x(j)", "-t", "compute", "-t", "evaluate", "-t", "assemble"]
     )
 
     assert result.exit_code == 0
     assert "compute" in result.stdout
     assert "evaluate" in result.stdout
-    assert "assembly" in result.stdout
+    assert "assemble" in result.stdout
 
 
 def test_write_to_file():

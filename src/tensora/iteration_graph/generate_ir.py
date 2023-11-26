@@ -24,8 +24,7 @@ from ..kernel_type import KernelType
 from .definition import Definition
 from .identifiable_expression import to_ir
 from .identifiable_expression.tensor_layer import TensorLayer
-from .iteration_graph import IterationGraph, IterationVariable, TerminalExpression
-from .iteration_graph import Sum as GraphAdd
+from .iteration_graph import IterationGraph, IterationVariable, Sum, TerminalExpression
 from .names import crd_name, dimension_name, pos_name, vals_name
 from .outputs import AppendOutput, Output
 from .write_sparse_ir import (
@@ -49,7 +48,8 @@ def to_ir_iteration_graph(
 def to_ir_terminal_expression(self: TerminalExpression, output: Output, kernel_type: KernelType):
     source = SourceBuilder("*** Computation of expression ***")
 
-    source.append(output.write_assignment(to_ir(self.expression), kernel_type))
+    if kernel_type.is_compute():
+        source.append(output.write_assignment(to_ir(self.expression), kernel_type))
 
     return source
 
@@ -85,6 +85,10 @@ def generate_subgraphs(graph: IterationVariable) -> list[IterationVariable]:
 @to_ir_iteration_graph.register(IterationVariable)
 def to_ir_iteration_variable(self: IterationVariable, output: Output, kernel_type: KernelType):
     source = SourceBuilder(f"*** Iteration over {self.index_variable} ***")
+
+    if not kernel_type.is_compute() and not self.has_assemble():
+        # If not doing compute and no assembly is left, return early
+        return source
 
     loop_variable = Variable(self.index_variable)
 
@@ -321,17 +325,19 @@ def to_ir_iteration_variable(self: IterationVariable, output: Output, kernel_typ
     return source
 
 
-@to_ir_iteration_graph.register(GraphAdd)
-def to_ir_add(self: GraphAdd, output: Output, kernel_type: KernelType):
-    source = SourceBuilder("*** Add ***")
+@to_ir_iteration_graph.register(Sum)
+def to_ir_sum(self: Sum, output: Output, kernel_type: KernelType):
+    source = SourceBuilder("*** Sum ***")
 
-    next_output, next_output_declarations, next_output_cleanup = output.next_output(
-        None, kernel_type
-    )
-    source.append(next_output_declarations)
+    if kernel_type.is_compute():
+        # No assembly is currently allowed downstream of a Sum node
+        next_output, next_output_declarations, next_output_cleanup = output.next_output(
+            None, kernel_type
+        )
+        source.append(next_output_declarations)
 
-    for term in self.terms:
-        source.append(to_ir_iteration_graph(term, next_output, kernel_type))
+        for term in self.terms:
+            source.append(to_ir_iteration_graph(term, next_output, kernel_type))
 
     return source
 
