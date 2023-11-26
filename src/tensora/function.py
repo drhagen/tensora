@@ -25,7 +25,7 @@ class PureTensorMethod:
         assignment: Assignment,
         input_formats: Dict[str, Format],
         output_format: Format,
-        compiler: TensorCompiler = TensorCompiler.taco,
+        compiler: TensorCompiler = TensorCompiler.tensora,
     ):
         target_name = assignment.target.name
         variable_orders = assignment.variable_orders()
@@ -154,7 +154,7 @@ def tensor_method(
     assignment: str,
     input_formats: Dict[str, str],
     output_format: str,
-    compiler: TensorCompiler = TensorCompiler.taco,
+    compiler: TensorCompiler = TensorCompiler.tensora,
 ) -> PureTensorMethod:
     return cachable_tensor_method(
         assignment, tuple(input_formats.items()), output_format, compiler
@@ -196,4 +196,4 @@ def evaluate_tensora(assignment: str, output_format: str, **inputs: Tensor) -> T
 
 
 def evaluate(assignment: str, output_format: str, **inputs: Tensor) -> Tensor:
-    return evaluate_taco(assignment, output_format, **inputs)
+    return evaluate_tensora(assignment, output_format, **inputs)
