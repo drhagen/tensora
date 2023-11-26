@@ -9,7 +9,7 @@ class KernelType(str, Enum):
     compute = "compute"
     evaluate = "evaluate"
 
-    def is_assembly(self):
+    def is_assemble(self):
         return self == KernelType.assemble or self == KernelType.evaluate
 
     def is_compute(self):

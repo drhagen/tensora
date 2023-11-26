@@ -199,14 +199,14 @@ class HashOutput(Output):
                     source.append(search_source)
                     source.append(self.write_layer_cleanup(layer + 1, kernel_type))
 
-                    if kernel_type.is_assembly():
+                    if kernel_type.is_assemble():
                         source.append(write_crd_assembly(TensorLayer(self.output, layer)))
                     source.append(position.increment())
 
                     if layer == self.final_dense_index() - 1:
                         source.append(self.extract_index_name().increment())
 
-            if kernel_type.is_assembly():
+            if kernel_type.is_assemble():
                 source.append(write_pos_assembly(TensorLayer(self.output, layer)))
         elif layer < self.output.order:
             # Bucket phase

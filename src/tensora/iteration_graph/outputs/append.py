@@ -45,7 +45,7 @@ class AppendOutput(Output):
             if mode == Mode.dense:
                 pass
             elif mode == Mode.compressed:
-                if kernel_type.is_assembly():
+                if kernel_type.is_assemble():
                     # How pos is handled depends on what the previous modes were
                     if all_dense:
                         # If the previous dimensions were all dense, then the size of pos in this dimension is fixed
@@ -77,7 +77,7 @@ class AppendOutput(Output):
             else:
                 raise NotImplementedError()
 
-        if kernel_type.is_assembly():
+        if kernel_type.is_assemble():
             if all_dense:
                 vals_size = Multiply.join(
                     [output_tensor.attr("dimensions").idx(i) for i in range(self.output.order)]
@@ -105,7 +105,7 @@ class AppendOutput(Output):
     def write_cleanup(self, kernel_type: KernelType):
         source = SourceBuilder(f"Assembling output tensor {self.output.name}")
 
-        if kernel_type.is_assembly():
+        if kernel_type.is_assemble():
             target_name = self.output.variable.name
             output_tensor = Variable(target_name)
 

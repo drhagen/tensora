@@ -4,7 +4,7 @@ from random import randrange
 import pytest
 
 from tensora import Tensor, TensorCompiler, evaluate_taco, evaluate_tensora, tensor_method
-from tensora.desugar import DiagonalAccessError
+from tensora.desugar import DiagonalAccessError, NoKernelFoundError
 
 pytestmark = pytest.mark.parametrize(
     ("evaluate", "compiler"),
@@ -129,3 +129,11 @@ def test_diagonal_error(evaluate, compiler):
 
     with pytest.raises(DiagonalAccessError):
         tensor_method("a(i) = A(i,i)", dict(A="dd"), "d", compiler)
+
+
+def test_no_solution(evaluate, compiler):
+    if compiler == TensorCompiler.taco:
+        pytest.skip("Taco currently segfaults on this")
+
+    with pytest.raises(NoKernelFoundError):
+        tensor_method("A(i,j) = B(i,j) + C(j,i)", dict(B="ds", C="ds"), "ds", compiler)

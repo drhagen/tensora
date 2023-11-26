@@ -6,6 +6,7 @@ from typing import Annotated, Optional
 import typer
 from parsita import Failure, Success
 
+from .desugar.exceptions import DiagonalAccessError, NoKernelFoundError
 from .expression import parse_assignment
 from .format import Format, Mode, parse_format
 from .kernel_type import KernelType
@@ -97,7 +98,11 @@ def tensora(
             formats[variable_name] = Format((Mode.dense,) * order, tuple(range(order)))
 
     # Generate code
-    code = generate_c_code_from_parsed(sugar, formats, kernel_types)
+    try:
+        code = generate_c_code_from_parsed(sugar, formats, kernel_types)
+    except (DiagonalAccessError, NoKernelFoundError) as error:
+        typer.echo(error, err=True)
+        raise typer.Exit(1)
 
     if output_path is None:
         typer.echo(code)
