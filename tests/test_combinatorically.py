@@ -51,7 +51,7 @@ def test_copy_2_backwards(evaluate, dense, format_in, format_out):
 @pytest.mark.parametrize("format2", ["s", "d"])
 def test_vector_dot(evaluate, dense1, dense2, format1, format2):
     assert_same_as_dense(
-        "out = in1(i) * in2(i)",
+        "out() = in1(i) * in2(i)",
         "",
         in1=(dense1, format1),
         in2=(dense2, format2),

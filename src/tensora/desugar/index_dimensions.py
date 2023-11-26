@@ -33,7 +33,7 @@ def index_dimensions_tensor(self: Tensor) -> dict[str, TensorDimension]:
     indexes = {}
     for i, index_i in enumerate(self.indexes):
         if index_i not in indexes:
-            indexes[index_i] = TensorDimension(self.variable.name, i)
+            indexes[index_i] = TensorDimension(self.name, i)
     return indexes
 
 

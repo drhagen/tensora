@@ -1,11 +1,18 @@
-__all__ = ["tensor_method", "evaluate", "PureTensorMethod", "TensorCompiler"]
+__all__ = [
+    "tensor_method",
+    "evaluate",
+    "evaluate_taco",
+    "evaluate_tensora",
+    "PureTensorMethod",
+    "TensorCompiler",
+]
 
 from functools import lru_cache
 from inspect import Parameter, Signature
 from typing import Dict, Tuple
 
 from .compile import TensorCompiler, allocate_taco_structure, taco_kernel, take_ownership_of_arrays
-from .expression import Assignment
+from .expression.ast import Assignment, Scalar
 from .format import Format, parse_format
 from .tensor import Tensor
 
@@ -20,14 +27,12 @@ class PureTensorMethod:
         output_format: Format,
         compiler: TensorCompiler = TensorCompiler.taco,
     ):
-        if assignment.is_mutating():
-            raise ValueError(f"{assignment} mutates its target and is so is not a pure function")
-
-        variable_orders = assignment.expression.variable_orders()
+        target_name = assignment.target.name
+        variable_orders = assignment.variable_orders()
 
         # Ensure that all parameters are defined
         for variable_name in variable_orders.keys():
-            if variable_name not in input_formats:
+            if variable_name != target_name and variable_name not in input_formats:
                 raise ValueError(
                     f"Variable {variable_name} in {assignment} not listed in parameters"
                 )
@@ -44,6 +49,9 @@ class PureTensorMethod:
                     f"Parameter {parameter_name} has order {format.order}, but this variable in the "
                     f"assignment has order {variable_orders[parameter_name]}"
                 )
+
+        if isinstance(assignment.target, Scalar):
+            raise NotImplementedError("Tensora does not support scalar outputs yet")
 
         if output_format.order != assignment.target.order:
             raise ValueError(
@@ -168,12 +176,7 @@ def cachable_tensor_method(
 
     parsed_output = parse_format(output_format).unwrap()
 
-    if parsed_assignment.is_mutating():
-        raise NotImplementedError(
-            f"Mutating tensor assignments like {assignment} not implemented yet."
-        )
-    else:
-        return PureTensorMethod(parsed_assignment, parsed_input_formats, parsed_output, compiler)
+    return PureTensorMethod(parsed_assignment, parsed_input_formats, parsed_output, compiler)
 
 
 def evaluate_taco(assignment: str, output_format: str, **inputs: Tensor) -> Tensor:

@@ -1,12 +1,13 @@
+from __future__ import annotations
+
 __all__ = ["Mode", "Format"]
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Tuple
 
 
 class Mode(Enum):
-    # Manually map these to the entries in .taco_compile.taco_type_header.taco_mode_t
+    # Manually map these to the entries in .compile.taco_type_header.taco_mode_t
     dense = (0, "d")
     compressed = (1, "s")
 
@@ -15,24 +16,23 @@ class Mode(Enum):
         self.character = character
 
     @staticmethod
-    def from_c_int(value: int) -> "Mode":
+    def from_c_int(value: int) -> Mode:
         for member in Mode:
             if member.value[0] == value:
                 return member
-        raise ValueError(f"No member of DimensionalMode has the integer value {value}")
+        raise ValueError(f"No member of Mode has the integer value {value}")
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Format:
-    modes: Tuple[Mode, ...]
-    ordering: Tuple[int, ...]
+    modes: tuple[Mode, ...]
+    ordering: tuple[int, ...]
 
     def __post_init__(self):
-        if len(self.modes) != len(self.ordering):
-            raise ValueError(
-                f"Length of modes ({len(self.modes)}) must be equal to length of ordering "
-                f"({len(self.ordering)})"
-            )
+        from .exceptions import InvalidModeOrderingError
+
+        if set(self.ordering) != set(range(len(self.modes))):
+            raise InvalidModeOrderingError(self.modes, self.ordering)
 
     @property
     def order(self):

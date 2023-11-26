@@ -19,7 +19,7 @@ from dataclasses import dataclass
 
 
 class Type:
-    pass
+    __slots__ = ()
 
 
 @dataclass(frozen=True, slots=True)

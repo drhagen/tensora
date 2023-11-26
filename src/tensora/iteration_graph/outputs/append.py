@@ -26,7 +26,7 @@ from .hash import HashOutput
 default_array_size = Multiply(IntegerLiteral(1024), IntegerLiteral(1024))
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class AppendOutput(Output):
     output: ie_ast.Variable
     next_layer: int

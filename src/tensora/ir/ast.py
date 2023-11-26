@@ -63,10 +63,12 @@ def to_expression(expression: Expression | int | str) -> Expression:
 
 
 class Statement:
-    pass
+    __slots__ = ()
 
 
 class Expression(Statement):
+    __slots__ = ()
+
     def plus(self, term: Expression | int | str) -> Expression:
         term = to_expression(term)
         return Add(self, term)
@@ -81,6 +83,8 @@ class Expression(Statement):
 
 
 class Assignable(Expression):
+    __slots__ = ()
+
     def attr(self, attribute: str) -> Assignable:
         return AttributeAccess(self, attribute)
 

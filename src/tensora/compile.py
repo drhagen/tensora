@@ -18,6 +18,7 @@ from weakref import WeakKeyDictionary
 
 from cffi import FFI
 
+from .expression import deparse_to_taco
 from .expression.ast import Assignment
 from .format import Format
 from .native import generate_c_code_from_parsed
@@ -139,7 +140,7 @@ def taco_kernel(
     """
     match compiler:
         case TensorCompiler.taco:
-            expression_string = expression.deparse()
+            expression_string = deparse_to_taco(expression)
             format_strings = frozenset(
                 (parameter_name, format_to_taco_format(format))
                 for parameter_name, format in formats.items()

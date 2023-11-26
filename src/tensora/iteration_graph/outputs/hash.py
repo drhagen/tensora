@@ -27,7 +27,7 @@ from .base import Output
 from .bucket import BucketOutput
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class HashOutput(Output):
     output: ie_ast.Variable
     starting_layer: int

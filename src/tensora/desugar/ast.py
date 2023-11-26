@@ -13,68 +13,70 @@ __all__ = [
 ]
 
 from dataclasses import dataclass
-from typing import List
-
-from .id import Id
 
 
 class Expression:
-    pass
+    __slots__ = ()
 
 
 class Literal(Expression):
-    pass
+    __slots__ = ()
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Integer(Literal):
     value: int
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Float(Literal):
     value: float
 
 
 class Variable(Expression):
-    variable: Id
-    indexes: List[str]
+    __slots__ = ()
+
+    id: int
+    name: str
+    indexes: list[str]
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Scalar(Variable):
-    variable: Id
+    id: int
+    name: str
 
     @property
     def indexes(self):
         return []
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Tensor(Variable):
-    variable: Id
-    indexes: List[str]
+    id: int
+    name: str
+    indexes: list[str]
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Add(Expression):
     left: Expression
     right: Expression
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Multiply(Expression):
     left: Expression
     right: Expression
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Contract(Expression):
     index: str
     expression: Expression
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Assignment:
     target: Variable
     expression: Expression

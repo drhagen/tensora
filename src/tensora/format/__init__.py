@@ -1,2 +1,3 @@
-from .format import Format, Mode  # noqa: F401
-from .parser import parse_format  # noqa: F401
+from .exceptions import InvalidModeOrderingError
+from .format import Format, Mode
+from .parser import parse_format

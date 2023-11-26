@@ -17,24 +17,26 @@ from .tensor_leaf import TensorLeaf
 
 
 class Expression:
-    pass
+    __slots__ = ()
 
 
 class Literal(Expression):
-    pass
+    __slots__ = ()
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Integer(Literal):
     value: int
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Float(Literal):
     value: float
 
 
 class Variable(Expression):
+    __slots__ = ()
+
     variable: TensorLeaf
     indexes: tuple[str, ...]
     modes: tuple[Mode, ...]
@@ -48,7 +50,7 @@ class Variable(Expression):
         return len(self.indexes)
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Scalar(Variable):
     variable: TensorLeaf
 
@@ -61,20 +63,20 @@ class Scalar(Variable):
         return ()
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Tensor(Variable):
     variable: TensorLeaf
     indexes: tuple[str, ...]
     modes: tuple[Mode, ...]
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Add(Expression):
     left: Expression
     right: Expression
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Multiply(Expression):
     left: Expression
     right: Expression

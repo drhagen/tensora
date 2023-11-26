@@ -1,7 +1,11 @@
 import pytest
 
+from tensora.expression import (
+    InconsistentVariableSizeError,
+    MutatingAssignmentError,
+    parse_assignment,
+)
 from tensora.expression.ast import *
-from tensora.expression.parser import parse_assignment
 
 assignment_strings = [
     (
@@ -53,6 +57,23 @@ def test_assignment_deparsing(string, assignment):
     assert deparsed == string
 
 
+def test_mutating_assignment():
+    assert isinstance(parse_assignment("A(i) = A(i) + 1").failure(), MutatingAssignmentError)
+
+
+@pytest.mark.parametrize(
+    "assignment",
+    [
+        "A(i) = B(i) + B(i,j)",
+        "A(i) = B(i) - B",
+        "A(i) = B(i,j) * B(k,l,m)",
+        "A(i) = B(i,j) + C(j,k) + (B(k) * D(k))",
+    ],
+)
+def test_inconsistent_variable_size(assignment):
+    assert isinstance(parse_assignment(assignment).failure(), InconsistentVariableSizeError)
+
+
 def parse(string):
     return parse_assignment(string).unwrap()
 
@@ -65,21 +86,9 @@ def test_assignment_to_string():
 @pytest.mark.parametrize(
     "string,output",
     [
-        ("A(i) = B(i,j) * C(j)", False),
-        ("y(i) = X(i,j) * y(i)", True),
-        ("z(i) += X(i,j) * y(i)", True),
-    ],
-)
-def test_is_mutating(string, output):
-    assert parse(string).is_mutating() == output
-
-
-@pytest.mark.parametrize(
-    "string,output",
-    [
         (
             "y(i) = 0.5 * (b - a) * (x1(i,j) + x2(i,j)) * z(j)",
-            {"y": 1, "b": 0, "a": 0, "x1": 2, "x2": 2, "z": 1},
+            {"y": 1, "b": None, "a": None, "x1": 2, "x2": 2, "z": 1},
         ),
         ("B2(i,k) = B(i,j) * B(j,k)", {"B2": 2, "B": 2}),
     ],

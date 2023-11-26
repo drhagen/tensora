@@ -71,7 +71,7 @@ def to_iteration_graphs_scalar(
     formats: dict[str, Format],
     counter: Iterator[int],
 ) -> Iterator[ig.IterationGraph]:
-    yield ig.TerminalExpression(id.Scalar(self.variable.to_tensor_leaf()))
+    yield ig.TerminalExpression(id.Scalar(id.TensorLeaf(self.name, self.id)))
 
 
 @to_iteration_graphs_expression.register(ast.Tensor)
@@ -80,13 +80,18 @@ def to_iteration_graphs_tensor(
     formats: dict[str, Format],
     counter: Iterator[int],
 ) -> Iterator[ig.IterationGraph]:
-    format = formats[self.variable.name]
+    from .exceptions import DiagonalAccessError
+
+    format = formats[self.name]
     index_variables = tuple(self.indexes[i_index] for i_index in format.ordering)
-    modes = formats[self.variable.name].modes
+    modes = formats[self.name].modes
+
+    if len(set(index_variables)) != len(index_variables):
+        raise DiagonalAccessError(self)
 
     for index_order in legal_iteration_orders(format):
         graph = ig.TerminalExpression(
-            id.Tensor(self.variable.to_tensor_leaf(), index_variables, modes)
+            id.Tensor(id.TensorLeaf(self.name, self.id), index_variables, modes)
         )
         # Build iteration order bottom up
         for i_index in reversed(index_order):
@@ -246,11 +251,11 @@ def merge_assignment(
 def to_iteration_graphs(
     assignment: ast.Assignment, formats: dict[str, Format]
 ) -> Iterator[ig.IterationGraph]:
-    output_format = formats[assignment.target.variable.name]
+    output_format = formats[assignment.target.name]
     output_layers = {
         assignment.target.indexes[i_dimension]: TensorLayer(
             id.Tensor(
-                assignment.target.variable.to_tensor_leaf(),
+                id.TensorLeaf(assignment.target.name, assignment.target.id),
                 tuple(assignment.target.indexes[i] for i in output_format.ordering),
                 output_format.modes,
             ),

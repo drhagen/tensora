@@ -1,7 +1,7 @@
 import pytest
 
-from tensora.desugar import Id, desugar_assignment
 from tensora.desugar import ast as desugar
+from tensora.desugar import desugar_assignment
 from tensora.expression import ast as sugar
 
 
@@ -14,8 +14,8 @@ from tensora.expression import ast as sugar
                 sugar.Add(sugar.Tensor("b", ["i"]), sugar.Tensor("c", ["i"])),
             ),
             desugar.Assignment(
-                desugar.Tensor(Id("a", 0), ["i"]),
-                desugar.Add(desugar.Tensor(Id("b", 1), ["i"]), desugar.Tensor(Id("c", 2), ["i"])),
+                desugar.Tensor(0, "a", ["i"]),
+                desugar.Add(desugar.Tensor(1, "b", ["i"]), desugar.Tensor(2, "c", ["i"])),
             ),
         ],
         [
@@ -24,12 +24,12 @@ from tensora.expression import ast as sugar
                 sugar.Multiply(sugar.Tensor("B", ["i", "k"]), sugar.Tensor("C", ["k", "i"])),
             ),
             desugar.Assignment(
-                desugar.Tensor(Id("A", 0), ["i", "j"]),
+                desugar.Tensor(0, "A", ["i", "j"]),
                 desugar.Contract(
                     "k",
                     desugar.Multiply(
-                        desugar.Tensor(Id("B", 1), ["i", "k"]),
-                        desugar.Tensor(Id("C", 2), ["k", "i"]),
+                        desugar.Tensor(1, "B", ["i", "k"]),
+                        desugar.Tensor(2, "C", ["k", "i"]),
                     ),
                 ),
             ),
@@ -43,14 +43,14 @@ from tensora.expression import ast as sugar
                 ),
             ),
             desugar.Assignment(
-                desugar.Tensor(Id("A", 0), ["i", "j"]),
+                desugar.Tensor(0, "A", ["i", "j"]),
                 desugar.Add(
-                    desugar.Tensor(Id("K", 1), ["i", "j"]),
+                    desugar.Tensor(1, "K", ["i", "j"]),
                     desugar.Contract(
                         "k",
                         desugar.Multiply(
-                            desugar.Tensor(Id("B", 2), ["i", "k"]),
-                            desugar.Tensor(Id("C", 3), ["k", "i"]),
+                            desugar.Tensor(2, "B", ["i", "k"]),
+                            desugar.Tensor(3, "C", ["k", "i"]),
                         ),
                     ),
                 ),
@@ -59,8 +59,8 @@ from tensora.expression import ast as sugar
         [
             sugar.Assignment(sugar.Tensor("a", ["i"]), sugar.Tensor("b", ["i", "j"])),
             desugar.Assignment(
-                desugar.Tensor(Id("a", 0), ["i"]),
-                desugar.Contract("j", desugar.Tensor(Id("b", 1), ["i", "j"])),
+                desugar.Tensor(0, "a", ["i"]),
+                desugar.Contract("j", desugar.Tensor(1, "b", ["i", "j"])),
             ),
         ],
     ],
