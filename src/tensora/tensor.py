@@ -510,7 +510,7 @@ def evaluate_matrix_multiplication_operator(left: Tensor, right: Tensor):
     if isinstance(left, Tensor) and isinstance(right, Tensor):
         if left.order == 1 and right.order == 1:
             scalar_tensor = evaluate_tensora(
-                "output = left(i) * right(i)", "", left=left, right=right
+                "output() = left(i) * right(i)", "", left=left, right=right
             )
             return float(scalar_tensor)
         elif left.order == 2 and right.order == 1:

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 __all__ = [
-    "Node",
     "Expression",
     "Literal",
     "Integer",
@@ -19,8 +18,12 @@ from abc import abstractmethod
 from dataclasses import dataclass
 
 
-class Node:
+class Expression:
     __slots__ = ()
+
+    @abstractmethod
+    def variables(self) -> dict[str, list[Variable]]:
+        raise NotImplementedError()
 
     @abstractmethod
     def deparse(self) -> str:
@@ -40,14 +43,6 @@ class Node:
 
     def __str__(self):
         return self.deparse()
-
-
-class Expression(Node):
-    __slots__ = ()
-
-    @abstractmethod
-    def variables(self) -> dict[str, list[Variable]]:
-        raise NotImplementedError()
 
 
 class Literal(Expression):
@@ -81,10 +76,7 @@ class Variable(Expression):
 
     name: str
     indexes: list[str]
-
-    @property
-    def order(self):
-        return len(self.indexes)
+    order: int | None
 
     def variables(self) -> dict[str, list[Variable]]:
         return {self.name: [self]}
@@ -101,6 +93,10 @@ class Scalar(Variable):
     name: str
 
     @property
+    def order(self):
+        return None
+
+    @property
     def indexes(self):
         return []
 
@@ -112,6 +108,10 @@ class Scalar(Variable):
 class Tensor(Variable):
     name: str
     indexes: list[str]
+
+    @property
+    def order(self):
+        return len(self.indexes)
 
     def deparse(self):
         return self.name + "(" + ",".join(self.indexes) + ")"
@@ -183,24 +183,22 @@ class Multiply(Expression):
         return variables_mapping
 
     def deparse(self):
+        left_string = self.left.deparse()
         if isinstance(self.left, (Add, Subtract)):
-            left_string = "(" + self.left.deparse() + ")"
-        else:
-            left_string = self.left.deparse()
+            left_string = f"({left_string})"
 
+        right_string = self.right.deparse()
         if isinstance(self.right, (Add, Subtract)):
-            right_string = "(" + self.right.deparse() + ")"
-        else:
-            right_string = self.right.deparse()
+            right_string = f"({right_string})"
 
-        return left_string + " * " + right_string
+        return f"{left_string} * {right_string}"
 
     def index_participants(self) -> dict[str, set[tuple[str, int]]]:
         return merge_index_participants(self.left, self.right)
 
 
 @dataclass(frozen=True)
-class Assignment(Node):
+class Assignment:
     target: Variable
     expression: Expression
 
@@ -215,24 +213,11 @@ class Assignment(Node):
             if name == target_name:
                 raise MutatingAssignmentError(self)
 
-            match first:
-                case Scalar():
-                    order = None
-                case Tensor():
-                    order = first.order
-                case _:
-                    raise NotImplementedError()
-
             for variable in rest:
-                match variable:
-                    case Scalar():
-                        if order is not None:
-                            raise InconsistentVariableSizeError(self, first, variable)
-                    case Tensor():
-                        if order != variable.order:
-                            raise InconsistentVariableSizeError(self, first, variable)
+                if first.order != variable.order:
+                    raise InconsistentVariableSizeError(self, first, variable)
 
-            variable_orders[name] = order
+            variable_orders[name] = first.order
 
         self._parameter_orders: dict[str, int | None]
         object.__setattr__(self, "_parameter_orders", variable_orders)
@@ -257,3 +242,6 @@ class Assignment(Node):
             self.target.name: self.target.order if isinstance(self.target, Tensor) else None,
             **self._parameter_orders,
         }
+
+    def __str__(self) -> str:
+        return self.deparse()

@@ -12,7 +12,7 @@ from inspect import Parameter, Signature
 from typing import Dict, Tuple
 
 from .compile import TensorCompiler, allocate_taco_structure, taco_kernel, take_ownership_of_arrays
-from .expression.ast import Assignment
+from .expression.ast import Assignment, Scalar
 from .format import Format, parse_format
 from .tensor import Tensor
 
@@ -49,6 +49,9 @@ class PureTensorMethod:
                     f"Parameter {parameter_name} has order {format.order}, but this variable in the "
                     f"assignment has order {variable_orders[parameter_name]}"
                 )
+
+        if isinstance(assignment.target, Scalar):
+            raise NotImplementedError("Tensora does not support scalar outputs yet")
 
         if output_format.order != assignment.target.order:
             raise ValueError(
