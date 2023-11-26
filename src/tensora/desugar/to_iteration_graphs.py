@@ -80,9 +80,14 @@ def to_iteration_graphs_tensor(
     formats: dict[str, Format],
     counter: Iterator[int],
 ) -> Iterator[ig.IterationGraph]:
+    from .exceptions import DiagonalAccessError
+
     format = formats[self.variable.name]
     index_variables = tuple(self.indexes[i_index] for i_index in format.ordering)
     modes = formats[self.variable.name].modes
+
+    if len(set(index_variables)) != len(index_variables):
+        raise DiagonalAccessError(self)
 
     for index_order in legal_iteration_orders(format):
         graph = ig.TerminalExpression(

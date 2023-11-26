@@ -4,6 +4,7 @@ from random import randrange
 import pytest
 
 from tensora import Tensor, TensorCompiler, evaluate_taco, evaluate_tensora, tensor_method
+from tensora.desugar import DiagonalAccessError
 
 pytestmark = pytest.mark.parametrize(
     ("evaluate", "compiler"),
@@ -120,3 +121,11 @@ def test_multithread_evaluation(evaluate, compiler):
 
     for actual in results:
         assert actual == expected
+
+
+def test_diagonal_error(evaluate, compiler):
+    if compiler == TensorCompiler.taco:
+        pytest.skip("We do not currently get a nice error from Taco")
+
+    with pytest.raises(DiagonalAccessError):
+        tensor_method("a(i) = A(i,i)", dict(A="dd"), "d", compiler)
