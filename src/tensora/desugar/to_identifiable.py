@@ -8,22 +8,20 @@ from . import ast as desugar
 
 
 @singledispatch
-def to_identifiable(expression: desugar.Variable, formats: dict[str, Format]) -> id.Expression:
-    raise NotImplementedError(
-        f"to_identifiable not implemented for {type(expression)}: {expression}"
-    )
+def to_identifiable(self: desugar.Variable, formats: dict[str, Format]) -> id.Variable:
+    raise NotImplementedError(f"to_identifiable not implemented for {type(self)}: {self}")
 
 
 @to_identifiable.register(desugar.Scalar)
-def to_identifiable_scalar(expression: desugar.Scalar, formats: dict[str, Format]):
-    return id.Scalar(expression.variable.to_tensor_leaf())
+def to_identifiable_scalar(self: desugar.Scalar, formats: dict[str, Format]):
+    return id.Scalar(id.TensorLeaf(self.name, self.id))
 
 
 @to_identifiable.register(desugar.Tensor)
-def to_identifiable_tensor(expression: desugar.Tensor, formats: dict[str, Format]):
-    format = formats[expression.variable.name]
+def to_identifiable_tensor(self: desugar.Tensor, formats: dict[str, Format]):
+    format = formats[self.name]
     return id.Tensor(
-        expression.variable.to_tensor_leaf(),
-        tuple(expression.indexes[i_index] for i_index in format.ordering),
+        id.TensorLeaf(self.name, self.id),
+        tuple(self.indexes[i_index] for i_index in format.ordering),
         format.modes,
     )

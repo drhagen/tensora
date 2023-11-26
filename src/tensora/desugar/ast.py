@@ -13,9 +13,6 @@ __all__ = [
 ]
 
 from dataclasses import dataclass
-from typing import List
-
-from .id import Id
 
 
 class Expression:
@@ -39,13 +36,15 @@ class Float(Literal):
 class Variable(Expression):
     __slots__ = ()
 
-    variable: Id
-    indexes: List[str]
+    id: int
+    name: str
+    indexes: list[str]
 
 
 @dataclass(frozen=True, slots=True)
 class Scalar(Variable):
-    variable: Id
+    id: int
+    name: str
 
     @property
     def indexes(self):
@@ -54,8 +53,9 @@ class Scalar(Variable):
 
 @dataclass(frozen=True, slots=True)
 class Tensor(Variable):
-    variable: Id
-    indexes: List[str]
+    id: int
+    name: str
+    indexes: list[str]
 
 
 @dataclass(frozen=True, slots=True)
