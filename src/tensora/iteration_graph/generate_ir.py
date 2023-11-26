@@ -248,7 +248,7 @@ def to_ir_iteration_variable(self: IterationVariable, output: Output, kernel_typ
                 # of the if-statements may hit. In that case, no allocation should
                 # be done.
                 if (
-                    kernel_type.is_assembly()
+                    kernel_type.is_assemble()
                     and self.is_sparse_output()
                     and isinstance(next_output, AppendOutput)
                 ):
@@ -285,11 +285,11 @@ def to_ir_iteration_variable(self: IterationVariable, output: Output, kernel_typ
                         next_pointer = next_output_layer.layer_pointer()
                         next_pointer_begin = next_output_layer.layer_begin_name()
                         with block.branch(GreaterThan(next_pointer, next_pointer_begin)):
-                            if kernel_type.is_assembly():
+                            if kernel_type.is_assemble():
                                 block.append(write_crd_assembly(self.output))
                             block.append(self.output.layer_pointer().increment())
                     else:
-                        if kernel_type.is_assembly():
+                        if kernel_type.is_assemble():
                             block.append(write_crd_assembly(self.output))
                         block.append(self.output.layer_pointer().increment())
 
@@ -314,7 +314,7 @@ def to_ir_iteration_variable(self: IterationVariable, output: Output, kernel_typ
     # Write sparse output position #
     ################################
     if (
-        kernel_type.is_assembly()
+        kernel_type.is_assemble()
         and self.is_sparse_output()
         and isinstance(next_output, AppendOutput)
     ):
