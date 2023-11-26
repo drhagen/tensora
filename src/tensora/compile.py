@@ -113,7 +113,7 @@ class TensorCompiler(Enum):
 def taco_kernel(
     expression: Assignment,
     formats: dict[str, Format],
-    compiler: TensorCompiler = TensorCompiler.taco,
+    compiler: TensorCompiler = TensorCompiler.tensora,
 ) -> Tuple[List[str], Any]:
     """Call taco with expression and compile resulting function.
 
