@@ -7,13 +7,7 @@ from dataclasses import dataclass, replace
 
 from ..format import Mode
 from ..stable_set import StableFrozenSet
-from .identifiable_expression import (
-    Context,
-    TensorLayer,
-    TensorLeaf,
-    exhaust_tensor,
-    extract_context,
-)
+from .identifiable_expression import Context, TensorLayer, exhaust_tensor, extract_context
 from .identifiable_expression.ast import Expression, Integer
 
 
@@ -23,7 +17,7 @@ class IterationGraph:
         raise NotImplementedError()
 
     @abstractmethod
-    def exhaust_tensor(self, tensor: TensorLeaf) -> IterationGraph:
+    def exhaust_tensor(self, reference: str) -> IterationGraph:
         raise NotImplementedError()
 
     @abstractmethod
@@ -32,7 +26,7 @@ class IterationGraph:
         raise NotImplementedError()
 
     @abstractmethod
-    def compressed_dimensions(self) -> StableFrozenSet[TensorLeaf]:
+    def compressed_dimensions(self) -> StableFrozenSet[str]:
         # Needed when empty subgraphs simplify
         raise NotImplementedError()
 
@@ -52,13 +46,13 @@ class TerminalNode(IterationGraph):
     def extract_context(self, index: str) -> Context:
         return extract_context(self.expression, index)
 
-    def exhaust_tensor(self, tensor: TensorLeaf) -> IterationGraph:
-        return TerminalNode(exhaust_tensor(self.expression, tensor))
+    def exhaust_tensor(self, reference: str) -> IterationGraph:
+        return TerminalNode(exhaust_tensor(self.expression, reference))
 
     def is_sparse_output(self) -> bool:
         return False
 
-    def compressed_dimensions(self) -> StableFrozenSet[TensorLeaf]:
+    def compressed_dimensions(self) -> StableFrozenSet[str]:
         # Needed when empty subgraphs simplify
         return StableFrozenSet()
 
@@ -88,13 +82,13 @@ class IterationNode(IterationGraph):
             has_assemble=next_context.has_assemble or self.is_sparse_output(),
         )
 
-    def exhaust_tensor(self, tensor: TensorLeaf) -> IterationGraph:
-        new_next = self.next.exhaust_tensor(tensor)
+    def exhaust_tensor(self, reference: str) -> IterationGraph:
+        new_next = self.next.exhaust_tensor(reference)
 
         return replace(self, next=new_next)
 
-    def compressed_dimensions(self) -> StableFrozenSet[TensorLeaf]:
-        return StableFrozenSet(*(leaf.tensor.variable for leaf in self.context.sparse_leaves))
+    def compressed_dimensions(self) -> StableFrozenSet[str]:
+        return StableFrozenSet(*(leaf.tensor.id for leaf in self.context.sparse_leaves))
 
     def sparse_leaves(self) -> list[TensorLayer]:
         return [TensorLayer(leaf.tensor, leaf.layer) for leaf in self.context.sparse_leaves]
@@ -132,10 +126,10 @@ class SumNode(IterationGraph):
             context = context.add(term.extract_context(index))
         return context
 
-    def exhaust_tensor(self, tensor: TensorLeaf) -> IterationGraph:
+    def exhaust_tensor(self, reference: str) -> IterationGraph:
         new_terms = []
         for term in self.terms:
-            new_term = term.exhaust_tensor(tensor)
+            new_term = term.exhaust_tensor(reference)
             # TODO: Simplify empty terms
             new_terms.append(new_term)
 
@@ -149,7 +143,7 @@ class SumNode(IterationGraph):
     def is_sparse_output(self) -> bool:
         return False
 
-    def compressed_dimensions(self) -> StableFrozenSet[TensorLeaf]:
+    def compressed_dimensions(self) -> StableFrozenSet[str]:
         # Needed when empty subgraphs simplify
         return StableFrozenSet()
 

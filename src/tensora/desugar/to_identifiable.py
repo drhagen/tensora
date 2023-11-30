@@ -14,14 +14,15 @@ def to_identifiable(self: desugar.Variable, formats: dict[str, Format]) -> id.Va
 
 @to_identifiable.register(desugar.Scalar)
 def to_identifiable_scalar(self: desugar.Scalar, formats: dict[str, Format]):
-    return id.Scalar(id.TensorLeaf(self.name, self.id))
+    return id.Scalar(f"{self.id}_{self.name}", self.name)
 
 
 @to_identifiable.register(desugar.Tensor)
 def to_identifiable_tensor(self: desugar.Tensor, formats: dict[str, Format]):
     format = formats[self.name]
     return id.Tensor(
-        id.TensorLeaf(self.name, self.id),
+        f"{self.id}_{self.name}",
+        self.name,
         tuple(self.indexes[i_index] for i_index in format.ordering),
         format.modes,
     )

@@ -32,12 +32,12 @@ class AppendOutput(Output):
     next_layer: int
 
     def vals_pointer(self) -> Expression:
-        return previous_layer_pointer(self.output.variable, self.output.order)
+        return previous_layer_pointer(self.output.id, self.output.order)
 
     def write_declarations(self, kernel_type: KernelType):
         source = SourceBuilder("Output initialization")
 
-        target_name = self.output.variable.name
+        target_name = self.output.name
         output_tensor = Variable(target_name)
 
         all_dense = True
@@ -69,9 +69,7 @@ class AppendOutput(Output):
                     )
 
                 # This is the only thing that get written when doing compute
-                source.append(
-                    layer_pointer(self.output.variable, i).declare(types.integer).assign(0)
-                )
+                source.append(layer_pointer(self.output.id, i).declare(types.integer).assign(0))
 
                 all_dense = False
             else:
@@ -96,9 +94,7 @@ class AppendOutput(Output):
         if self.next_layer != self.output.order:
             raise RuntimeError()
 
-        source.append(
-            vals_name(self.output.variable.name).idx(self.vals_pointer()).assign(right_hand_side)
-        )
+        source.append(vals_name(self.output.name).idx(self.vals_pointer()).assign(right_hand_side))
 
         return source
 
@@ -106,7 +102,7 @@ class AppendOutput(Output):
         source = SourceBuilder(f"Assembling output tensor {self.output.name}")
 
         if kernel_type.is_assemble():
-            target_name = self.output.variable.name
+            target_name = self.output.name
             output_tensor = Variable(target_name)
 
             for i, mode in enumerate(self.output.modes):
@@ -148,8 +144,8 @@ class AppendOutput(Output):
                 dimension_names = [
                     dimension_name(index) for index in self.output.indexes[self.next_layer :]
                 ]
-                bucket = vals_name(self.output.variable.name).plus(
-                    previous_layer_pointer(self.output.variable, self.next_layer).times(
+                bucket = vals_name(self.output.name).plus(
+                    previous_layer_pointer(self.output.id, self.next_layer).times(
                         Multiply.join(dimension_names)
                     )
                 )

@@ -8,19 +8,14 @@ __all__ = [
     "pos_capacity_name",
     "crd_capacity_name",
     "vals_capacity_name",
-    "tensor_to_string",
     "layer_pointer",
     "previous_layer_pointer",
     "sparse_end_name",
     "value_from_crd",
 ]
 
-from typing import TYPE_CHECKING
 
 from ..ir.ast import Expression, IntegerLiteral, Variable
-
-if TYPE_CHECKING:
-    from .identifiable_expression import TensorLeaf
 
 
 def dimension_name(index_variable: str) -> Variable:
@@ -51,28 +46,24 @@ def vals_capacity_name(tensor: str) -> Variable:
     return Variable(f"{tensor}_vals_capacity")
 
 
-def tensor_to_string(tensor: TensorLeaf):
-    return f"{tensor.name}_{tensor.instance}"
+def layer_pointer(reference: str, layer: int) -> Variable:
+    return Variable(f"p_{reference}_{layer}")
 
 
-def layer_pointer(tensor: TensorLeaf, layer: int) -> Variable:
-    return Variable(f"p_{tensor_to_string(tensor)}_{layer}")
-
-
-def previous_layer_pointer(tensor: TensorLeaf, layer: int) -> Expression:
+def previous_layer_pointer(reference: str, layer: int) -> Expression:
     if layer == 0:
         return IntegerLiteral(0)
     else:
-        return layer_pointer(tensor, layer - 1)
+        return layer_pointer(reference, layer - 1)
 
 
-def sparse_end_name(tensor: TensorLeaf, layer: int) -> Variable:
-    return Variable(f"p_{tensor_to_string(tensor)}_{layer}_end")
+def sparse_end_name(reference: str, layer: int) -> Variable:
+    return Variable(f"p_{reference}_{layer}_end")
 
 
-def layer_begin_name(tensor: TensorLeaf, layer: int) -> Variable:
-    return Variable(f"p_{tensor_to_string(tensor)}_{layer}_begin")
+def layer_begin_name(reference: str, layer: int) -> Variable:
+    return Variable(f"p_{reference}_{layer}_begin")
 
 
-def value_from_crd(tensor: TensorLeaf, layer: int) -> Variable:
-    return Variable(f"i_{tensor_to_string(tensor)}_{layer}")
+def value_from_crd(reference: str, layer: int) -> Variable:
+    return Variable(f"i_{reference}_{layer}")

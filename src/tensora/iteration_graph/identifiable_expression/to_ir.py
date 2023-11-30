@@ -25,14 +25,14 @@ def to_ir_float(self: Float):
 
 @to_ir.register(Scalar)
 def to_ir_scalar(self: Scalar):
-    return ir.Variable(self.variable.name)
+    return ir.Variable(self.name)
 
 
 @to_ir.register(Tensor)
 def to_ir_tensor(self: Tensor):
     from ..names import previous_layer_pointer, vals_name
 
-    return vals_name(self.variable.name).idx(previous_layer_pointer(self.variable, self.order))
+    return vals_name(self.name).idx(previous_layer_pointer(self.id, self.order))
 
 
 @to_ir.register(Add)

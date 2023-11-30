@@ -8,7 +8,7 @@ from ...ir.ast import Add, Expression, LessThan, Multiply, Variable
 from ...kernel_type import KernelType
 from ..identifiable_expression import TensorLayer
 from ..identifiable_expression import ast as ie_ast
-from ..names import dimension_name, tensor_to_string
+from ..names import dimension_name
 from .base import Output
 
 
@@ -68,14 +68,10 @@ class BucketOutput(Output):
         return Add.join(list(reversed(terms)))
 
     def name(self) -> Variable:
-        return Variable(
-            f'bucket_{tensor_to_string(self.output.variable)}{"".join(f"_{x}" for x in self.layers)}'
-        )
+        return Variable(f'bucket_{self.output.id}{"".join(f"_{x}" for x in self.layers)}')
 
     def loop_name(self) -> Variable:
-        return Variable(
-            f'i_bucket_{tensor_to_string(self.output.variable)}{"".join(f"_{x}" for x in self.layers)}'
-        )
+        return Variable(f'i_bucket_{self.output.id}{"".join(f"_{x}" for x in self.layers)}')
 
     def dimension_names(self):
         return [dimension_name(self.output.indexes[layer]) for layer in self.layers]
