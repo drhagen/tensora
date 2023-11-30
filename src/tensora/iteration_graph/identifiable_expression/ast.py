@@ -13,7 +13,6 @@ __all__ = [
 from dataclasses import dataclass
 
 from ...format import Mode
-from .tensor_leaf import TensorLeaf
 
 
 class Expression:
@@ -37,13 +36,10 @@ class Float(Literal):
 class Variable(Expression):
     __slots__ = ()
 
-    variable: TensorLeaf
+    id: str
+    name: str
     indexes: tuple[str, ...]
     modes: tuple[Mode, ...]
-
-    @property
-    def name(self):
-        return self.variable.name
 
     @property
     def order(self):
@@ -52,7 +48,8 @@ class Variable(Expression):
 
 @dataclass(frozen=True, slots=True)
 class Scalar(Variable):
-    variable: TensorLeaf
+    id: str
+    name: str
 
     @property
     def indexes(self):
@@ -65,7 +62,8 @@ class Scalar(Variable):
 
 @dataclass(frozen=True, slots=True)
 class Tensor(Variable):
-    variable: TensorLeaf
+    id: str
+    name: str
     indexes: tuple[str, ...]
     modes: tuple[Mode, ...]
 

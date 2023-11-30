@@ -71,7 +71,7 @@ def to_iteration_graphs_scalar(
     formats: dict[str, Format],
     counter: Iterator[int],
 ) -> Iterator[ig.IterationGraph]:
-    yield ig.TerminalNode(id.Scalar(id.TensorLeaf(self.name, self.id)))
+    yield ig.TerminalNode(id.Scalar(f"{self.id}_{self.name}", self.name))
 
 
 @to_iteration_graphs_expression.register(ast.Tensor)
@@ -91,7 +91,7 @@ def to_iteration_graphs_tensor(
 
     for index_order in legal_iteration_orders(format):
         graph = ig.TerminalNode(
-            id.Tensor(id.TensorLeaf(self.name, self.id), index_variables, modes)
+            id.Tensor(f"{self.id}_{self.name}", self.name, index_variables, modes)
         )
         # Build iteration order bottom up
         for i_index in reversed(index_order):
@@ -255,7 +255,8 @@ def to_iteration_graphs(
     output_layers = {
         assignment.target.indexes[i_dimension]: TensorLayer(
             id.Tensor(
-                id.TensorLeaf(assignment.target.name, assignment.target.id),
+                f"{assignment.target.id}_{assignment.target.name}",
+                assignment.target.name,
                 tuple(assignment.target.indexes[i] for i in output_format.ordering),
                 output_format.modes,
             ),

@@ -148,8 +148,8 @@ class HashOutput(Output):
             key_number = self.key_number(layer)
             layer_index = Variable(self.output.indexes[layer])
             dimension_size = dimension_name(self.output.indexes[layer])
-            position = layer_pointer(self.output.variable, layer)
-            previous_position = previous_layer_pointer(self.output.variable, layer)
+            position = layer_pointer(self.output.id, layer)
+            previous_position = previous_layer_pointer(self.output.id, layer)
             end_position = self.end_position(key_number)
             next_end_position = self.end_position(key_number + 1)
 
@@ -212,8 +212,8 @@ class HashOutput(Output):
             # Bucket phase
             layer_index = Variable(self.output.indexes[layer])
             dimension_size = dimension_name(self.output.indexes[layer])
-            position = layer_pointer(self.output.variable, layer)
-            previous_position = previous_layer_pointer(self.output.variable, layer)
+            position = layer_pointer(self.output.id, layer)
+            previous_position = previous_layer_pointer(self.output.id, layer)
             bucket_position = self.bucket_position(layer)
             previous_bucket_position = self.previous_bucket_position(layer)
 
@@ -231,8 +231,8 @@ class HashOutput(Output):
                 source.append(layer_index.increment())
         elif layer == self.output.order:
             # Final phase
-            vals = vals_name(self.output.variable.name)
-            previous_position = previous_layer_pointer(self.output.variable, layer)
+            vals = vals_name(self.output.name)
+            previous_position = previous_layer_pointer(self.output.id, layer)
             previous_bucket_position = self.previous_bucket_position(layer)
             bucket = BucketOutput(
                 self.output, list(range(self.final_dense_index(), self.output.order))
@@ -317,7 +317,7 @@ class HashOutput(Output):
             return Variable(f"p_{self.name().name}_order_{key_number}_end")
 
     def bucket_position(self, layer: int):
-        return Variable(layer_pointer(self.output.variable, layer).name + "_bucket")
+        return Variable(layer_pointer(self.output.id, layer).name + "_bucket")
 
     def previous_bucket_position(self, layer: int):
         if layer == 0:
