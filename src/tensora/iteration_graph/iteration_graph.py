@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-__all__ = ["IterationGraph", "Sum", "IterationVariable", "TerminalExpression"]
+__all__ = ["IterationGraph", "TerminalNode", "IterationNode", "SumNode"]
 
 from abc import abstractmethod
 from dataclasses import dataclass, replace
@@ -46,14 +46,14 @@ class IterationGraph:
 
 
 @dataclass(frozen=True)
-class TerminalExpression(IterationGraph):
+class TerminalNode(IterationGraph):
     expression: Expression
 
     def extract_context(self, index: str) -> Context:
         return extract_context(self.expression, index)
 
     def exhaust_tensor(self, tensor: TensorLeaf) -> IterationGraph:
-        return TerminalExpression(exhaust_tensor(self.expression, tensor))
+        return TerminalNode(exhaust_tensor(self.expression, tensor))
 
     def is_sparse_output(self) -> bool:
         return False
@@ -70,7 +70,7 @@ class TerminalExpression(IterationGraph):
 
 
 @dataclass(frozen=True)
-class IterationVariable(IterationGraph):
+class IterationNode(IterationGraph):
     index_variable: str
     output: TensorLayer | None
     next: IterationGraph
@@ -122,7 +122,7 @@ class IterationVariable(IterationGraph):
 
 
 @dataclass(frozen=True)
-class Sum(IterationGraph):
+class SumNode(IterationGraph):
     name: str
     terms: list[IterationGraph]
 
@@ -140,7 +140,7 @@ class Sum(IterationGraph):
             new_terms.append(new_term)
 
         if len(new_terms) == 0:
-            return TerminalExpression(Integer(0))
+            return TerminalNode(Integer(0))
         elif len(new_terms) == 1:
             return new_terms[0]
         else:

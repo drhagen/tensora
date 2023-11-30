@@ -24,7 +24,7 @@ from ..kernel_type import KernelType
 from .definition import Definition
 from .identifiable_expression import to_ir
 from .identifiable_expression.tensor_layer import TensorLayer
-from .iteration_graph import IterationGraph, IterationVariable, Sum, TerminalExpression
+from .iteration_graph import IterationGraph, IterationNode, SumNode, TerminalNode
 from .names import crd_name, dimension_name, pos_name, vals_name
 from .outputs import AppendOutput, Output
 from .write_sparse_ir import (
@@ -44,8 +44,8 @@ def to_ir_iteration_graph(
     )
 
 
-@to_ir_iteration_graph.register(TerminalExpression)
-def to_ir_terminal_expression(self: TerminalExpression, output: Output, kernel_type: KernelType):
+@to_ir_iteration_graph.register(TerminalNode)
+def to_ir_terminal_expression(self: TerminalNode, output: Output, kernel_type: KernelType):
     source = SourceBuilder("*** Computation of expression ***")
 
     if kernel_type.is_compute():
@@ -54,7 +54,7 @@ def to_ir_terminal_expression(self: TerminalExpression, output: Output, kernel_t
     return source
 
 
-def generate_subgraphs(graph: IterationVariable) -> list[IterationVariable]:
+def generate_subgraphs(graph: IterationNode) -> list[IterationNode]:
     # The 0th element is just the full graph
     # Each element is derived from a previous element by zeroing a tensor
     # Zeroing a tensor always results in a strictly simpler graph
@@ -82,8 +82,8 @@ def generate_subgraphs(graph: IterationVariable) -> list[IterationVariable]:
     return list(all_subgraphs.values())
 
 
-@to_ir_iteration_graph.register(IterationVariable)
-def to_ir_iteration_variable(self: IterationVariable, output: Output, kernel_type: KernelType):
+@to_ir_iteration_graph.register(IterationNode)
+def to_ir_iteration_variable(self: IterationNode, output: Output, kernel_type: KernelType):
     source = SourceBuilder(f"*** Iteration over {self.index_variable} ***")
 
     if not kernel_type.is_compute() and not self.has_assemble():
@@ -325,8 +325,8 @@ def to_ir_iteration_variable(self: IterationVariable, output: Output, kernel_typ
     return source
 
 
-@to_ir_iteration_graph.register(Sum)
-def to_ir_sum(self: Sum, output: Output, kernel_type: KernelType):
+@to_ir_iteration_graph.register(SumNode)
+def to_ir_sum(self: SumNode, output: Output, kernel_type: KernelType):
     source = SourceBuilder("*** Sum ***")
 
     if kernel_type.is_compute():
