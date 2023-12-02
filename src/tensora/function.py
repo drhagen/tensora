@@ -1,11 +1,4 @@
-__all__ = [
-    "tensor_method",
-    "evaluate",
-    "evaluate_taco",
-    "evaluate_tensora",
-    "PureTensorMethod",
-    "TensorCompiler",
-]
+__all__ = ["tensor_method", "evaluate", "evaluate_taco", "evaluate_tensora", "PureTensorMethod"]
 
 from functools import lru_cache
 from inspect import Parameter, Signature
@@ -35,6 +28,8 @@ class PureTensorMethod:
                 raise error
             case Success(problem):
                 pass
+            case _:
+                raise NotImplementedError()
 
         # Store validated attributes
         self.assignment = assignment
