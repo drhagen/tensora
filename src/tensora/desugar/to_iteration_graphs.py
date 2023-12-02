@@ -249,7 +249,7 @@ def merge_assignment(
 
 
 def to_iteration_graphs(
-    assignment: ast.Assignment, formats: dict[str, Format]
+    assignment: ast.Assignment, formats: dict[str, Format | None]
 ) -> Iterator[ig.IterationGraph]:
     output_format = formats[assignment.target.name]
     output_layers = {

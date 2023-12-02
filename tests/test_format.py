@@ -2,7 +2,7 @@ import pytest
 from returns.result import Failure
 
 from tensora import Format, Mode
-from tensora.format import InvalidModeOrderingError, parse_format
+from tensora.format import InvalidModeOrderingError, parse_format, parse_named_format
 
 format_strings = [
     ("", Format((), ())),
@@ -27,9 +27,25 @@ def test_deparse_format(string, format):
     assert actual == string
 
 
-@pytest.mark.parametrize("string", ["df", "1d0s", "d0s", "d0s1s1", "d1s2s3"])
+@pytest.mark.parametrize("string", ["df", "1d0s", "d0s", "d0s1s1", "d1s2s3", "d3d1d2"])
 def test_parse_bad_format(string):
     actual = parse_format(string)
+    assert isinstance(actual, Failure)
+
+
+def test_parse_named_format():
+    actual = parse_named_format("A:d1s0s2").unwrap()
+    assert actual == ("A", Format((Mode.dense, Mode.compressed, Mode.compressed), (1, 0, 2)))
+
+
+def test_parse_bad_named_format():
+    actual = parse_named_format("d1s0s2s3")
+    assert isinstance(actual, Failure)
+
+
+@pytest.mark.parametrize("string", ["A:d0s", "A:d3d1d2"])
+def test_parse_bad_ordering_in_named_format(string):
+    actual = parse_named_format(string)
     assert isinstance(actual, Failure)
 
 

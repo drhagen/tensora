@@ -1,4 +1,4 @@
-__all__ = ["MutatingAssignmentError", "InconsistentVariableSizeError"]
+__all__ = ["MutatingAssignmentError", "InconsistentDimensionsError"]
 
 from dataclasses import dataclass
 
@@ -17,7 +17,7 @@ class MutatingAssignmentError(Exception):
 
 
 @dataclass(frozen=True, slots=True)
-class InconsistentVariableSizeError(Exception):
+class InconsistentDimensionsError(Exception):
     assignment: Assignment
     first: Variable
     second: Variable

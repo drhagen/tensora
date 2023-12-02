@@ -1,7 +1,7 @@
 import pytest
 
 from tensora.expression import (
-    InconsistentVariableSizeError,
+    InconsistentDimensionsError,
     MutatingAssignmentError,
     parse_assignment,
 )
@@ -71,7 +71,7 @@ def test_mutating_assignment():
     ],
 )
 def test_inconsistent_variable_size(assignment):
-    assert isinstance(parse_assignment(assignment).failure(), InconsistentVariableSizeError)
+    assert isinstance(parse_assignment(assignment).failure(), InconsistentDimensionsError)
 
 
 def parse(string):

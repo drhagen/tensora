@@ -1,5 +1,5 @@
 __all__ = [
-    "taco_kernel",
+    "generate_library",
     "allocate_taco_structure",
     "taco_structure_to_cffi",
     "take_ownership_of_arrays",
@@ -8,20 +8,18 @@ __all__ = [
 ]
 
 import re
-import subprocess
 import tempfile
 import threading
-from enum import Enum, auto
 from pathlib import Path
-from typing import Any, List, Tuple
+from typing import Any
 from weakref import WeakKeyDictionary
 
 from cffi import FFI
+from returns.result import Failure, Success
 
-from .expression import deparse_to_taco
-from .expression.ast import Assignment
-from .format import Format
-from .native import generate_c_code_from_parsed
+from .generate import TensorCompiler, generate_c_code
+from .kernel_type import KernelType
+from .problem import Problem
 
 lock = threading.Lock()
 
@@ -97,69 +95,31 @@ tensor_cdefs.set_source("_main", "")
 tensor_lib = tensor_cdefs.dlopen(None)
 
 
-def format_to_taco_format(format: Format):
-    return (
-        "".join(mode.character for mode in format.modes)
-        + ":"
-        + ",".join(map(str, format.ordering))
-    )
+def generate_library(
+    problem: Problem, compiler: TensorCompiler = TensorCompiler.tensora
+) -> tuple[list[str], Any]:
+    """Generate source, compile it, and load it.
 
-
-class TensorCompiler(Enum):
-    taco = auto()
-    tensora = auto()
-
-
-def taco_kernel(
-    expression: Assignment,
-    formats: dict[str, Format],
-    compiler: TensorCompiler = TensorCompiler.tensora,
-) -> Tuple[List[str], Any]:
-    """Call taco with expression and compile resulting function.
-
-    Given an expression and a set of formats:
-    (1) call out to taco to get the source code for the evaluate function that runs that expression for those formats
+    Given a problem:
+    (1) invoke the tensor algebra compiler to generate C code for evaluate
     (2) parse the signature in the source to determine the order of arguments
     (3) compile the source with cffi
     (4) return the list of parameter names and the compiled library
 
-    Because compilation can take a non-trivial amount of time, the results of this function is cached by a
-    `functools.lru_cache`, which is configured to store the results of the 256 most recent calls to this function.
-
     Args:
-        expression: An expression that can parsed by taco.
-        formats: A frozen set of pairs of strings. It must be a frozen set because `lru_cache` requires that the
-        arguments be hashable and therefore immutable. The first element of each pair is a variable name; the second
-        element is the format in taco format (e.g. 'dd:1,0', 'dss:0,1,2'). Scalar variables must not be listed because
-        taco does not understand them having a format.
+        problem: A valid tensor algebra expression and associated tensor formats
+        compiler: The tensor algebra compiler to use to generate the C code
 
     Returns:
         A tuple where the first element is the list of variable names in the order they appear in the function
         signature, and the second element is the compiled FFILibrary which has a single method `evaluate` which expects
         cffi pointers to taco_tensor_t instances in order specified by the list of variable names.
     """
-    match compiler:
-        case TensorCompiler.taco:
-            expression_string = deparse_to_taco(expression)
-            format_strings = frozenset(
-                (parameter_name, format_to_taco_format(format))
-                for parameter_name, format in formats.items()
-                if format.order != 0  # Taco does not like formats for scalars
-            )
-            # Call taco to write the kernels to standard out
-            result = subprocess.run(
-                [taco_binary, expression_string, "-print-evaluate", "-print-nocolor"]
-                + [f"-f={name}:{format}" for name, format in format_strings],
-                capture_output=True,
-                text=True,
-            )
-
-            if result.returncode != 0:
-                raise RuntimeError(result.stderr)
-
-            source = result.stdout
-        case TensorCompiler.tensora:
-            source = generate_c_code_from_parsed(expression, formats)
+    match generate_c_code(problem, [KernelType.evaluate], compiler):
+        case Failure(error):
+            raise error
+        case Success(source):
+            pass
 
     # Determine signature
     # 1) Find function by name and capture its parameter list
@@ -197,7 +157,7 @@ def taco_kernel(
 
 
 def allocate_taco_structure(
-    mode_types: Tuple[int, ...], dimensions: Tuple[int, ...], mode_ordering: Tuple[int, ...]
+    mode_types: tuple[int, ...], dimensions: tuple[int, ...], mode_ordering: tuple[int, ...]
 ):
     """Allocate all parts of a taco tensor except growable arrays.
 
@@ -285,12 +245,12 @@ def allocate_taco_structure(
 
 
 def taco_structure_to_cffi(
-    indices: List[List[List[int]]],
-    vals: List[float],
+    indices: list[list[list[int]]],
+    vals: list[float],
     *,
-    mode_types: Tuple[int, ...],
-    dimensions: Tuple[int, ...],
-    mode_ordering: Tuple[int, ...],
+    mode_types: tuple[int, ...],
+    dimensions: tuple[int, ...],
+    mode_ordering: tuple[int, ...],
 ):
     """Build a cffi taco tensor from Python data.
 
@@ -485,5 +445,5 @@ def take_ownership_of_tensor(cffi_tensor) -> None:
     take_ownership_of_tensor_members(cffi_tensor)
 
 
-def weakly_increasing(list: List[int]):
+def weakly_increasing(list: list[int]):
     return all(x <= y for x, y in zip(list, list[1:]))
