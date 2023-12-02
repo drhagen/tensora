@@ -19,8 +19,8 @@ from .problem import Problem
 
 class TensorCompiler(str, Enum):
     # Python 3.10 does not support StrEnum, so do it manually
-    taco = "taco"
     tensora = "tensora"
+    taco = "taco"
 
     def __str__(self) -> str:
         return self.name
