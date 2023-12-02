@@ -15,10 +15,9 @@ from typing import Any
 from weakref import WeakKeyDictionary
 
 from cffi import FFI
+from returns.result import Failure, Success
 
-from tensora.generate import TensorCompiler
-
-from .generate import generate_c_code
+from .generate import TensorCompiler, generate_c_code
 from .kernel_type import KernelType
 from .problem import Problem
 
@@ -116,7 +115,11 @@ def generate_library(
         signature, and the second element is the compiled FFILibrary which has a single method `evaluate` which expects
         cffi pointers to taco_tensor_t instances in order specified by the list of variable names.
     """
-    source = generate_c_code(problem, [KernelType.evaluate], compiler)
+    match generate_c_code(problem, [KernelType.evaluate], compiler):
+        case Failure(error):
+            raise error
+        case Success(source):
+            pass
 
     # Determine signature
     # 1) Find function by name and capture its parameter list

@@ -1,8 +1,18 @@
-__all__ = ["TensorCompiler", "generate_c_code", "generate_c_code_tensora", "generate_c_code_taco"]
+__all__ = [
+    "TensorCompiler",
+    "generate_c_code",
+    "generate_c_code_tensora",
+    "generate_c_code_taco",
+    "TacoError",
+]
 
+from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 
+from returns.result import Failure, Result, Success
+
+from .desugar import DiagonalAccessError, NoKernelFoundError
 from .kernel_type import KernelType
 from .problem import Problem
 
@@ -18,7 +28,7 @@ class TensorCompiler(str, Enum):
 
 def generate_c_code(
     problem: Problem, kernel_types: list[KernelType], tensor_compiler: TensorCompiler
-) -> str:
+) -> Result[str, Exception]:
     match tensor_compiler:
         case TensorCompiler.tensora:
             return generate_c_code_tensora(problem, kernel_types)
@@ -26,7 +36,9 @@ def generate_c_code(
             return generate_c_code_taco(problem, kernel_types)
 
 
-def generate_c_code_tensora(problem: Problem, kernel_types: list[KernelType]) -> str:
+def generate_c_code_tensora(
+    problem: Problem, kernel_types: list[KernelType]
+) -> Result[str, DiagonalAccessError | NoKernelFoundError]:
     from .codegen import ir_to_c
     from .desugar import best_algorithm, desugar_assignment, index_dimensions, to_identifiable
     from .ir import SourceBuilder, peephole
@@ -40,19 +52,35 @@ def generate_c_code_tensora(problem: Problem, kernel_types: list[KernelType]) ->
 
     definition = Definition(output_variable, formats, index_dimensions(desugar))
 
-    graph = best_algorithm(desugar, formats)
+    match best_algorithm(desugar, formats):
+        case Failure() as result:
+            return result
+        case Success(graph):
+            pass
+        case _:
+            raise NotImplementedError()
 
     ir = SourceBuilder()
     for kernel_type in kernel_types:
         ir.append(generate_ir(definition, graph, kernel_type).finalize())
 
-    return ir_to_c(peephole(ir.finalize()))
+    return Success(ir_to_c(peephole(ir.finalize())))
+
+
+@dataclass(frozen=True, slots=True)
+class TacoError(Exception):
+    message: str
+
+    def __str__(self) -> str:
+        return self.message
 
 
 taco_binary = Path(__file__).parent.joinpath("taco/bin/taco")
 
 
-def generate_c_code_taco(problem: Problem, kernel_types: list[KernelType]) -> str:
+def generate_c_code_taco(
+    problem: Problem, kernel_types: list[KernelType]
+) -> Result[str, Exception]:
     import subprocess
 
     from .expression import deparse_to_taco
@@ -86,6 +114,6 @@ def generate_c_code_taco(problem: Problem, kernel_types: list[KernelType]) -> st
     )
 
     if result.returncode != 0:
-        raise RuntimeError(result.stderr)
+        return Failure(TacoError(result.stderr))
 
-    return result.stdout
+    return Success(result.stdout)

@@ -7,7 +7,6 @@ import typer
 from parsita import ParseError
 from returns.result import Failure, Success
 
-from .desugar import DiagonalAccessError, NoKernelFoundError
 from .expression import parse_assignment
 from .format import parse_named_format
 from .generate import TensorCompiler, generate_c_code
@@ -108,11 +107,14 @@ def tensora(
             raise NotImplementedError()
 
     # Generate code
-    try:
-        code = generate_c_code(problem, kernel_types, tensor_compiler)
-    except (DiagonalAccessError, NoKernelFoundError) as error:
-        typer.echo(error, err=True)
-        raise typer.Exit(1)
+    match generate_c_code(problem, kernel_types, tensor_compiler):
+        case Failure(error):
+            typer.echo(str(error), err=True)
+            raise typer.Exit(1)
+        case Success(code):
+            pass
+        case _:
+            raise NotImplementedError()
 
     if output_path is None:
         typer.echo(code)
