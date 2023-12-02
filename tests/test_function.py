@@ -134,7 +134,7 @@ def test_diagonal_error(evaluate, compiler):
 
 def test_no_solution(evaluate, compiler):
     if compiler == TensorCompiler.taco:
-        pytest.skip("Taco currently segfaults on this")
+        pytest.xfail("Taco currently segfaults on this")
 
     with pytest.raises(NoKernelFoundError):
         tensor_method("A(i,j) = B(i,j) + C(j,i)", dict(B="ds", C="ds"), "ds", compiler)
