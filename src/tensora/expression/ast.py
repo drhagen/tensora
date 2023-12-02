@@ -203,7 +203,7 @@ class Assignment:
     expression: Expression
 
     def __post_init__(self):
-        from .exceptions import InconsistentVariableSizeError, MutatingAssignmentError
+        from .exceptions import InconsistentDimensionsError, MutatingAssignmentError
 
         target_name = self.target.name
 
@@ -215,7 +215,7 @@ class Assignment:
 
             for variable in rest:
                 if first.order != variable.order:
-                    raise InconsistentVariableSizeError(self, first, variable)
+                    raise InconsistentDimensionsError(self, first, variable)
 
             variable_orders[name] = first.order
 

@@ -4,13 +4,15 @@ from pathlib import Path
 from typing import Annotated, Optional
 
 import typer
-from parsita import Failure, Success
+from parsita import ParseError
+from returns.result import Failure, Success
 
-from .desugar.exceptions import DiagonalAccessError, NoKernelFoundError
+from .desugar import DiagonalAccessError, NoKernelFoundError
 from .expression import parse_assignment
-from .format import Format, Mode, parse_format
+from .format import parse_named_format
+from .generate import TensorCompiler, generate_c_code
 from .kernel_type import KernelType
-from .native import generate_c_code_from_parsed
+from .problem import make_problem
 
 app = typer.Typer()
 
@@ -43,6 +45,14 @@ def tensora(
             help="The type of kernel that will be generated. Can be mentioned multiple times.",
         ),
     ] = [KernelType.compute],
+    tensor_compiler: Annotated[
+        TensorCompiler,
+        typer.Option(
+            "--compiler",
+            "-c",
+            help="The tensor algebra compiler to use to generate the kernel.",
+        ),
+    ] = TensorCompiler.tensora,
     output_path: Annotated[
         Optional[Path],
         typer.Option(
@@ -61,45 +71,45 @@ def tensora(
         case Failure(error):
             typer.echo(f"Failed to parse assignment:\n{error}", err=True)
             raise typer.Exit(1)
-        case Success(sugar):
-            sugar = sugar
+        case Success(parsed_assignment):
+            pass
+        case _:
+            raise NotImplementedError()
 
     # Parse formats
     parsed_formats = {}
     for target_format_string in target_format_strings:
-        split_format = target_format_string.split(":")
-        if len(split_format) != 2:
-            typer.echo(
-                f"Format must be of the form 'target:format_string': {target_format_string}",
-                err=True,
-            )
-            raise typer.Exit(1)
-
-        target, format_string = split_format
+        match parse_named_format(target_format_string):
+            case Failure(ParseError(_) as error):
+                typer.echo(f"Failed to parse format:\n{error}", err=True)
+                raise typer.Exit(1)
+            case Failure(error):
+                typer.echo(str(error), err=True)
+                raise typer.Exit(1)
+            case Success((target, format)):
+                pass
+            case _:
+                raise NotImplementedError()
 
         if target in parsed_formats:
             typer.echo(f"Format for {target} was mentioned multiple times", err=True)
             raise typer.Exit(1)
 
-        match parse_format(format_string):
-            case Failure(error):
-                typer.echo(f"Failed to parse format:\n{error}", err=True)
-                typer.Exit(1)
-            case Success(format):
-                parsed_formats[target] = format
+        parsed_formats[target] = format
 
-    # Fill in missing formats with dense formats
-    # Use the order of variable_orders to determine the parameter order
-    formats = {}
-    for variable_name, order in sugar.variable_orders().items():
-        if variable_name in parsed_formats:
-            formats[variable_name] = parsed_formats[variable_name]
-        else:
-            formats[variable_name] = Format((Mode.dense,) * order, tuple(range(order)))
+    # Validate and standardize assignment and formats
+    match make_problem(parsed_assignment, parsed_formats):
+        case Failure(error):
+            typer.echo(str(error), err=True)
+            raise typer.Exit(1)
+        case Success(problem):
+            pass
+        case _:
+            raise NotImplementedError()
 
     # Generate code
     try:
-        code = generate_c_code_from_parsed(sugar, formats, kernel_types)
+        code = generate_c_code(problem, kernel_types, tensor_compiler)
     except (DiagonalAccessError, NoKernelFoundError) as error:
         typer.echo(error, err=True)
         raise typer.Exit(1)

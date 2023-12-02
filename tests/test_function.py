@@ -3,8 +3,9 @@ from random import randrange
 
 import pytest
 
-from tensora import Tensor, TensorCompiler, evaluate_taco, evaluate_tensora, tensor_method
+from tensora import Tensor, evaluate_taco, evaluate_tensora, tensor_method
 from tensora.desugar import DiagonalAccessError, NoKernelFoundError
+from tensora.generate import TensorCompiler
 
 pytestmark = pytest.mark.parametrize(
     ("evaluate", "compiler"),

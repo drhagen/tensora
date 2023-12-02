@@ -15,5 +15,5 @@ class TensorDimension:
 @dataclass(frozen=True, slots=True)
 class Definition:
     output_variable: Variable
-    formats: dict[str, Format]
+    formats: dict[str, Format | None]
     indexes: dict[str, TensorDimension]

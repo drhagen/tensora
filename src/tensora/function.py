@@ -9,11 +9,14 @@ __all__ = [
 
 from functools import lru_cache
 from inspect import Parameter, Signature
-from typing import Dict, Tuple
 
-from .compile import TensorCompiler, allocate_taco_structure, taco_kernel, take_ownership_of_arrays
-from .expression.ast import Assignment, Scalar
+from returns.result import Failure, Success
+
+from .compile import allocate_taco_structure, generate_library, take_ownership_of_arrays
+from .expression.ast import Assignment
 from .format import Format, parse_format
+from .generate import TensorCompiler
+from .problem import make_problem
 from .tensor import Tensor
 
 
@@ -23,41 +26,15 @@ class PureTensorMethod:
     def __init__(
         self,
         assignment: Assignment,
-        input_formats: Dict[str, Format],
-        output_format: Format,
+        input_formats: dict[str, Format | None],
+        output_format: Format | None,
         compiler: TensorCompiler = TensorCompiler.tensora,
     ):
-        target_name = assignment.target.name
-        variable_orders = assignment.variable_orders()
-
-        # Ensure that all parameters are defined
-        for variable_name in variable_orders.keys():
-            if variable_name != target_name and variable_name not in input_formats:
-                raise ValueError(
-                    f"Variable {variable_name} in {assignment} not listed in parameters"
-                )
-
-        # Ensure that no extraneous parameters are defined
-        for parameter_name in input_formats.keys():
-            if parameter_name not in variable_orders:
-                raise ValueError(f"Parameter {parameter_name} not in {assignment} variables")
-
-        # Verify that parameters have the correct order
-        for parameter_name, format in input_formats.items():
-            if format.order != variable_orders[parameter_name]:
-                raise ValueError(
-                    f"Parameter {parameter_name} has order {format.order}, but this variable in the "
-                    f"assignment has order {variable_orders[parameter_name]}"
-                )
-
-        if isinstance(assignment.target, Scalar):
-            raise NotImplementedError("Tensora does not support scalar outputs yet")
-
-        if output_format.order != assignment.target.order:
-            raise ValueError(
-                f"Output parameter has order {output_format.order}, but the output variable in the "
-                f"assignment has order {assignment.target.order}"
-            )
+        match make_problem(assignment, {assignment.target.name: output_format, **input_formats}):
+            case Failure(error):
+                raise error
+            case Success(problem):
+                pass
 
         # Store validated attributes
         self.assignment = assignment
@@ -73,8 +50,7 @@ class PureTensorMethod:
         )
 
         # Compile taco function
-        all_formats = {self.assignment.target.name: output_format, **input_formats}
-        self.parameter_order, self.cffi_lib = taco_kernel(assignment, all_formats, compiler)
+        self.parameter_order, self.cffi_lib = generate_library(problem, compiler)
 
     def __call__(self, *args, **kwargs):
         # Handle arguments like normal Python function
@@ -152,7 +128,7 @@ class PureTensorMethod:
 
 def tensor_method(
     assignment: str,
-    input_formats: Dict[str, str],
+    input_formats: dict[str, str],
     output_format: str,
     compiler: TensorCompiler = TensorCompiler.tensora,
 ) -> PureTensorMethod:
@@ -164,7 +140,7 @@ def tensor_method(
 @lru_cache()
 def cachable_tensor_method(
     assignment: str,
-    input_formats: Tuple[Tuple[str, str], ...],
+    input_formats: tuple[tuple[str, str], ...],
     output_format: str,
     compiler: TensorCompiler,
 ) -> PureTensorMethod:

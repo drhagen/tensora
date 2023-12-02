@@ -1,4 +1,4 @@
-__all__ = ["parse_format"]
+__all__ = ["parse_format", "parse_named_format"]
 
 from parsita import ParseError, ParserContext, lit, reg, rep
 from parsita.util import constant
@@ -30,9 +30,21 @@ class FormatParsers(ParserContext):
 
     format = format_without_orderings | format_with_orderings
 
+    variable = reg(r"[a-zA-Z_][a-zA-Z0-9_]*")
+    named_format = variable << ":" & format > tuple
 
-def parse_format(format: str) -> result.Result[Format, ParseError | InvalidModeOrderingError]:
+
+def parse_format(string: str, /) -> result.Result[Format, ParseError | InvalidModeOrderingError]:
     try:
-        return FormatParsers.format.parse(format)
+        return FormatParsers.format.parse(string)
+    except InvalidModeOrderingError as e:
+        return result.Failure(e)
+
+
+def parse_named_format(
+    string: str, /
+) -> result.Result[tuple[str, Format], ParseError | InvalidModeOrderingError]:
+    try:
+        return FormatParsers.named_format.parse(string)
     except InvalidModeOrderingError as e:
         return result.Failure(e)
