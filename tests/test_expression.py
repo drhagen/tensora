@@ -21,25 +21,21 @@ assignment_strings = [
         Assignment(Tensor("D", ["i"]), Subtract(Tensor("A", ["i"]), Tensor("B", ["i"]))),
     ),
     (
-        "A2(i) = 2 * a * A(i)",
-        Assignment(
-            Tensor("A2", ["i"]), Multiply(Multiply(Integer(2), Scalar("a")), Tensor("A", ["i"]))
-        ),
-    ),
-    (
         "B2(i) = 2.0 * B(i)",
         Assignment(Tensor("B2", ["i"]), Multiply(Float(2.0), Tensor("B", ["i"]))),
     ),
     (
         "ab2(i) = 2.0 * (a(i) + b(i))",
         Assignment(
-            Tensor("ab2", ["i"]), Multiply(Float(2.0), Add(Tensor("a", ["i"]), Tensor("b", ["i"])))
+            Tensor("ab2", ["i"]),
+            Multiply(Float(2.0), Add(Tensor("a", ["i"]), Tensor("b", ["i"]))),
         ),
     ),
     (
         "ab2(i) = (a(i) + b(i)) * 2.0",
         Assignment(
-            Tensor("ab2", ["i"]), Multiply(Add(Tensor("a", ["i"]), Tensor("b", ["i"])), Float(2.0))
+            Tensor("ab2", ["i"]),
+            Multiply(Add(Tensor("a", ["i"]), Tensor("b", ["i"])), Float(2.0)),
         ),
     ),
 ]
@@ -65,7 +61,7 @@ def test_mutating_assignment():
     "assignment",
     [
         "A(i) = B(i) + B(i,j)",
-        "A(i) = B(i) - B",
+        "A(i) = B(i) - B()",
         "A(i) = B(i,j) * B(k,l,m)",
         "A(i) = B(i,j) + C(j,k) + (B(k) * D(k))",
     ],
@@ -87,8 +83,8 @@ def test_assignment_to_string():
     "string,output",
     [
         (
-            "y(i) = 0.5 * (b - a) * (x1(i,j) + x2(i,j)) * z(j)",
-            {"y": 1, "b": None, "a": None, "x1": 2, "x2": 2, "z": 1},
+            "y(i) = 0.5 * (b() - a()) * (x1(i,j) + x2(i,j)) * z(j)",
+            {"y": 1, "b": 0, "a": 0, "x1": 2, "x2": 2, "z": 1},
         ),
         ("B2(i,k) = B(i,j) * B(j,k)", {"B2": 2, "B": 2}),
     ],
@@ -101,7 +97,7 @@ def test_variable_order(string, output):
     "string,output",
     [
         (
-            "y(i) = 0.5 * (b - a) * (x1(i,j) + x2(i,j)) * z(j)",
+            "y(i) = 0.5 * (b() - a()) * (x1(i,j) + x2(i,j)) * z(j)",
             {"i": {("y", 0), ("x1", 0), ("x2", 0)}, "j": {("x1", 1), ("x2", 1), ("z", 0)}},
         ),
         (

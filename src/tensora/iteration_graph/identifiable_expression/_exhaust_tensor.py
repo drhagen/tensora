@@ -2,7 +2,7 @@ __all__ = ["exhaust_tensor"]
 
 from functools import singledispatch
 
-from .ast import Add, Expression, Integer, Literal, Multiply, Scalar, Tensor
+from .ast import Add, Expression, Integer, Literal, Multiply, Tensor
 
 
 @singledispatch
@@ -12,11 +12,6 @@ def exhaust_tensor(self, reference: str) -> Expression:
 
 @exhaust_tensor.register(Literal)
 def exhaust_tensor_literal(self: Literal, reference: str):
-    return self
-
-
-@exhaust_tensor.register(Scalar)
-def exhaust_tensor_scalar(self: Scalar, reference: str):
     return self
 
 

@@ -3,7 +3,7 @@ __all__ = ["to_ir"]
 from functools import singledispatch
 
 from ...ir import ast as ir
-from .ast import Add, Expression, Float, Integer, Multiply, Scalar, Tensor
+from .ast import Add, Expression, Float, Integer, Multiply, Tensor
 
 
 @singledispatch
@@ -21,11 +21,6 @@ def to_ir_integer(self: Integer):
 @to_ir.register(Float)
 def to_ir_float(self: Float):
     return ir.FloatLiteral(self.value)
-
-
-@to_ir.register(Scalar)
-def to_ir_scalar(self: Scalar):
-    return ir.Variable(self.name)
 
 
 @to_ir.register(Tensor)

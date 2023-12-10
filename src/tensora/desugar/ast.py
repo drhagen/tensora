@@ -3,8 +3,6 @@ __all__ = [
     "Literal",
     "Integer",
     "Float",
-    "Variable",
-    "Scalar",
     "Tensor",
     "Add",
     "Multiply",
@@ -33,26 +31,8 @@ class Float(Literal):
     value: float
 
 
-class Variable(Expression):
-    __slots__ = ()
-
-    id: int
-    name: str
-    indexes: list[str]
-
-
 @dataclass(frozen=True, slots=True)
-class Scalar(Variable):
-    id: int
-    name: str
-
-    @property
-    def indexes(self):
-        return []
-
-
-@dataclass(frozen=True, slots=True)
-class Tensor(Variable):
+class Tensor(Expression):
     id: int
     name: str
     indexes: list[str]
@@ -78,5 +58,5 @@ class Contract(Expression):
 
 @dataclass(frozen=True, slots=True)
 class Assignment:
-    target: Variable
+    target: Tensor
     expression: Expression

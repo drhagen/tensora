@@ -3,17 +3,7 @@ __all__ = ["index_dimensions"]
 from functools import singledispatch
 
 from ..iteration_graph import TensorDimension
-from .ast import (
-    Add,
-    Assignment,
-    Contract,
-    Expression,
-    Float,
-    Integer,
-    Multiply,
-    Scalar,
-    Tensor,
-)
+from .ast import Add, Assignment, Contract, Expression, Float, Integer, Multiply, Tensor
 
 
 @singledispatch
@@ -23,8 +13,7 @@ def index_dimensions_expression(self: Expression) -> dict[str, TensorDimension]:
 
 @index_dimensions_expression.register(Integer)
 @index_dimensions_expression.register(Float)
-@index_dimensions_expression.register(Scalar)
-def index_dimensions_nothing(self: Integer | Float | Scalar) -> dict[str, TensorDimension]:
+def index_dimensions_nothing(self: Integer | Float) -> dict[str, TensorDimension]:
     return {}
 
 

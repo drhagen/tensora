@@ -90,7 +90,7 @@ def generate_c_code_taco(
     expression_string = deparse_to_taco(problem.assignment)
     format_string_arguments = []
     for name, format in formats.items():
-        if format is not None and format.order != 0:  # Taco does not like formats for scalars
+        if format.order != 0:  # Taco does not like formats for scalars
             mode_string = "".join(mode.character for mode in format.modes)
             ordering_string = ",".join(map(str, format.ordering))
             format_string_arguments.append(f"-f={name}:{mode_string}:{ordering_string}")

@@ -7,7 +7,7 @@ from parsita.util import splat
 from returns import result
 
 from ._exceptions import InconsistentDimensionsError, MutatingAssignmentError
-from .ast import Add, Assignment, Float, Integer, Multiply, Scalar, Subtract, Tensor
+from .ast import Add, Assignment, Float, Integer, Multiply, Subtract, Tensor
 
 
 def make_expression(first, rest):
@@ -31,16 +31,14 @@ class TensorExpressionParsers(ParserContext, whitespace=r"[ ]*"):
     number = floating_point | integer
 
     tensor = name & "(" >> repsep(name, ",") << ")" > splat(Tensor)
-    scalar = name > Scalar
-    variable = tensor | scalar
 
     parentheses = "(" >> expression << ")"  # noqa: F821
-    factor = variable | number | parentheses
+    factor = tensor | number | parentheses
 
     term = rep1sep(factor, "*") > (lambda x: reduce(Multiply, x))
     expression = term & rep(lit("+", "-") & term) > splat(make_expression)
 
-    assignment = variable & "=" >> expression > splat(Assignment)
+    assignment = tensor & "=" >> expression > splat(Assignment)
 
 
 def parse_assignment(

@@ -29,13 +29,6 @@ def desugar_float(
     return desugar.Float(self.value)
 
 
-@desugar_expression.register(sugar.Scalar)
-def desugar_scalar(
-    self: sugar.Scalar, contract_indexes: set[str], ids: Iterator[int]
-) -> desugar.Expression:
-    return desugar.Scalar(next(ids), self.name)
-
-
 @desugar_expression.register(sugar.Tensor)
 def desugar_tensor(
     self: sugar.Tensor, contract_indexes: set[str], ids: Iterator[int]
@@ -112,13 +105,7 @@ def desugar_multiply(
 def desugar_assignment(assignment: sugar.Assignment) -> desugar.Assignment:
     ids = count()
 
-    match assignment.target:
-        case sugar.Scalar(name):
-            desugared_target = desugar.Scalar(next(ids), name)
-        case sugar.Tensor(name, indexes):
-            desugared_target = desugar.Tensor(next(ids), name, indexes)
-        case _:
-            raise NotImplementedError()
+    desugared_target = desugar.Tensor(next(ids), assignment.target.name, assignment.target.indexes)
 
     all_indexes = set(assignment.index_participants().keys())
     contract_indexes = all_indexes - set(assignment.target.indexes)
