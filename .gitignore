@@ -11,3 +11,4 @@ build
 venv
 dist
 src/tensora/taco
+.hypothesis
