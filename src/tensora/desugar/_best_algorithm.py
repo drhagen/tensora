@@ -5,8 +5,8 @@ from returns.result import Failure, Result, Success
 from ..format import Format
 from ..iteration_graph.iteration_graph import IterationGraph
 from . import ast
-from .exceptions import DiagonalAccessError, NoKernelFoundError
-from .to_iteration_graphs import to_iteration_graphs
+from ._exceptions import DiagonalAccessError, NoKernelFoundError
+from ._to_iteration_graphs import to_iteration_graphs
 
 
 def best_algorithm(

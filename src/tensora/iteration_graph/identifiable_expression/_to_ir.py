@@ -30,7 +30,7 @@ def to_ir_scalar(self: Scalar):
 
 @to_ir.register(Tensor)
 def to_ir_tensor(self: Tensor):
-    from ..names import previous_layer_pointer, vals_name
+    from .._names import previous_layer_pointer, vals_name
 
     return vals_name(self.name).idx(previous_layer_pointer(self.id, self.order))
 

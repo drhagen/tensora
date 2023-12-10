@@ -3,7 +3,7 @@ __all__ = ["TensorLayer"]
 from dataclasses import dataclass
 
 from ...ir import ast as ir
-from ..names import (
+from .._names import (
     crd_capacity_name,
     crd_name,
     layer_begin_name,

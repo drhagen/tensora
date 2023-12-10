@@ -6,9 +6,7 @@ from ...format import Mode
 from ...ir import SourceBuilder, types
 from ...ir.ast import ArrayAllocate, Expression, IntegerLiteral, Multiply, Variable
 from ...kernel_type import KernelType
-from ..identifiable_expression import TensorLayer
-from ..identifiable_expression import ast as ie_ast
-from ..names import (
+from .._names import (
     crd_capacity_name,
     crd_name,
     dimension_name,
@@ -19,9 +17,11 @@ from ..names import (
     vals_capacity_name,
     vals_name,
 )
-from .base import Output
-from .bucket import BucketOutput
-from .hash import HashOutput
+from ..identifiable_expression import TensorLayer
+from ..identifiable_expression import ast as ie_ast
+from ._base import Output
+from ._bucket import BucketOutput
+from ._hash import HashOutput
 
 default_array_size = Multiply(IntegerLiteral(1024), IntegerLiteral(1024))
 

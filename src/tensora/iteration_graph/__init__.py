@@ -1,2 +1,2 @@
-from .definition import Definition, TensorDimension
-from .generate_ir import generate_ir
+from ._definition import Definition, TensorDimension
+from ._generate_ir import generate_ir

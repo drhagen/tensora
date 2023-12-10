@@ -6,10 +6,10 @@ from ...format import Mode
 from ...ir import SourceBuilder, types
 from ...ir.ast import Add, Expression, LessThan, Multiply, Variable
 from ...kernel_type import KernelType
+from .._names import dimension_name
 from ..identifiable_expression import TensorLayer
 from ..identifiable_expression import ast as ie_ast
-from ..names import dimension_name
-from .base import Output
+from ._base import Output
 
 
 @dataclass(frozen=True, slots=True)

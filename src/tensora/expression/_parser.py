@@ -6,8 +6,8 @@ from parsita import ParseError, ParserContext, lit, reg, rep, rep1sep, repsep
 from parsita.util import splat
 from returns import result
 
+from ._exceptions import InconsistentDimensionsError, MutatingAssignmentError
 from .ast import Add, Assignment, Float, Integer, Multiply, Scalar, Subtract, Tensor
-from .exceptions import InconsistentDimensionsError, MutatingAssignmentError
 
 
 def make_expression(first, rest):

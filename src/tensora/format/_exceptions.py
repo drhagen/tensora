@@ -2,7 +2,7 @@ __all__ = ["InvalidModeOrderingError"]
 
 from dataclasses import dataclass
 
-from .format import Mode
+from ._format import Mode
 
 
 @dataclass(frozen=True, slots=True)

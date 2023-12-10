@@ -1,6 +1,6 @@
 __all__ = ["format_order"]
 
-from .format import Format
+from ._format import Format
 
 
 def format_order(format: Format | None) -> int | None:

@@ -44,7 +44,7 @@ from ..ir.ast import (
     Subtract,
     Variable,
 )
-from .type_to_c import type_to_c
+from ._type_to_c import type_to_c
 
 
 def parens(code: Expression, wrap_me: type | tuple[type, ...]):

@@ -5,8 +5,8 @@ __all__ = ["IterationGraph", "TerminalNode", "IterationNode", "SumNode"]
 from abc import abstractmethod
 from dataclasses import dataclass, replace
 
+from .._stable_set import StableFrozenSet
 from ..format import Mode
-from ..stable_set import StableFrozenSet
 from .identifiable_expression import Context, TensorLayer, exhaust_tensor, extract_context
 from .identifiable_expression.ast import Expression, Integer
 
