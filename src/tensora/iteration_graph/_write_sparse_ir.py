@@ -8,8 +8,8 @@ __all__ = [
 from ..format import Mode
 from ..ir import SourceBuilder, types
 from ..ir.ast import ArrayReallocate, GreaterThanOrEqual, Max, Multiply, Variable
+from ._names import dimension_name
 from .identifiable_expression import TensorLayer
-from .names import dimension_name
 
 
 def write_sparse_initialization(leaf: TensorLayer) -> SourceBuilder:

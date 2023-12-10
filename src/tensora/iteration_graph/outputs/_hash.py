@@ -19,12 +19,12 @@ from ...ir.ast import (
     Variable,
 )
 from ...kernel_type import KernelType
+from .._names import dimension_name, layer_pointer, previous_layer_pointer, vals_name
+from .._write_sparse_ir import write_crd_assembly, write_pos_assembly
 from ..identifiable_expression import TensorLayer
 from ..identifiable_expression import ast as ie_ast
-from ..names import dimension_name, layer_pointer, previous_layer_pointer, vals_name
-from ..write_sparse_ir import write_crd_assembly, write_pos_assembly
-from .base import Output
-from .bucket import BucketOutput
+from ._base import Output
+from ._bucket import BucketOutput
 
 
 @dataclass(frozen=True, slots=True)

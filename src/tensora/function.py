@@ -139,7 +139,7 @@ def cachable_tensor_method(
     output_format: str,
     compiler: TensorCompiler,
 ) -> PureTensorMethod:
-    from .expression.parser import parse_assignment
+    from .expression._parser import parse_assignment
 
     parsed_assignment = parse_assignment(assignment).unwrap()
 

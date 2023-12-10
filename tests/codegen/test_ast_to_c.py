@@ -2,7 +2,7 @@ from textwrap import dedent
 
 import pytest
 
-from tensora.codegen.ir_to_c import ir_to_c
+from tensora.codegen import ir_to_c
 from tensora.ir.ast import *
 from tensora.ir.types import *
 

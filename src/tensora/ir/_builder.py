@@ -6,7 +6,7 @@ from abc import abstractmethod
 from contextlib import contextmanager
 from typing import Mapping
 
-from ..stable_set import StableSet
+from .._stable_set import StableSet
 from .ast import (
     Block,
     Branch,

@@ -1,7 +1,7 @@
 import pytest
 
+from tensora.ir import peephole
 from tensora.ir.ast import *
-from tensora.ir.peephole import peephole
 from tensora.ir.types import *
 
 changed = [

@@ -29,7 +29,7 @@ class Format:
     ordering: tuple[int, ...]
 
     def __post_init__(self):
-        from .exceptions import InvalidModeOrderingError
+        from ._exceptions import InvalidModeOrderingError
 
         if set(self.ordering) != set(range(len(self.modes))):
             raise InvalidModeOrderingError(self.modes, self.ordering)

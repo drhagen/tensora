@@ -7,7 +7,7 @@ from functools import singledispatch
 
 from ...format import Mode
 from . import ast
-from .tensor_layer import TensorLayer
+from ._tensor_layer import TensorLayer
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)

@@ -203,7 +203,7 @@ class Assignment:
     expression: Expression
 
     def __post_init__(self):
-        from .exceptions import InconsistentDimensionsError, MutatingAssignmentError
+        from ._exceptions import InconsistentDimensionsError, MutatingAssignmentError
 
         target_name = self.target.name
 

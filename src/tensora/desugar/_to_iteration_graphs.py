@@ -80,7 +80,7 @@ def to_iteration_graphs_tensor(
     formats: dict[str, Format],
     counter: Iterator[int],
 ) -> Iterator[ig.IterationGraph]:
-    from .exceptions import DiagonalAccessError
+    from ._exceptions import DiagonalAccessError
 
     format = formats[self.name]
     index_variables = tuple(self.indexes[i_index] for i_index in format.ordering)

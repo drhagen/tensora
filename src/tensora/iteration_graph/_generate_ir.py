@@ -21,18 +21,18 @@ from ..ir.ast import (
     Variable,
 )
 from ..kernel_type import KernelType
-from .definition import Definition
-from .identifiable_expression import to_ir
-from .identifiable_expression.tensor_layer import TensorLayer
-from .iteration_graph import IterationGraph, IterationNode, SumNode, TerminalNode
-from .names import crd_name, dimension_name, pos_name, vals_name
-from .outputs import AppendOutput, Output
-from .write_sparse_ir import (
+from ._definition import Definition
+from ._names import crd_name, dimension_name, pos_name, vals_name
+from ._write_sparse_ir import (
     write_crd_assembly,
     write_pos_allocation,
     write_pos_assembly,
     write_sparse_initialization,
 )
+from .identifiable_expression import to_ir
+from .identifiable_expression._tensor_layer import TensorLayer
+from .iteration_graph import IterationGraph, IterationNode, SumNode, TerminalNode
+from .outputs import AppendOutput, Output
 
 
 @singledispatch
