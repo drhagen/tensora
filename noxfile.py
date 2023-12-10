@@ -27,6 +27,11 @@ def coverage(s: Session):
 
 
 @session(venv_backend="none")
+def fuzz(s: Session):
+    s.run("hypothesis", "fuzz", "fuzz_tests")
+
+
+@session(venv_backend="none")
 @parametrize("command", [["ruff", "check", "."], ["ruff", "format", "--check", "."]])
 def lint(s: Session, command: list[str]):
     s.run(*command)
