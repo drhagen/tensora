@@ -14,12 +14,12 @@ from ._base import Output
 
 @dataclass(frozen=True, slots=True)
 class BucketOutput(Output):
-    output: ie_ast.Variable
+    output: ie_ast.Tensor
     layers: list[int]
     unfulfilled: set[int]
 
     def __init__(
-        self, output: ie_ast.Variable, layers: list[int], unfulfilled: set[int] | None = None
+        self, output: ie_ast.Tensor, layers: list[int], unfulfilled: set[int] | None = None
     ):
         object.__setattr__(self, "output", output)
         object.__setattr__(self, "layers", layers)

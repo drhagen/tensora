@@ -10,7 +10,7 @@ from ._to_iteration_graphs import to_iteration_graphs
 
 
 def best_algorithm(
-    assignment: ast.Assignment, formats: dict[str, Format | None]
+    assignment: ast.Assignment, formats: dict[str, Format]
 ) -> Result[IterationGraph, DiagonalAccessError | NoKernelFoundError]:
     try:
         match next(to_iteration_graphs(assignment, formats), None):

@@ -28,7 +28,7 @@ default_array_size = Multiply(IntegerLiteral(1024), IntegerLiteral(1024))
 
 @dataclass(frozen=True, slots=True)
 class AppendOutput(Output):
-    output: ie_ast.Variable
+    output: ie_ast.Tensor
     next_layer: int
 
     def vals_pointer(self) -> Expression:

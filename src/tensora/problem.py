@@ -11,24 +11,21 @@ from dataclasses import dataclass
 from returns.result import Failure, Result, Success
 
 from .expression.ast import Assignment
-from .format import Format, Mode, format_order
+from .format import Format, Mode
 
 
 @dataclass(frozen=True, slots=True)
 class IncorrectDimensionsError(Exception):
     name: str
-    actual: int | None
-    expected: int | None
+    actual: int
+    expected: int
     assignment: Assignment
 
     def __str__(self):
-        actual = self.actual if self.actual is not None else "scalar"
-        expected = self.expected if self.expected is not None else "scalar"
-
         return (
             f"Expected each reference in an assignment to have a number of indexes matching the "
             f"order of the corresponding format, but variable {self.name} referenced in "
-            f"{self.assignment} indexes has order {actual} while its format has order {expected}"
+            f"{self.assignment} indexes has order {self.actual} while its format has order {self.expected}"
         )
 
 
@@ -61,7 +58,7 @@ class UnusedFormatError(Exception):
 @dataclass(frozen=True, slots=True)
 class Problem:
     assignment: Assignment
-    formats: dict[str, Format | None]
+    formats: dict[str, Format]
 
     def __post_init__(self):
         # This intentionally allows for names in formats that are not referenced in the assignment.
@@ -72,19 +69,19 @@ class Problem:
         for name, order in tensor_orders.items():
             if name not in self.formats:
                 raise UndefinedReferenceError(name, self.assignment, list(self.formats.keys()))
-            elif order != format_order(self.formats[name]):
+            elif order != self.formats[name].order:
                 raise IncorrectDimensionsError(
-                    name, format_order(self.formats[name]), order, self.assignment
+                    name, self.formats[name].order, order, self.assignment
                 )
 
 
 def make_problem(
-    assignment: Assignment, formats: dict[str, Format | None]
+    assignment: Assignment, formats: dict[str, Format]
 ) -> Result[Problem, UnusedFormatError | UndefinedReferenceError | IncorrectDimensionsError]:
     """Create a Problem while filling in default formats.
 
     This does three things that the `Problem` constructor does not do:
-    1. It reorders the formats to match the order the variables appear in the assignment.
+    1. It reorders the formats to match the order the tensors appear in the assignment.
     2. It fills in any missing formats with all dense modes.
     3. It raises an exception if there are formats not referenced in the assignment.
     """
@@ -98,10 +95,7 @@ def make_problem(
     new_formats = {}
     for name, order in tensor_orders.items():
         if name not in formats:
-            if order is None:
-                new_formats[name] = None
-            else:
-                new_formats[name] = Format(tuple([Mode.dense] * order), tuple(range(order)))
+            new_formats[name] = Format(tuple([Mode.dense] * order), tuple(range(order)))
         else:
             new_formats[name] = formats[name]
 

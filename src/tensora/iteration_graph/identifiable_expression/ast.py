@@ -1,14 +1,4 @@
-__all__ = [
-    "Expression",
-    "Literal",
-    "Integer",
-    "Float",
-    "Variable",
-    "Scalar",
-    "Tensor",
-    "Add",
-    "Multiply",
-]
+__all__ = ["Expression", "Literal", "Integer", "Float", "Tensor", "Add", "Multiply"]
 
 from dataclasses import dataclass
 
@@ -33,9 +23,8 @@ class Float(Literal):
     value: float
 
 
-class Variable(Expression):
-    __slots__ = ()
-
+@dataclass(frozen=True, slots=True)
+class Tensor(Expression):
     id: str
     name: str
     indexes: tuple[str, ...]
@@ -44,28 +33,6 @@ class Variable(Expression):
     @property
     def order(self):
         return len(self.indexes)
-
-
-@dataclass(frozen=True, slots=True)
-class Scalar(Variable):
-    id: str
-    name: str
-
-    @property
-    def indexes(self):
-        return ()
-
-    @property
-    def modes(self):
-        return ()
-
-
-@dataclass(frozen=True, slots=True)
-class Tensor(Variable):
-    id: str
-    name: str
-    indexes: tuple[str, ...]
-    modes: tuple[Mode, ...]
 
 
 @dataclass(frozen=True, slots=True)

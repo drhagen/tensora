@@ -3,7 +3,7 @@ __all__ = ["Definition", "TensorDimension"]
 from dataclasses import dataclass
 
 from ..format import Format
-from .identifiable_expression.ast import Variable
+from .identifiable_expression.ast import Tensor
 
 
 @dataclass(frozen=True, slots=True)
@@ -14,6 +14,6 @@ class TensorDimension:
 
 @dataclass(frozen=True, slots=True)
 class Definition:
-    output_variable: Variable
-    formats: dict[str, Format | None]
+    output_variable: Tensor
+    formats: dict[str, Format]
     indexes: dict[str, TensorDimension]

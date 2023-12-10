@@ -65,15 +65,6 @@ def to_iteration_graphs_float(
     yield ig.TerminalNode(id.Float(self.value))
 
 
-@to_iteration_graphs_expression.register(ast.Scalar)
-def to_iteration_graphs_scalar(
-    self: ast.Scalar,
-    formats: dict[str, Format],
-    counter: Iterator[int],
-) -> Iterator[ig.IterationGraph]:
-    yield ig.TerminalNode(id.Scalar(f"{self.id}_{self.name}", self.name))
-
-
 @to_iteration_graphs_expression.register(ast.Tensor)
 def to_iteration_graphs_tensor(
     self: ast.Tensor,
@@ -249,7 +240,7 @@ def merge_assignment(
 
 
 def to_iteration_graphs(
-    assignment: ast.Assignment, formats: dict[str, Format | None]
+    assignment: ast.Assignment, formats: dict[str, Format]
 ) -> Iterator[ig.IterationGraph]:
     output_format = formats[assignment.target.name]
     output_layers = {

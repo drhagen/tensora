@@ -21,7 +21,7 @@ from . import ast as id
 
 @dataclass(frozen=True, slots=True)
 class TensorLayer:
-    tensor: id.Variable
+    tensor: id.Tensor
     layer: int
 
     @property

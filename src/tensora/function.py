@@ -19,8 +19,8 @@ class PureTensorMethod:
     def __init__(
         self,
         assignment: Assignment,
-        input_formats: dict[str, Format | None],
-        output_format: Format | None,
+        input_formats: dict[str, Format],
+        output_format: Format,
         compiler: TensorCompiler = TensorCompiler.tensora,
     ):
         match make_problem(assignment, {assignment.target.name: output_format, **input_formats}):
@@ -55,6 +55,9 @@ class PureTensorMethod:
         for name, argument, format in zip(
             bound_arguments.keys(), bound_arguments.values(), self.input_formats.values()
         ):
+            if not isinstance(argument, Tensor):
+                raise TypeError(f"Argument {name} must be a Tensor not {type(argument)}")
+
             if argument.order != format.order:
                 raise ValueError(
                     f"Argument {name} must have order {format.order} not {argument.order}"
@@ -85,7 +88,7 @@ class PureTensorMethod:
             reference_size = actual_sizes[0][2]
             index_sizes[index] = reference_size
 
-            for variable, dimension, size in actual_sizes[1:]:
+            for _, _, size in actual_sizes[1:]:
                 if size != reference_size:
                     expected = ", ".join(
                         f"{variable}.dimensions[{dimension}] == {size}"
@@ -116,7 +119,7 @@ class PureTensorMethod:
         take_ownership_of_arrays(cffi_output)
 
         if return_value != 0:
-            raise RuntimeError(f"Taco function failed with error code {return_value}")
+            raise RuntimeError(f"Kernel evaluation failed with error code {return_value}")
 
         return output
 

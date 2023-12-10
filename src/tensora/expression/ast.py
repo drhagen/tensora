@@ -5,8 +5,6 @@ __all__ = [
     "Literal",
     "Integer",
     "Float",
-    "Variable",
-    "Scalar",
     "Tensor",
     "Add",
     "Subtract",
@@ -22,7 +20,7 @@ class Expression:
     __slots__ = ()
 
     @abstractmethod
-    def variables(self) -> dict[str, list[Variable]]:
+    def variables(self) -> dict[str, list[Tensor]]:
         raise NotImplementedError()
 
     @abstractmethod
@@ -48,7 +46,7 @@ class Expression:
 class Literal(Expression):
     __slots__ = ()
 
-    def variables(self) -> dict[str, list[Variable]]:
+    def variables(self) -> dict[str, list[Tensor]]:
         return {}
 
     def index_participants(self) -> dict[str, set[tuple[str, int]]]:
@@ -71,41 +69,8 @@ class Float(Literal):
         return str(self.value)
 
 
-class Variable(Expression):
-    __slots__ = ()
-
-    name: str
-    indexes: list[str]
-    order: int | None
-
-    def variables(self) -> dict[str, list[Variable]]:
-        return {self.name: [self]}
-
-    def index_participants(self) -> dict[str, set[tuple[str, int]]]:
-        participants = {}
-        for i, index_name in enumerate(self.indexes):
-            participants[index_name] = participants.get(index_name, set()) | {(self.name, i)}
-        return participants
-
-
 @dataclass(frozen=True, slots=True)
-class Scalar(Variable):
-    name: str
-
-    @property
-    def order(self):
-        return None
-
-    @property
-    def indexes(self):
-        return []
-
-    def deparse(self):
-        return self.name
-
-
-@dataclass(frozen=True, slots=True)
-class Tensor(Variable):
+class Tensor(Expression):
     name: str
     indexes: list[str]
 
@@ -113,8 +78,17 @@ class Tensor(Variable):
     def order(self):
         return len(self.indexes)
 
+    def variables(self) -> dict[str, list[Tensor]]:
+        return {self.name: [self]}
+
     def deparse(self):
         return self.name + "(" + ",".join(self.indexes) + ")"
+
+    def index_participants(self) -> dict[str, set[tuple[str, int]]]:
+        participants = {}
+        for i, index_name in enumerate(self.indexes):
+            participants[index_name] = participants.get(index_name, set()) | {(self.name, i)}
+        return participants
 
 
 def merge_index_participants(left: Expression, right: Expression):
@@ -131,7 +105,7 @@ class Add(Expression):
     left: Expression
     right: Expression
 
-    def variables(self) -> dict[str, list[Variable]]:
+    def variables(self) -> dict[str, list[Tensor]]:
         variables_mapping = self.left.variables().copy()
         for name, variables in self.right.variables().items():
             if name in variables_mapping:
@@ -152,7 +126,7 @@ class Subtract(Expression):
     left: Expression
     right: Expression
 
-    def variables(self) -> dict[str, list[Variable]]:
+    def variables(self) -> dict[str, list[Tensor]]:
         variables_mapping = self.left.variables().copy()
         for name, variables in self.right.variables().items():
             if name in variables_mapping:
@@ -173,7 +147,7 @@ class Multiply(Expression):
     left: Expression
     right: Expression
 
-    def variables(self) -> dict[str, list[Variable]]:
+    def variables(self) -> dict[str, list[Tensor]]:
         variables_mapping = self.left.variables().copy()
         for name, variables in self.right.variables().items():
             if name in variables_mapping:
@@ -199,7 +173,7 @@ class Multiply(Expression):
 
 @dataclass(frozen=True)
 class Assignment:
-    target: Variable
+    target: Tensor
     expression: Expression
 
     def __post_init__(self):
@@ -207,7 +181,7 @@ class Assignment:
 
         target_name = self.target.name
 
-        variable_orders: dict[str, int | None] = {}
+        variable_orders: dict[str, int] = {}
         variables_mapping = self.expression.variables()
         for name, (first, *rest) in variables_mapping.items():
             if name == target_name:
@@ -219,7 +193,7 @@ class Assignment:
 
             variable_orders[name] = first.order
 
-        self._parameter_orders: dict[str, int | None]
+        self._parameter_orders: dict[str, int]
         object.__setattr__(self, "_parameter_orders", variable_orders)
 
     def deparse(self) -> str:
@@ -228,7 +202,7 @@ class Assignment:
     def index_participants(self) -> dict[str, set[tuple[str, int]]]:
         return merge_index_participants(self.target, self.expression)
 
-    def variable_orders(self) -> dict[str, int | None]:
+    def variable_orders(self) -> dict[str, int]:
         """Number of dimensions of each variable.
 
         This is the same as `parameter_orders` except that it also includes the target variable.
@@ -238,10 +212,7 @@ class Assignment:
             of dimensions that variable has in the right hand side.
         """
 
-        return {
-            self.target.name: self.target.order if isinstance(self.target, Tensor) else None,
-            **self._parameter_orders,
-        }
+        return {self.target.name: self.target.order, **self._parameter_orders}
 
     def __str__(self) -> str:
         return self.deparse()

@@ -120,6 +120,8 @@ def generate_library(
             raise error
         case Success(source):
             pass
+        case _:
+            raise NotImplementedError()
 
     # Determine signature
     # 1) Find function by name and capture its parameter list

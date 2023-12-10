@@ -2,7 +2,7 @@ __all__ = ["MutatingAssignmentError", "InconsistentDimensionsError"]
 
 from dataclasses import dataclass
 
-from .ast import Assignment, Variable
+from .ast import Assignment, Tensor
 
 
 @dataclass(frozen=True, slots=True)
@@ -19,8 +19,8 @@ class MutatingAssignmentError(Exception):
 @dataclass(frozen=True, slots=True)
 class InconsistentDimensionsError(Exception):
     assignment: Assignment
-    first: Variable
-    second: Variable
+    first: Tensor
+    second: Tensor
 
     def __str__(self):
         return (

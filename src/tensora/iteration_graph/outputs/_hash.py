@@ -29,12 +29,12 @@ from ._bucket import BucketOutput
 
 @dataclass(frozen=True, slots=True)
 class HashOutput(Output):
-    output: ie_ast.Variable
+    output: ie_ast.Tensor
     starting_layer: int
     unfulfilled: set[int]
 
     def __init__(
-        self, output: ie_ast.Variable, starting_layer: int, unfulfilled: set[int] | None = None
+        self, output: ie_ast.Tensor, starting_layer: int, unfulfilled: set[int] | None = None
     ):
         object.__setattr__(self, "output", output)
         object.__setattr__(self, "starting_layer", starting_layer)

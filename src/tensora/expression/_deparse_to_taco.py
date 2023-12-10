@@ -22,15 +22,10 @@ def deparse_to_taco_float(self: ast.Float) -> str:
     return str(self.value)
 
 
-@deparse_to_taco_expression.register(ast.Scalar)
-def deparse_to_taco_scalar(self: ast.Scalar) -> str:
-    return self.name
-
-
 @deparse_to_taco_expression.register(ast.Tensor)
 def deparse_to_taco_tensor(self: ast.Tensor) -> str:
     if len(self.indexes) == 0:
-        # Taco does not support zero-dimensional tensors
+        # Taco represents zero-dimensional tensors as scalars
         return self.name
     else:
         return f"{self.name}({', '.join(self.indexes)})"
