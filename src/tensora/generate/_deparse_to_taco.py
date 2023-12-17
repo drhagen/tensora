@@ -2,7 +2,7 @@ __all__ = ["deparse_to_taco"]
 
 from functools import singledispatch
 
-from . import ast
+from ..expression import ast
 
 
 @singledispatch
