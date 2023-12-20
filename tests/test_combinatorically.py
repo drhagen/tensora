@@ -45,6 +45,12 @@ def test_copy_2_backwards(evaluate, dense, format_in, format_out):
     assert actual == a
 
 
+@pytest.mark.parametrize("expression", [0, 1])
+def test_constant_scalar(evaluate, expression):
+    actual = evaluate(f"a() = {expression}", "")
+    assert actual == Tensor.from_scalar(expression)
+
+
 @pytest.mark.parametrize("dense1", [[0, 2, 4, 0], [0, 0, 0, 0]])
 @pytest.mark.parametrize("dense2", [[-1, 3.5, 0, 0], [0, 0, 0, 0]])
 @pytest.mark.parametrize("format1", ["s", "d"])

@@ -16,6 +16,7 @@ def test_generate_cannot_crash(problem_inputs):
         if name != problem.assignment.target.name
     }
     output_format = problem.formats[problem.assignment.target.name]
+
     try:
         method = PureTensorMethod(problem.assignment, input_formats, output_format)
     except (DiagonalAccessError, NoKernelFoundError):
