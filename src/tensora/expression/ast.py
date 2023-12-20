@@ -115,7 +115,14 @@ class Add(Expression):
         return variables_mapping
 
     def deparse(self):
-        return self.left.deparse() + " + " + self.right.deparse()
+        left_string = self.left.deparse()
+
+        right_string = self.right.deparse()
+        if isinstance(self.right, (Add, Subtract)):
+            # Preserve AST even though addition is associative.
+            right_string = f"({right_string})"
+
+        return left_string + " + " + right_string
 
     def index_participants(self) -> dict[str, set[tuple[str, int]]]:
         return merge_index_participants(self.left, self.right)
@@ -136,7 +143,13 @@ class Subtract(Expression):
         return variables_mapping
 
     def deparse(self):
-        return self.left.deparse() + " - " + self.right.deparse()
+        left_string = self.left.deparse()
+
+        right_string = self.right.deparse()
+        if isinstance(self.right, (Add, Subtract)):
+            right_string = f"({right_string})"
+
+        return left_string + " - " + right_string
 
     def index_participants(self) -> dict[str, set[tuple[str, int]]]:
         return merge_index_participants(self.left, self.right)
@@ -162,7 +175,8 @@ class Multiply(Expression):
             left_string = f"({left_string})"
 
         right_string = self.right.deparse()
-        if isinstance(self.right, (Add, Subtract)):
+        # Preserve AST even though multiplication is associative.
+        if isinstance(self.right, (Add, Subtract, Multiply)):
             right_string = f"({right_string})"
 
         return f"{left_string} * {right_string}"
