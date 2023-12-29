@@ -10,32 +10,32 @@ from tensora.expression.ast import *
 assignment_strings = [
     (
         "A(i) = B(i,j) * C(j)",
-        Assignment(Tensor("A", ["i"]), Multiply(Tensor("B", ["i", "j"]), Tensor("C", ["j"]))),
+        Assignment(Tensor("A", ("i",)), Multiply(Tensor("B", ("i", "j")), Tensor("C", ("j",)))),
     ),
     (
         "ab(i) = a(i) + b(i)",
-        Assignment(Tensor("ab", ["i"]), Add(Tensor("a", ["i"]), Tensor("b", ["i"]))),
+        Assignment(Tensor("ab", ("i",)), Add(Tensor("a", ("i",)), Tensor("b", ("i",)))),
     ),
     (
         "D(i) = A(i) - B(i)",
-        Assignment(Tensor("D", ["i"]), Subtract(Tensor("A", ["i"]), Tensor("B", ["i"]))),
+        Assignment(Tensor("D", ("i",)), Subtract(Tensor("A", ("i",)), Tensor("B", ("i",)))),
     ),
     (
         "B2(i) = 2.0 * B(i)",
-        Assignment(Tensor("B2", ["i"]), Multiply(Float(2.0), Tensor("B", ["i"]))),
+        Assignment(Tensor("B2", ("i",)), Multiply(Float(2.0), Tensor("B", ("i",)))),
     ),
     (
         "ab2(i) = 2.0 * (a(i) + b(i))",
         Assignment(
-            Tensor("ab2", ["i"]),
-            Multiply(Float(2.0), Add(Tensor("a", ["i"]), Tensor("b", ["i"]))),
+            Tensor("ab2", ("i",)),
+            Multiply(Float(2.0), Add(Tensor("a", ("i",)), Tensor("b", ("i",)))),
         ),
     ),
     (
         "ab2(i) = (a(i) + b(i)) * 2.0",
         Assignment(
-            Tensor("ab2", ["i"]),
-            Multiply(Add(Tensor("a", ["i"]), Tensor("b", ["i"])), Float(2.0)),
+            Tensor("ab2", ("i",)),
+            Multiply(Add(Tensor("a", ("i",)), Tensor("b", ("i",))), Float(2.0)),
         ),
     ),
 ]

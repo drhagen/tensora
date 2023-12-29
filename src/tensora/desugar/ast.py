@@ -35,7 +35,7 @@ class Float(Literal):
 class Tensor(Expression):
     id: int
     name: str
-    indexes: list[str]
+    indexes: tuple[str, ...]
 
 
 @dataclass(frozen=True, slots=True)

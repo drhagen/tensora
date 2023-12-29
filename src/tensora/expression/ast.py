@@ -26,7 +26,7 @@ class Expression:
     @abstractmethod
     def deparse(self) -> str:
         """Convert the assignment back into a string."""
-        pass
+        raise NotImplementedError()
 
     @abstractmethod
     def index_participants(self) -> dict[str, set[tuple[str, int]]]:
@@ -37,7 +37,7 @@ class Expression:
             pairs. In each pair, the first element is the name of a tensor and the second element
             is the dimension in which that index appears.
         """
-        pass
+        raise NotImplementedError()
 
     def __str__(self):
         return self.deparse()
@@ -72,7 +72,7 @@ class Float(Literal):
 @dataclass(frozen=True, slots=True)
 class Tensor(Expression):
     name: str
-    indexes: list[str]
+    indexes: tuple[str, ...]
 
     @property
     def order(self):

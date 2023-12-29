@@ -30,7 +30,7 @@ class TensorExpressionParsers(ParserContext, whitespace=r"[ ]*"):
     integer = reg(r"[0-9]+") > (lambda x: Integer(int(x)))
     number = floating_point | integer
 
-    tensor = name & "(" >> repsep(name, ",") << ")" > splat(Tensor)
+    tensor = name & "(" >> (repsep(name, ",") > tuple) << ")" > splat(Tensor)
 
     parentheses = "(" >> expression << ")"  # noqa: F821
     factor = tensor | number | parentheses

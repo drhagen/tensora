@@ -10,57 +10,57 @@ from tensora.expression import ast as sugar
     [
         [
             sugar.Assignment(
-                sugar.Tensor("a", ["i"]),
-                sugar.Add(sugar.Tensor("b", ["i"]), sugar.Tensor("c", ["i"])),
+                sugar.Tensor("a", ("i",)),
+                sugar.Add(sugar.Tensor("b", ("i",)), sugar.Tensor("c", ("i",))),
             ),
             desugar.Assignment(
-                desugar.Tensor(0, "a", ["i"]),
-                desugar.Add(desugar.Tensor(1, "b", ["i"]), desugar.Tensor(2, "c", ["i"])),
+                desugar.Tensor(0, "a", ("i",)),
+                desugar.Add(desugar.Tensor(1, "b", ("i",)), desugar.Tensor(2, "c", ("i",))),
             ),
         ],
         [
             sugar.Assignment(
-                sugar.Tensor("A", ["i", "j"]),
-                sugar.Multiply(sugar.Tensor("B", ["i", "k"]), sugar.Tensor("C", ["k", "i"])),
+                sugar.Tensor("A", ("i", "j")),
+                sugar.Multiply(sugar.Tensor("B", ("i", "k")), sugar.Tensor("C", ("k", "i"))),
             ),
             desugar.Assignment(
-                desugar.Tensor(0, "A", ["i", "j"]),
+                desugar.Tensor(0, "A", ("i", "j")),
                 desugar.Contract(
                     "k",
                     desugar.Multiply(
-                        desugar.Tensor(1, "B", ["i", "k"]),
-                        desugar.Tensor(2, "C", ["k", "i"]),
+                        desugar.Tensor(1, "B", ("i", "k")),
+                        desugar.Tensor(2, "C", ("k", "i")),
                     ),
                 ),
             ),
         ],
         [
             sugar.Assignment(
-                sugar.Tensor("A", ["i", "j"]),
+                sugar.Tensor("A", ("i", "j")),
                 sugar.Add(
-                    sugar.Tensor("K", ["i", "j"]),
-                    sugar.Multiply(sugar.Tensor("B", ["i", "k"]), sugar.Tensor("C", ["k", "i"])),
+                    sugar.Tensor("K", ("i", "j")),
+                    sugar.Multiply(sugar.Tensor("B", ("i", "k")), sugar.Tensor("C", ("k", "i"))),
                 ),
             ),
             desugar.Assignment(
-                desugar.Tensor(0, "A", ["i", "j"]),
+                desugar.Tensor(0, "A", ("i", "j")),
                 desugar.Add(
-                    desugar.Tensor(1, "K", ["i", "j"]),
+                    desugar.Tensor(1, "K", ("i", "j")),
                     desugar.Contract(
                         "k",
                         desugar.Multiply(
-                            desugar.Tensor(2, "B", ["i", "k"]),
-                            desugar.Tensor(3, "C", ["k", "i"]),
+                            desugar.Tensor(2, "B", ("i", "k")),
+                            desugar.Tensor(3, "C", ("k", "i")),
                         ),
                     ),
                 ),
             ),
         ],
         [
-            sugar.Assignment(sugar.Tensor("a", ["i"]), sugar.Tensor("b", ["i", "j"])),
+            sugar.Assignment(sugar.Tensor("a", ("i",)), sugar.Tensor("b", ("i", "j"))),
             desugar.Assignment(
-                desugar.Tensor(0, "a", ["i"]),
-                desugar.Contract("j", desugar.Tensor(1, "b", ["i", "j"])),
+                desugar.Tensor(0, "a", ("i",)),
+                desugar.Contract("j", desugar.Tensor(1, "b", ("i", "j"))),
             ),
         ],
     ],
