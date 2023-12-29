@@ -74,6 +74,18 @@ class Problem:
                     name, self.formats[name].order, order, self.assignment
                 )
 
+    def __eq__(self, other: object):
+        if isinstance(other, Problem):
+            # Problems are only equal if the formats orders are equal
+            return self.assignment == other.assignment and tuple(self.formats.items()) == tuple(
+                other.formats.items()
+            )
+        else:
+            return NotImplemented
+
+    def __hash__(self) -> int:
+        return hash((self.assignment, tuple(self.formats.items())))
+
 
 def make_problem(
     assignment: Assignment, formats: dict[str, Format]

@@ -20,9 +20,9 @@ def test_csr_matrix_vector_product(evaluate, compiler):
 
     expected = Tensor.from_aos([[0], [1]], [-5.0, 14.0], dimensions=(2,), format="d")
 
-    function = tensor_method("y(i) = A(i,j) * x(j)", dict(A="ds", x="d"), "d", compiler=compiler)
+    function = tensor_method("y(i) = A(i,j) * x(j)", dict(A="ds"), compiler=compiler)
 
-    actual = function(A, x)
+    actual = function(A=A, x=x)
 
     assert actual == expected
 
@@ -40,9 +40,9 @@ def test_csc_matrix_vector_product(evaluate, compiler):
 
     expected = Tensor.from_aos([[0], [1]], [-5.0, 14.0], dimensions=(2,), format="d")
 
-    function = tensor_method("y(i) = A(i,j) * x(j)", dict(A="d1s0", x="d"), "d", compiler=compiler)
+    function = tensor_method("y(i) = A(i,j) * x(j)", dict(A="d1s0"), compiler=compiler)
 
-    actual = function(A, x)
+    actual = function(A=A, x=x)
 
     assert actual == expected
 
@@ -64,10 +64,10 @@ def test_csr_matrix_plus_csr_matrix(evaluate, compiler):
     )
 
     function = tensor_method(
-        "C(i,j) = A(i,j) + B(i,j)", dict(A="ds", B="ds"), "ds", compiler=compiler
+        "C(i,j) = A(i,j) + B(i,j)", dict(C="ds", A="ds", B="ds"), compiler=compiler
     )
 
-    actual = function(A, B)
+    actual = function(A=A, B=B)
 
     assert actual == expected
 
@@ -90,11 +90,11 @@ def test_rhs(evaluate, compiler):
     expected = Tensor.from_lol([5, 0, -3])
 
     assignment = "f(i) = A0(i) + A1(i,j) * x(j) + A2(i,k,l) * x(k) * x(l)"
-    formats = {"A0": "d", "A1": "ds", "A2": "dss", "x": "d"}
+    formats = {"f": "d", "A0": "d", "A1": "ds", "A2": "dss", "x": "d"}
 
-    function = tensor_method(assignment, formats, "d", compiler=compiler)
+    function = tensor_method(assignment, formats, compiler=compiler)
 
-    actual = function(A0, A1, A2, x)
+    actual = function(A0=A0, A1=A1, A2=A2, x=x)
 
     assert actual == expected
 
@@ -129,7 +129,7 @@ def test_diagonal_error(evaluate, compiler):
         pytest.skip("We do not currently get a nice error from Taco")
 
     with pytest.raises(DiagonalAccessError):
-        tensor_method("a(i) = A(i,i)", dict(A="dd"), "d", compiler)
+        tensor_method("a(i) = A(i,i)", dict(a="d", A="dd"), compiler)
 
 
 def test_no_solution(evaluate, compiler):
@@ -137,4 +137,4 @@ def test_no_solution(evaluate, compiler):
         pytest.xfail("Taco currently segfaults on this")
 
     with pytest.raises(NoKernelFoundError):
-        tensor_method("A(i,j) = B(i,j) + C(j,i)", dict(B="ds", C="ds"), "ds", compiler)
+        tensor_method("A(i,j) = B(i,j) + C(j,i)", dict(A="ds", B="ds", C="ds"), compiler)

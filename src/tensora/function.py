@@ -1,51 +1,40 @@
-__all__ = ["tensor_method", "evaluate", "evaluate_taco", "evaluate_tensora", "PureTensorMethod"]
+__all__ = ["tensor_method", "evaluate", "evaluate_taco", "evaluate_tensora", "TensorMethod"]
 
 from functools import lru_cache
 from inspect import Parameter, Signature
 
-from returns.result import Failure, Success
+from returns.functions import raise_exception
 
 from .compile import allocate_taco_structure, generate_library, take_ownership_of_arrays
-from .expression.ast import Assignment
-from .format import Format, parse_format
+from .expression import parse_assignment
+from .format import parse_format
 from .generate import TensorCompiler
-from .problem import make_problem
+from .problem import Problem, make_problem
 from .tensor import Tensor
 
 
-class PureTensorMethod:
+class TensorMethod:
     """A function taking specific tensor arguments."""
 
-    def __init__(
-        self,
-        assignment: Assignment,
-        input_formats: dict[str, Format],
-        output_format: Format,
-        compiler: TensorCompiler = TensorCompiler.tensora,
-    ):
-        match make_problem(assignment, {assignment.target.name: output_format, **input_formats}):
-            case Failure(error):
-                raise error
-            case Success(problem):
-                pass
-            case _:
-                raise NotImplementedError()
-
+    def __init__(self, problem: Problem, compiler: TensorCompiler = TensorCompiler.tensora):
         # Store validated attributes
-        self.assignment = assignment
-        self.input_formats = input_formats
-        self.output_format = output_format
+        self._problem = problem
+        self._output_name = problem.assignment.target.name
+        self._input_formats = {
+            name: format for name, format in problem.formats.items() if name != self._output_name
+        }
+        self._output_format = problem.formats[self._output_name]
 
         # Create Python signature of the function
         self.signature = Signature(
             [
-                Parameter(parameter_name, Parameter.POSITIONAL_OR_KEYWORD)
-                for parameter_name in input_formats.keys()
+                Parameter(parameter_name, Parameter.KEYWORD_ONLY, annotation=Tensor)
+                for parameter_name in self._input_formats.keys()
             ]
         )
 
         # Compile taco function
-        self.parameter_order, self.cffi_lib = generate_library(problem, compiler)
+        self._parameter_order, self._cffi_lib = generate_library(problem, compiler)
 
     def __call__(self, *args, **kwargs):
         # Handle arguments like normal Python function
@@ -53,7 +42,7 @@ class PureTensorMethod:
 
         # Validate tensor arguments
         for name, argument, format in zip(
-            bound_arguments.keys(), bound_arguments.values(), self.input_formats.values()
+            bound_arguments.keys(), bound_arguments.values(), self._input_formats.values()
         ):
             if not isinstance(argument, Tensor):
                 raise TypeError(f"Argument {name} must be a Tensor not {type(argument)}")
@@ -75,7 +64,7 @@ class PureTensorMethod:
                 )
 
         # Validate dimensions
-        index_participants = self.assignment.expression.index_participants()
+        index_participants = self._problem.assignment.expression.index_participants()
         index_sizes = {}
         for index, participants in index_participants.items():
             # Extract the size of dimension referenced by this index on each tensor that uses it; record the variable
@@ -95,26 +84,28 @@ class PureTensorMethod:
                         for variable, dimension, size in actual_sizes
                     )
                     raise ValueError(
-                        f"{self.assignment} expected all these dimensions of these tensors to be the same "
+                        f"{self._problem.assignment} expected all these dimensions of these tensors to be the same "
                         f"because they share the index {index}: {expected}"
                     )
 
         # Determine output dimensions
-        output_dimensions = tuple(index_sizes[index] for index in self.assignment.target.indexes)
+        output_dimensions = tuple(
+            index_sizes[index] for index in self._problem.assignment.target.indexes
+        )
 
         cffi_output = allocate_taco_structure(
-            tuple(mode.c_int for mode in self.output_format.modes),
+            tuple(mode.c_int for mode in self._output_format.modes),
             output_dimensions,
-            self.output_format.ordering,
+            self._output_format.ordering,
         )
 
         output = Tensor(cffi_output)
 
-        all_arguments = {self.assignment.target.name: output, **bound_arguments}
+        all_arguments = {self._output_name: output, **bound_arguments}
 
-        cffi_args = [all_arguments[name].cffi_tensor for name in self.parameter_order]
+        cffi_args = [all_arguments[name].cffi_tensor for name in self._parameter_order]
 
-        return_value = self.cffi_lib.evaluate(*cffi_args)
+        return_value = self._cffi_lib.evaluate(*cffi_args)
 
         take_ownership_of_arrays(cffi_output)
 
@@ -124,47 +115,51 @@ class PureTensorMethod:
         return output
 
 
+@lru_cache()
+def cachable_tensor_method(problem: Problem, compiler: TensorCompiler) -> TensorMethod:
+    return TensorMethod(problem, compiler)
+
+
 def tensor_method(
     assignment: str,
-    input_formats: dict[str, str],
-    output_format: str,
+    formats: dict[str, str],
     compiler: TensorCompiler = TensorCompiler.tensora,
-) -> PureTensorMethod:
-    return cachable_tensor_method(
-        assignment, tuple(input_formats.items()), output_format, compiler
-    )
+) -> TensorMethod:
+    parsed_assignment = parse_assignment(assignment).alt(raise_exception).unwrap()
+    parsed_formats = {
+        name: parse_format(format).alt(raise_exception).unwrap()
+        for name, format in formats.items()
+    }
 
+    problem = make_problem(parsed_assignment, parsed_formats).alt(raise_exception).unwrap()
 
-@lru_cache()
-def cachable_tensor_method(
-    assignment: str,
-    input_formats: tuple[tuple[str, str], ...],
-    output_format: str,
-    compiler: TensorCompiler,
-) -> PureTensorMethod:
-    from .expression._parser import parse_assignment
-
-    parsed_assignment = parse_assignment(assignment).unwrap()
-
-    parsed_input_formats = {name: parse_format(format).unwrap() for name, format in input_formats}
-
-    parsed_output = parse_format(output_format).unwrap()
-
-    return PureTensorMethod(parsed_assignment, parsed_input_formats, parsed_output, compiler)
+    return cachable_tensor_method(problem, compiler)
 
 
 def evaluate_taco(assignment: str, output_format: str, **inputs: Tensor) -> Tensor:
-    input_formats = {name: tensor.format.deparse() for name, tensor in inputs.items()}
+    parsed_assignment = parse_assignment(assignment).alt(raise_exception).unwrap()
+    input_formats = {name: tensor.format for name, tensor in inputs.items()}
+    parsed_output_format = parse_format(output_format).alt(raise_exception).unwrap()
 
-    function = tensor_method(assignment, input_formats, output_format, TensorCompiler.taco)
+    formats = {parsed_assignment.target.name: parsed_output_format} | input_formats
+
+    problem = make_problem(parsed_assignment, formats).alt(raise_exception).unwrap()
+
+    function = cachable_tensor_method(problem, TensorCompiler.taco)
 
     return function(**inputs)
 
 
 def evaluate_tensora(assignment: str, output_format: str, **inputs: Tensor) -> Tensor:
-    input_formats = {name: tensor.format.deparse() for name, tensor in inputs.items()}
+    parsed_assignment = parse_assignment(assignment).alt(raise_exception).unwrap()
+    input_formats = {name: tensor.format for name, tensor in inputs.items()}
+    parsed_output_format = parse_format(output_format).alt(raise_exception).unwrap()
 
-    function = tensor_method(assignment, input_formats, output_format, TensorCompiler.tensora)
+    formats = {parsed_assignment.target.name: parsed_output_format} | input_formats
+
+    problem = make_problem(parsed_assignment, formats).alt(raise_exception).unwrap()
+
+    function = cachable_tensor_method(problem, TensorCompiler.tensora)
 
     return function(**inputs)
 
