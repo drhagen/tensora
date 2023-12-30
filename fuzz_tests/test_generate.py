@@ -1,7 +1,7 @@
 from hypothesis import given
 
 from tensora.desugar import DiagonalAccessError, NoKernelFoundError
-from tensora.function import TensorMethod
+from tensora.function import BroadcastTargetIndexError, TensorMethod
 
 from .strategies import problem_and_tensors
 
@@ -12,7 +12,7 @@ def test_generate_cannot_crash(problem_inputs):
 
     try:
         method = TensorMethod(problem)
-    except (DiagonalAccessError, NoKernelFoundError):
+    except (BroadcastTargetIndexError, DiagonalAccessError, NoKernelFoundError):
         return
 
     _ = method(**input_tensors)
