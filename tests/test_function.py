@@ -5,6 +5,7 @@ import pytest
 
 from tensora import Tensor, evaluate_taco, evaluate_tensora, tensor_method
 from tensora.desugar import DiagonalAccessError, NoKernelFoundError
+from tensora.function import BroadcastTargetIndexError
 from tensora.generate import TensorCompiler
 
 pytestmark = pytest.mark.parametrize(
@@ -78,7 +79,7 @@ def test_csr_matrix_plus_csr_matrix(evaluate, compiler):
 
 def test_rhs(evaluate, compiler):
     if compiler == TensorCompiler.taco:
-        pytest.skip("Taco does not support this")
+        pytest.xfail("Taco does not support this")
 
     A0 = Tensor.from_lol([2, -3, 0])
     A1 = Tensor.from_aos([(0, 2), (1, 2), (2, 2)], [3, 3, -3], dimensions=(3, 3), format="ds")
@@ -124,9 +125,14 @@ def test_multithread_evaluation(evaluate, compiler):
         assert actual == expected
 
 
+def test_broadcast_target_index_error(evaluate, compiler):
+    with pytest.raises(BroadcastTargetIndexError):
+        tensor_method("A(i,j) = a(i)", {}, compiler)
+
+
 def test_diagonal_error(evaluate, compiler):
     if compiler == TensorCompiler.taco:
-        pytest.skip("We do not currently get a nice error from Taco")
+        pytest.xfail("We do not currently get a nice error from Taco")
 
     with pytest.raises(DiagonalAccessError):
         tensor_method("a(i) = A(i,i)", dict(a="d", A="dd"), compiler)
