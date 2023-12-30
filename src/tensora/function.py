@@ -1,5 +1,13 @@
-__all__ = ["tensor_method", "evaluate", "evaluate_taco", "evaluate_tensora", "TensorMethod"]
+__all__ = [
+    "tensor_method",
+    "evaluate",
+    "evaluate_taco",
+    "evaluate_tensora",
+    "TensorMethod",
+    "BroadcastTargetIndexError",
+]
 
+from dataclasses import dataclass
 from functools import lru_cache
 from inspect import Parameter, Signature
 
@@ -7,16 +15,39 @@ from returns.functions import raise_exception
 
 from .compile import allocate_taco_structure, generate_library, take_ownership_of_arrays
 from .expression import parse_assignment
+from .expression.ast import Assignment
 from .format import parse_format
 from .generate import TensorCompiler
 from .problem import Problem, make_problem
 from .tensor import Tensor
 
 
+@dataclass(frozen=True, slots=True)
+class BroadcastTargetIndexError(Exception):
+    index: str
+    assignment: Assignment
+
+    def __str__(self):
+        return (
+            f"Expected index variable {self.index} on the target variable to be mentioned on the "
+            f"right-hand side, but it was not: {self.assignment}. Such broadcasting makes sense "
+            f"in a kernel and those kernels can be generated, but they cannot be used in "
+            f"`evaluate` or `tensor_method` because those functions get the output dimensions "
+            f"from the the dimensions of the input tensors."
+        )
+
+
 class TensorMethod:
     """A function taking specific tensor arguments."""
 
     def __init__(self, problem: Problem, compiler: TensorCompiler = TensorCompiler.tensora):
+        # Reject broadcasting to outputs because there is no way to specify output dimensions that
+        # do not have a corresponding input dimension
+        input_indexes = set(problem.assignment.expression.index_participants().keys())
+        for output_index in problem.assignment.target.indexes:
+            if output_index not in input_indexes:
+                raise BroadcastTargetIndexError(output_index, problem.assignment)
+
         # Store validated attributes
         self._problem = problem
         self._output_name = problem.assignment.target.name
