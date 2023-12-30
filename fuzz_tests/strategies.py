@@ -7,7 +7,9 @@ from tensora.format import Format, Mode
 from tensora.problem import Problem
 
 names = st.from_regex(r"[A-Za-z][A-Za-z0-9]*", fullmatch=True)
-variables = st.builds(ast.Tensor, name=names, indexes=st.lists(names, max_size=16))
+variables = st.builds(
+    ast.Tensor, name=names, indexes=st.builds(tuple, st.lists(names, max_size=16))
+)
 expressions = st.deferred(
     lambda: st.builds(ast.Integer, st.integers(min_value=0))
     | st.builds(ast.Float, st.floats(min_value=0, allow_infinity=False, allow_nan=False))
