@@ -6,7 +6,7 @@ from parsita import ParseError, ParserContext, lit, reg, rep, rep1sep, repsep
 from parsita.util import splat
 from returns import result
 
-from ._exceptions import InconsistentDimensionsError, MutatingAssignmentError
+from ._exceptions import InconsistentDimensionsError, MutatingAssignmentError, NameConflictError
 from .ast import Add, Assignment, Float, Integer, Multiply, Subtract, Tensor
 
 
@@ -43,8 +43,11 @@ class TensorExpressionParsers(ParserContext, whitespace=r"[ ]*"):
 
 def parse_assignment(
     string: str
-) -> result.Result[Assignment, ParseError | MutatingAssignmentError | InconsistentDimensionsError]:
+) -> result.Result[
+    Assignment,
+    ParseError | MutatingAssignmentError | InconsistentDimensionsError | NameConflictError,
+]:
     try:
         return TensorExpressionParsers.assignment.parse(string)
-    except (MutatingAssignmentError, InconsistentDimensionsError) as e:
+    except (MutatingAssignmentError, InconsistentDimensionsError, NameConflictError) as e:
         return result.Failure(e)

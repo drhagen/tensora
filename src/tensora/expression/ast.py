@@ -191,24 +191,41 @@ class Assignment:
     expression: Expression
 
     def __post_init__(self):
-        from ._exceptions import InconsistentDimensionsError, MutatingAssignmentError
+        from ._exceptions import (
+            InconsistentDimensionsError,
+            MutatingAssignmentError,
+            NameConflictError,
+        )
 
         target_name = self.target.name
 
-        variable_orders: dict[str, int] = {}
+        # Mutable containers
+        variable_orders: dict[str, int] = {target_name: self.target.order}
+        index_names = set(self.target.indexes)
+
+        # Validate expression
         variables_mapping = self.expression.variables()
-        for name, (first, *rest) in variables_mapping.items():
+        for name, variables in variables_mapping.items():
             if name == target_name:
                 raise MutatingAssignmentError(self)
 
+            for variable in variables:
+                index_names.update(variable.indexes)
+
+            (first, *rest) = variables
             for variable in rest:
                 if first.order != variable.order:
                     raise InconsistentDimensionsError(self, first, variable)
 
             variable_orders[name] = first.order
 
-        self._parameter_orders: dict[str, int]
-        object.__setattr__(self, "_parameter_orders", variable_orders)
+        # Detect name conflicts
+        conflicted_names = index_names.intersection(variable_orders.keys())
+        if len(conflicted_names) > 0:
+            raise NameConflictError(conflicted_names.pop(), self)
+
+        self._variable_orders: dict[str, int]
+        object.__setattr__(self, "_variable_orders", variable_orders)
 
     def deparse(self) -> str:
         return self.target.deparse() + " = " + self.expression.deparse()
@@ -219,14 +236,12 @@ class Assignment:
     def variable_orders(self) -> dict[str, int]:
         """Number of dimensions of each variable.
 
-        This is the same as `parameter_orders` except that it also includes the target variable.
-
         Returns:
             A mapping where each key is the string name of a variable and each value is the number
-            of dimensions that variable has in the right hand side.
+            of dimensions that variable has.
         """
 
-        return {self.target.name: self.target.order, **self._parameter_orders}
+        return self._variable_orders
 
     def __str__(self) -> str:
         return self.deparse()

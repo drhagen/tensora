@@ -1,4 +1,4 @@
-__all__ = ["MutatingAssignmentError", "InconsistentDimensionsError"]
+__all__ = ["MutatingAssignmentError", "InconsistentDimensionsError", "NameConflictError"]
 
 from dataclasses import dataclass
 
@@ -27,4 +27,16 @@ class InconsistentDimensionsError(Exception):
             f"Expected each tensor in an assignment to be referenced with the same number of "
             f"indexes, but found parameter {self.first.name} referenced as {self.first} and then "
             f"as {self.second} in {self.assignment}"
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class NameConflictError(Exception):
+    name: str
+    assignment: Assignment
+
+    def __str__(self):
+        return (
+            f"Expected no tensor and index to have the same name, but found {self.name} as both a "
+            f"tensor and an index in {self.assignment}"
         )

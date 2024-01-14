@@ -3,6 +3,7 @@ import pytest
 from tensora.expression import (
     InconsistentDimensionsError,
     MutatingAssignmentError,
+    NameConflictError,
     parse_assignment,
 )
 from tensora.expression.ast import *
@@ -68,6 +69,21 @@ def test_mutating_assignment():
 )
 def test_inconsistent_variable_size(assignment):
     assert isinstance(parse_assignment(assignment).failure(), InconsistentDimensionsError)
+
+
+@pytest.mark.parametrize(
+    "assignment",
+    [
+        "A(i) = B(B)",
+        "A(i) = B(i,j) * C(j,B)",
+        "A(i) = C(j,B) * B(i,j)",
+        "A(A) = B(i)",
+        "A(i) = B(A)",
+        "A(B) = B(i)",
+    ],
+)
+def test_name_conflict(assignment):
+    assert isinstance(parse_assignment(assignment).failure(), NameConflictError)
 
 
 def parse(string):
