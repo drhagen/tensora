@@ -6,6 +6,7 @@ from returns.result import Failure, Success
 from tensora.expression import (
     InconsistentDimensionsError,
     MutatingAssignmentError,
+    NameConflictError,
     ast,
     parse_assignment,
 )
@@ -37,7 +38,12 @@ def test_expression_parsing_cannot_crash(string):
     match parse_assignment(string):
         case Success(ast.Assignment()):
             pass
-        case Failure(ParseError() | MutatingAssignmentError() | InconsistentDimensionsError()):
+        case Failure(
+            ParseError()
+            | MutatingAssignmentError()
+            | InconsistentDimensionsError()
+            | NameConflictError()
+        ):
             pass
         case _:
             assert False
