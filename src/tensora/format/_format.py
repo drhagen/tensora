@@ -22,6 +22,9 @@ class Mode(Enum):
                 return member
         raise ValueError(f"No member of Mode has the integer value {value}")
 
+    def __repr__(self) -> str:
+        return f"Mode.{self.name}"
+
 
 @dataclass(frozen=True, slots=True)
 class Format:
