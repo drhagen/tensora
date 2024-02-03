@@ -60,7 +60,7 @@ class BucketOutput(Output):
     def ravel_indexes(self, dimensions: list[Variable], indexes: list[Variable]):
         dimensions_so_far: list[Variable] = []
         terms: list[Expression] = []
-        for dim_i, index_i in zip(reversed(dimensions), reversed(indexes)):
+        for dim_i, index_i in zip(reversed(dimensions), reversed(indexes), strict=True):
             terms.append(Multiply.join([index_i] + dimensions_so_far))
             dimensions_so_far.append(dim_i)
 

@@ -102,7 +102,7 @@ class Tensor:
         # Lengths of coordinates, modes, and dimensions must be equal. Lengths of elements of coordinates and values
         # must be equal
 
-        transposed_coordinates = [*zip(*coordinates)]
+        transposed_coordinates = [*zip(*coordinates, strict=True)]
 
         return Tensor.from_aos(
             transposed_coordinates, values, dimensions=dimensions, format=format
@@ -362,7 +362,7 @@ def coordinates_to_tree(coordinates: Iterable[Tuple[int, ...]], values: Iterable
                 node[key] = {}
             recurse(node[key], remaining_coordinates[1:], payload)
 
-    for coordinate, value in zip(coordinates, values):
+    for coordinate, value in zip(coordinates, values, strict=True):
         if len(coordinate) == 0:
             # Coordinates for order-0 tensors must be handled separately from others
             if tree is None:
@@ -384,7 +384,7 @@ def tree_to_indices_and_values(
     # Initialize indexes structure
     indexes = []
     values = []
-    for mode, dimension in zip(modes, dimensions):
+    for mode, dimension in zip(modes, dimensions, strict=True):
         if mode == Mode.dense:
             indexes.append([])
         elif mode == Mode.compressed:
@@ -445,13 +445,13 @@ def evaluate_binary_operator(
             # Output has density of least dense tensor
             output_format = "".join(
                 "d" if mode1 == Mode.dense and mode2 == Mode.dense else "s"
-                for mode1, mode2 in zip(left.format.modes, right.format.modes)
+                for mode1, mode2 in zip(left.format.modes, right.format.modes, strict=True)
             )
         elif operator in ("+", "-"):
             # Output has density of most dense tensor
             output_format = "".join(
                 "d" if mode1 == Mode.dense or mode2 == Mode.dense else "s"
-                for mode1, mode2 in zip(left.format.modes, right.format.modes)
+                for mode1, mode2 in zip(left.format.modes, right.format.modes, strict=True)
             )
         else:
             raise NotImplementedError()
@@ -584,7 +584,7 @@ def default_aos_dimensions(coordinates: Iterable[Tuple[int, ...]]) -> Tuple[int,
                     f"{order}, but this coordinate is not that length: {coordinate}"
                 )
 
-            for i, (dimension, index) in enumerate(zip(maximums, coordinate)):
+            for i, (dimension, index) in enumerate(zip(maximums, coordinate, strict=True)):
                 if index > dimension:
                     maximums[i] = coordinate[i]
 
@@ -632,7 +632,9 @@ def taco_indexes_from_aos_coordinates(
                     yield prefix + [suffix]
 
     # Sort coordinates
-    sorted_coordinates_and_values = sorted(zip(coordinates, values), key=lambda x: x[0])
+    sorted_coordinates_and_values = sorted(
+        zip(coordinates, values, strict=True), key=lambda x: x[0]
+    )
 
     # Remove duplicates
     deduplicated_coordinates = []
@@ -646,12 +648,12 @@ def taco_indexes_from_aos_coordinates(
             deduplicated_values.append(value)
 
     # To SoA coordinates for easier handling
-    soa_coordinates = [*zip(*deduplicated_coordinates)]
+    soa_coordinates = [*zip(*deduplicated_coordinates, strict=True)]
 
     # Build taco levels from sorted, deduplicated, SoA coordinates
     levels = []
     previous_prefixes = [()]
-    for i_level, (mode, dimension) in enumerate(zip(modes, dimensions)):
+    for i_level, (mode, dimension) in enumerate(zip(modes, dimensions, strict=True)):
         if mode == Mode.dense:
             levels.append([dimension])
             previous_prefixes = CartesianAppend(previous_prefixes, range(dimension))
@@ -665,7 +667,7 @@ def taco_indexes_from_aos_coordinates(
             idx = []
             unique_coordinates = []
             previous_coordinate = None
-            for coordinate in zip(*soa_coordinates[0 : i_level + 1]):
+            for coordinate in zip(*soa_coordinates[0 : i_level + 1], strict=True):
                 if coordinate != previous_coordinate:
                     while coordinate[0:-1] != current_prefix:
                         # The prefix has changed. Mark in pos the position of this prefix. Some prefixes may be
