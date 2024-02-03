@@ -46,5 +46,6 @@ class Format:
             return "".join(mode.character for mode in self.modes)
         else:
             return "".join(
-                mode.character + str(ordering) for mode, ordering in zip(self.modes, self.ordering)
+                mode.character + str(ordering)
+                for mode, ordering in zip(self.modes, self.ordering, strict=True)
             )

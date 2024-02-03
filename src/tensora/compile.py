@@ -331,7 +331,7 @@ def taco_structure_to_cffi(
     memory_holder = global_weakkeydict[cffi_tensor]
 
     cffi_indices = tensor_cdefs.cast("int32_t***", cffi_tensor.indices)
-    for i_level, (mode, level) in enumerate(zip(mode_types, indices)):
+    for i_level, (mode, level) in enumerate(zip(mode_types, indices, strict=True)):
         if mode == tensor_lib.taco_mode_dense:
             pass
         elif mode == tensor_lib.taco_mode_sparse:
@@ -448,4 +448,4 @@ def take_ownership_of_tensor(cffi_tensor) -> None:
 
 
 def weakly_increasing(list: list[int]):
-    return all(x <= y for x, y in zip(list, list[1:]))
+    return all(x <= y for x, y in zip(list[:-1], list[1:], strict=True))

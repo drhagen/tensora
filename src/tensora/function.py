@@ -73,7 +73,10 @@ class TensorMethod:
 
         # Validate tensor arguments
         for name, argument, format in zip(
-            bound_arguments.keys(), bound_arguments.values(), self._input_formats.values()
+            bound_arguments.keys(),
+            bound_arguments.values(),
+            self._input_formats.values(),
+            strict=True,
         ):
             if not isinstance(argument, Tensor):
                 raise TypeError(f"Argument {name} must be a Tensor not {type(argument)}")
