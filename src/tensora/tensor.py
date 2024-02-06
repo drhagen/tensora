@@ -145,12 +145,6 @@ class Tensor:
             format=format,
         )
 
-    @staticmethod
-    def from_scalar(scalar: float) -> Tensor:
-        return Tensor(
-            taco_structure_to_cffi([], [scalar], mode_types=(), dimensions=(), mode_ordering=())
-        )
-
     def to_format(self, format: Union[Format, str]):
         return Tensor.from_dok(self.to_dok(), dimensions=self.dimensions, format=format)
 
@@ -479,7 +473,7 @@ def evaluate_binary_operator(
             f"output({indexes}) = left({indexes}) {operator} right()",
             output_format,
             left=left,
-            right=Tensor.from_scalar(float(right)),
+            right=Tensor.from_lol(float(right)),
         )
 
     elif isinstance(left, Real) and isinstance(right, Tensor):
@@ -496,7 +490,7 @@ def evaluate_binary_operator(
         return evaluate_tensora(
             f"output({indexes}) = left() {operator} right({indexes})",
             output_format,
-            left=Tensor.from_scalar(float(left)),
+            left=Tensor.from_lol(float(left)),
             right=right,
         )
 
@@ -509,10 +503,7 @@ def evaluate_matrix_multiplication_operator(left: Tensor, right: Tensor):
 
     if isinstance(left, Tensor) and isinstance(right, Tensor):
         if left.order == 1 and right.order == 1:
-            scalar_tensor = evaluate_tensora(
-                "output() = left(i) * right(i)", "", left=left, right=right
-            )
-            return float(scalar_tensor)
+            return evaluate_tensora("output() = left(i) * right(i)", "", left=left, right=right)
         elif left.order == 2 and right.order == 1:
             # Output format is the uncontracted dimension of the matrix
             output_format = left.format.modes[left.format.ordering[0]].character
