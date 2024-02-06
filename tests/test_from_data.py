@@ -185,6 +185,14 @@ def test_from_lol_default_dimensions_default_format():
     assert actual.dimensions == (3, 3, 2)
 
 
+def test_from_lol_scalar():
+    actual = Tensor.from_lol(3.5)
+
+    assert actual.to_dok() == {(): 3.5}
+    assert actual.format == Format((), ())
+    assert actual.dimensions == ()
+
+
 def assert_all_methods_same(lol, dimensions, format):
     dok = {}
 

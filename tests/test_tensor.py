@@ -232,17 +232,6 @@ def test_from_dense_lil_scalar():
     assert x.to_dok() == {(): 2.0}
 
 
-def test_from_scalar():
-    x = Tensor.from_scalar(-2.0)
-
-    assert x.order == 0
-    assert x.dimensions == ()
-    assert x.modes == ()
-    assert x.mode_ordering == ()
-    assert x.format == Format((), ())
-    assert x.to_dok() == {(): -2.0}
-
-
 def test_to_dok():
     dok = {
         (2, 3): 2.0,
@@ -258,7 +247,7 @@ def test_to_dok():
 
 
 def test_to_float():
-    x = Tensor.from_scalar(2.0)
+    x = Tensor.from_lol(2.0)
     assert float(x) == 2.0
 
 
@@ -337,8 +326,7 @@ def test_multiply(a, b, c):
 def test_matrix_multiply(a, b, c):
     a = Tensor.from_lol(a)
     b = Tensor.from_lol(b)
-    if isinstance(c, list):
-        c = Tensor.from_lol(c)
+    c = Tensor.from_lol(c)
 
     actual = a @ b
     assert actual == c
