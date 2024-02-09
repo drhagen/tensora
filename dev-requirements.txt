@@ -12,3 +12,6 @@ hypofuzz == 23.7.1
 
 # Lint
 ruff == 0.1.6
+
+# Docs
+mkdocs-material == 9.5.6
