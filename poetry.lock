@@ -1879,4 +1879,4 @@ taco = ["tensora-taco"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "7753372e676d3ceb87dd25aa03e2de0285678aa0288a7bef4f3f4c771c7ea25c"
+content-hash = "fae41aacbb72760a3dd768e1c5a3f9ce19ef59ead278f5b57a10e508b9b79a04"

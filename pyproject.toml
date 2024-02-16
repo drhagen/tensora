@@ -19,7 +19,10 @@ classifiers = [
 [tool.poetry.dependencies]
 python = "^3.10"
 returns = "^0.20|^0.21|^0.22"
-cffi = "^1.11"
+cffi = "^1.16"
+# setuptools is required by cffi on Python 3.12 and up
+# https://cffi.readthedocs.io/en/latest/whatsnew.html#v1-16-0rc1
+setuptools = { version = "^69", python = ">=3.12" }
 parsita = "^2.0"
 typer = "^0.9"
 tensora-taco = { version = "^0.1.2", optional = true }
