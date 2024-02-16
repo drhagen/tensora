@@ -22,6 +22,7 @@ returns = "^0.20|^0.21|^0.22"
 cffi = "^1.11"
 parsita = "^2.0"
 typer = "^0.9"
+tensora-taco = { version = "^0.1.2", optional = true }
 numpy = { version = "^1.24", optional = true }
 scipy = { version = "^1.7", optional = true }
 
@@ -44,6 +45,11 @@ mkdocs-material = "^9"
 
 [tool.poetry.scripts]
 tensora = "tensora.cli:app"
+
+[tool.poetry.extras]
+taco = ["tensora-taco"]
+numpy = ["numpy"]
+scipy = ["scipy"]
 
 [tool.coverage.run]
 branch = true

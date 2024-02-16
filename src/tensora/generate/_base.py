@@ -6,6 +6,8 @@ from returns.result import Result
 
 from ..kernel_type import KernelType
 from ..problem import Problem
+from ._taco import generate_c_code_taco
+from ._tensora import generate_c_code_tensora
 
 
 class TensorCompiler(str, Enum):
@@ -22,10 +24,6 @@ def generate_c_code(
 ) -> Result[str, Exception]:
     match tensor_compiler:
         case TensorCompiler.tensora:
-            from ._tensora import generate_c_code_tensora
-
             return generate_c_code_tensora(problem, kernel_types)
         case TensorCompiler.taco:
-            from tensora_taco import generate_c_code_taco
-
             return generate_c_code_taco(problem, kernel_types)
