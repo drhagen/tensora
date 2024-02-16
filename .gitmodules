@@ -1,3 +1,0 @@
-[submodule "src/taco"]
-	path = src/taco
-	url = https://github.com/tensor-compiler/taco

@@ -24,11 +24,10 @@ def test_cli():
     assert result.stdout.startswith("int32_t compute(taco_tensor_t* restrict y,")
 
 
-@pytest.mark.parametrize("compiler", [[], ["-c", "tensora"], ["-c", "taco"]])
-def test_multiple_kernels(compiler):
+def test_multiple_kernels():
     result = runner.invoke(
         app,
-        ["y(i) = A(i,j) * x(j)", "-t", "compute", "-t", "evaluate", "-t", "assemble"] + compiler,
+        ["y(i) = A(i,j) * x(j)", "-t", "compute", "-t", "evaluate", "-t", "assemble"],
     )
 
     assert result.exit_code == 0
@@ -47,7 +46,6 @@ def test_write_to_file():
         assert Path(f.name).read_text().startswith("int32_t compute(taco_tensor_t* restrict y,")
 
 
-@pytest.mark.parametrize("compiler", ["tensora", "taco"])
 @pytest.mark.parametrize(
     "command",
     [
@@ -61,10 +59,7 @@ def test_write_to_file():
         ["A(i,j) = B(i,j) + C(j,i)", "-f=A:ds", "-f=B:ds", "-f=C:ds"],
     ],
 )
-def test_bad_input(compiler, command):
-    if command[0] == "a(i) = A(i,i)" and compiler == "taco":
-        pytest.xfail("Taco CLI succeeds but generates invalid code")
-
-    result = runner.invoke(app, command + ["-c", compiler], catch_exceptions=False)
+def test_bad_input(command):
+    result = runner.invoke(app, command, catch_exceptions=False)
 
     assert result.exit_code == 1

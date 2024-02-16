@@ -42,7 +42,7 @@ class TensorExpressionParsers(ParserContext, whitespace=r"[ ]*"):
 
 
 def parse_assignment(
-    string: str
+    string: str,
 ) -> result.Result[
     Assignment,
     ParseError | MutatingAssignmentError | InconsistentDimensionsError | NameConflictError,

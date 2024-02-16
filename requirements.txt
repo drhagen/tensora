@@ -1,4 +1,0 @@
-cffi ~= 1.11
-returns ~= 0.22
-parsita ~= 2.0
-typer ~= 0.9
