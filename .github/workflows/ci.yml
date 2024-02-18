@@ -15,7 +15,7 @@ jobs:
     strategy:
       matrix:
         python-version: ["3.10", "3.11", "3.12"]
-        os: ["ubuntu-22.04", "macos-12", "windows-2022"]
+        os: ["ubuntu-22.04", "macos-12"]
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout repo
@@ -34,10 +34,7 @@ jobs:
           poetry run nox -s
           test-${{ matrix.python-version }}
           test_numpy-${{ matrix.python-version }}
-      - name: Test TACO
-        # Tensora TACO does not work on Windows
-        if: ${{ ! startsWith(matrix.os, 'windows') }}
-        run: poetry run nox -s test_taco-${{ matrix.python-version }}
+          test_taco-${{ matrix.python-version }}
       - name: Delete extraneous Mac files
         # I have no idea where these come from, but they break report generation
         run: find . -name ".coverage.*.Mac-*" -delete

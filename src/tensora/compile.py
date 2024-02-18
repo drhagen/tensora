@@ -89,9 +89,10 @@ tensor_cdefs = FFI()
 # This `FFI` is `include`d in each kernel so objects created with its `new` can be passed to the kernels.
 tensor_cdefs.cdef(taco_type_header)
 
-# This library only has definitions, in order to call `dlopen`, `set_source` must be called with empty `source` first
+# This library only has definitions, in order to `include` it elsewhere, `set_source` must be called with empty `source` first
 tensor_cdefs.set_source("_main", "")
 
+# Open the base C library, which works on Linux and Mac
 tensor_lib = tensor_cdefs.dlopen(None)
 
 
