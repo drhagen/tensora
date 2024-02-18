@@ -1,7 +1,6 @@
 __all__ = ["generate_c_code_taco", "TacoError"]
 
 from dataclasses import dataclass
-from pathlib import Path
 
 from returns.result import Failure, Result, Success
 
@@ -16,9 +15,6 @@ class TacoError(Exception):
 
     def __str__(self) -> str:
         return self.message
-
-
-taco_binary = Path(__file__).parent.joinpath("taco/bin/taco")
 
 
 def generate_c_code_taco(
@@ -47,9 +43,7 @@ def generate_c_code_taco(
                 kernel_type_arguments.append("-print-assembly")
 
     taco_arguments = (
-        [taco_binary, expression_string, "-print-nocolor"]
-        + kernel_type_arguments
-        + format_string_arguments
+        [expression_string, "-print-nocolor"] + kernel_type_arguments + format_string_arguments
     )
 
     match taco_cli(taco_arguments):
