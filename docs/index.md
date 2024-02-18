@@ -14,7 +14,7 @@ The recommended means of installation is with `pip` from PyPI.
 pip install tensora
 ```
 
-You must have a C compiler installed that is compatible with and available to [CFFI API mode](https://cffi.readthedocs.io/en/latest/overview.html#purely-for-performance-api-level-out-of-line). Tensora definitely works on Mac and Linux and definitely does not work on Windows. It will probably work on any system where `ffi.dlopen(None)` works.
+You must have a C compiler installed that is compatible with and available to [CFFI API mode](https://cffi.readthedocs.io/en/latest/overview.html#purely-for-performance-api-level-out-of-line). Tensora definitely works on Mac and Linux and definitely does not work on Windows. It will probably work on any system where [`ffi.dlopen(None)`](https://cffi.readthedocs.io/en/latest/cdef.html#ffi-dlopen-loading-libraries-in-abi-mode) works.
 
 ## Hello world
 
