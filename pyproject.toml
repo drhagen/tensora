@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "tensora"
-version = "0.3.0a1"
+version = "0.3.0"
 description = "Library for dense and sparse tensors built on the tensor algebra compiler"
 authors = ["David Hagen <david@drhagen.com>"]
 license = "MIT"
