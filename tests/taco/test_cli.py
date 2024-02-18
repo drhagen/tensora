@@ -9,25 +9,20 @@ from tensora.cli import app
 runner = CliRunner()
 
 
-def test_help():
-    result = runner.invoke(app, ["--help"])
-
-    assert result.exit_code == 0
-    assert "Usage:" in result.stdout
-    assert "Options" in result.stdout
-
-
-def test_cli():
-    result = runner.invoke(app, ["y(i) = A(i,j) * x(j)", "-f", "A:ds"])
-
-    assert result.exit_code == 0
-    assert result.stdout.startswith("int32_t compute(taco_tensor_t* restrict y,")
-
-
 def test_multiple_kernels():
     result = runner.invoke(
         app,
-        ["y(i) = A(i,j) * x(j)", "-t", "compute", "-t", "evaluate", "-t", "assemble"],
+        [
+            "y(i) = A(i,j) * x(j)",
+            "-t",
+            "compute",
+            "-t",
+            "evaluate",
+            "-t",
+            "assemble",
+            "-c",
+            "taco",
+        ],
     )
 
     assert result.exit_code == 0
@@ -55,11 +50,10 @@ def test_write_to_file():
         ["y(i) = A(i,j) * x(j)", "-f=A:ds", "-f=A:dd"],
         ["y(i) = A(i,j) * x(j)", "-f=A:d"],
         ["y(i) = A(i,j) * x(j)", "-f=B:ds"],
-        ["a(i) = A(i,i)"],
         ["A(i,j) = B(i,j) + C(j,i)", "-f=A:ds", "-f=B:ds", "-f=C:ds"],
     ],
 )
 def test_bad_input(command):
-    result = runner.invoke(app, command, catch_exceptions=False)
+    result = runner.invoke(app, command + ["-c", "taco"], catch_exceptions=False)
 
     assert result.exit_code == 1

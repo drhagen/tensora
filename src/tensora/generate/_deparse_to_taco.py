@@ -2,7 +2,7 @@ __all__ = ["deparse_to_taco"]
 
 from functools import singledispatch
 
-from ..expression import ast
+from tensora.expression import ast
 
 
 @singledispatch

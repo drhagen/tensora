@@ -1,6 +1,7 @@
 import pytest
 
-from tensora import Tensor, evaluate
+from tensora import Tensor
+from tensora import evaluate_taco as evaluate
 
 
 def assert_same_as_dense(expression, format_out, **tensor_pairs):

@@ -1,21 +1,26 @@
-import platform
-
 from nox import Session, options, parametrize, session
 
-options.sessions = ["test", "test_numpy", "coverage", "lint"]
+options.sessions = ["test", "test_numpy", "test_taco", "coverage", "lint"]
 
 
-@session(python=["3.10", "3.11"])
+@session(python=["3.10", "3.11", "3.12"])
 def test(s: Session):
     s.install(".", "pytest", "pytest-cov")
-    s.env["COVERAGE_FILE"] = f".coverage.{s.python}.{platform.system()}"
+    s.env["COVERAGE_FILE"] = f".coverage.{s.python}"
     s.run("python", "-m", "pytest", "--cov", "tensora", "tests")
 
 
-@session(python=["3.10", "3.11"])
+@session(python=["3.10", "3.11", "3.12"])
+def test_taco(s: Session):
+    s.install(".[taco]", "pytest", "pytest-cov")
+    s.env["COVERAGE_FILE"] = f".coverage.taco.{s.python}"
+    s.run("python", "-m", "pytest", "--cov", "tensora", "tests/taco")
+
+
+@session(python=["3.10", "3.11", "3.12"])
 def test_numpy(s: Session):
     s.install(".[numpy]", "pytest", "pytest-cov")
-    s.env["COVERAGE_FILE"] = f".coverage.numpy.{s.python}.{platform.system()}"
+    s.env["COVERAGE_FILE"] = f".coverage.numpy.{s.python}"
     s.run("python", "-m", "pytest", "--cov", "tensora", "tests/test_numpy.py")
 
 
