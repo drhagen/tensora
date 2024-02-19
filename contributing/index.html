@@ -18,7 +18,7 @@
       
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.6">
+      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.9">
     
     
       
@@ -26,7 +26,7 @@
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.50c56a3b.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.f2e4d321.min.css">
       
         
         <link rel="stylesheet" href="../assets/stylesheets/palette.06af60db.min.css">
@@ -564,34 +564,34 @@
 <div class="highlight"><pre><span></span><code>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/drhagen/tensora.git
 </code></pre></div>
 <h2 id="installing-from-source">Installing from source</h2>
-<p>Tensora uses pip as its dependency manager. Install the dependencies and dev dependencies, and then install Tensora in editable mode:</p>
-<div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements.txt<span class="w"> </span>-r<span class="w"> </span>dev-requirements.txt
-pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.
+<p>Tensora uses Poetry as its packaging and dependency manager. In whatever Python environment you prefer, <a href="https://python-poetry.org/docs/">install Poetry</a> and then use Poetry to install Tensora and its dependencies:</p>
+<div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>poetry
+poetry<span class="w"> </span>install
 </code></pre></div>
 <h2 id="testing">Testing</h2>
 <p>Tensora uses pytest to run the tests in the <code>tests/</code> directory. The test command is encapsulated with Nox:</p>
-<div class="highlight"><pre><span></span><code>nox<span class="w"> </span>-s<span class="w"> </span><span class="nb">test</span><span class="w"> </span>test_numpy
+<div class="highlight"><pre><span></span><code>poetry<span class="w"> </span>run<span class="w"> </span>nox<span class="w"> </span>-s<span class="w"> </span><span class="nb">test</span><span class="w"> </span>test_taco<span class="w"> </span>test_numpy
 </code></pre></div>
 <p>This will try to test with all compatible Python versions that <code>nox</code> can find. To run the tests with only a particular version, run something like this:</p>
-<div class="highlight"><pre><span></span><code>nox<span class="w"> </span>-s<span class="w"> </span>test-3.10<span class="w"> </span>test_numpy-3.10
+<div class="highlight"><pre><span></span><code>poetry<span class="w"> </span>run<span class="w"> </span>nox<span class="w"> </span>-s<span class="w"> </span>test-3.10<span class="w"> </span>test_taco-3.10<span class="w"> </span>test_numpy-3.10
 </code></pre></div>
-<p>It is good to run the tests locally before making a PR, but it is not necessary to have all Python versions run. It is rare for a failure to appear in a single version, and the CI will catch it anyway. </p>
+<p>It is good to run the tests locally before making a PR, but it is not necessary to have all Python versions run. It is rare for a failure to appear in a single version, and the CI will catch it anyway.</p>
 <h2 id="code-quality">Code quality</h2>
 <p>Tensora uses Ruff to ensure a minimum standard of code quality. The code quality commands are encapsulated with Nox:</p>
-<div class="highlight"><pre><span></span><code>nox<span class="w"> </span>-s<span class="w"> </span>fmt
-nox<span class="w"> </span>-s<span class="w"> </span>lint
+<div class="highlight"><pre><span></span><code>poetry<span class="w"> </span>run<span class="w"> </span>nox<span class="w"> </span>-s<span class="w"> </span>format
+poetry<span class="w"> </span>run<span class="w"> </span>nox<span class="w"> </span>-s<span class="w"> </span>lint
 </code></pre></div>
 <h2 id="generating-the-docs">Generating the docs</h2>
 <p>Tensora uses MkDocs to generate HTML docs from Markdown. For development purposes, they can be served locally without needing to build them first:</p>
-<div class="highlight"><pre><span></span><code>mkdocs<span class="w"> </span>serve
+<div class="highlight"><pre><span></span><code>poetry<span class="w"> </span>run<span class="w"> </span>mkdocs<span class="w"> </span>serve
 </code></pre></div>
 <p>To deploy the current docs to GitHub Pages, Tensora uses the MkDocs <code>gh-deploy</code> command that builds the static site on the <code>gh-pages</code> branch, commits, and pushes to the origin:</p>
-<div class="highlight"><pre><span></span><code>mkdocs<span class="w"> </span>gh-deploy
+<div class="highlight"><pre><span></span><code>poetry<span class="w"> </span>run<span class="w"> </span>mkdocs<span class="w"> </span>gh-deploy
 </code></pre></div>
 <h2 id="making-a-release">Making a release</h2>
 <ol>
 <li>Bump<ol>
-<li>Increment version in <code>setup.py</code></li>
+<li>Increment version in <code>pyproject.toml</code></li>
 <li>Commit with message "Bump version number to X.Y.Z"</li>
 <li>Push commit to GitHub</li>
 <li>Check <a href="https://github.com/drhagen/tensora/actions/workflows/ci.yml">CI</a> to ensure all tests pass</li>
@@ -600,19 +600,7 @@ nox<span class="w"> </span>-s<span class="w"> </span>lint
 <li>Tag<ol>
 <li>Tag commit with "vX.Y.Z"</li>
 <li>Push tag to GitHub</li>
-</ol>
-</li>
-<li>Build<ol>
-<li>Clear <code>dist/</code></li>
-<li>Run <code>python setup.py sdist</code></li>
-<li>Verify that sdist (<code>.tar.gz</code>) is in <code>dist/</code></li>
-</ol>
-</li>
-<li>Publish<ol>
-<li>Run <code>twine check dist/*</code></li>
-<li>Run <code>twine upload --repository testpypi dist/*</code></li>
-<li>Check <a href="https://test.pypi.org/project/tensora/">PyPI test server</a> for good upload</li>
-<li>Run <code>twine upload dist/*</code></li>
+<li>Wait for <a href="https://github.com/drhagen/tensora/actions/workflows/release.yml">build</a> to finish</li>
 <li>Check <a href="https://pypi.org/project/tensora/">PyPI</a> for good upload</li>
 </ol>
 </li>
@@ -724,7 +712,7 @@ nox<span class="w"> </span>-s<span class="w"> </span>lint
     <script id="__config" type="application/json">{"base": "..", "features": [], "search": "../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="../assets/javascripts/bundle.e1c3ead8.min.js"></script>
+      <script src="../assets/javascripts/bundle.8fd75fb4.min.js"></script>
       
     
   </body>

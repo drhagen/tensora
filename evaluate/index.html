@@ -20,7 +20,7 @@
       
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.6">
+      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.9">
     
     
       
@@ -28,7 +28,7 @@
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.50c56a3b.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.f2e4d321.min.css">
       
         
         <link rel="stylesheet" href="../assets/stylesheets/palette.06af60db.min.css">
@@ -589,7 +589,7 @@
 <p><code>inputs</code> is all the inputs to the expression. There must be one named argument for each variable name in <code>assignment</code>. The dimensions of the tensors in <code>inputs</code> must be consistent with <code>assignment</code> and with each other.</p>
 </li>
 </ul>
-<p>There is also <code>evaluate_tensora</code> and <code>evaluate_taco</code> that have identical interfaces, but use different tensor algebra compilers. <code>evaluate</code> is an alias for the default, which is currently <code>evaluate_tensora</code>.</p>
+<p>There is also <code>evaluate_tensora</code> and <code>evaluate_taco</code> that have identical interfaces, but use different tensor algebra compilers. <code>evaluate</code> is an alias for the default, which is currently <code>evaluate_tensora</code>. <code>evaluate_taco</code> is only available if the <code>tensora[taco]</code> extra is installed.</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">tensora</span> <span class="kn">import</span> <span class="n">Tensor</span><span class="p">,</span> <span class="n">evaluate</span>
 
 <span class="n">A</span> <span class="o">=</span> <span class="n">Tensor</span><span class="o">.</span><span class="n">from_lol</span><span class="p">([[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">],</span> <span class="p">[</span><span class="mi">4</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">6</span><span class="p">]])</span>
@@ -601,7 +601,7 @@
 <h2 id="assignments">Assignments</h2>
 <p>In a loose sense, the assignment strings use Einstein notation. The assignments are made of tensor names, index names, and operations. A tensor with its indexes is the target of the assignment on the left-hand side. Various tensors with their indexes are connected by elementary operations on the right-hand side.</p>
 <h3 id="output-indexes">Output indexes</h3>
-<p>Indexes that appear on both sides match an output dimension to the input dimensions sharing that index. </p>
+<p>Indexes that appear on both sides match an output dimension to the input dimensions sharing that index.</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">tensora</span> <span class="kn">import</span> <span class="n">Tensor</span><span class="p">,</span> <span class="n">evaluate</span>
 
 <span class="n">a</span> <span class="o">=</span> <span class="n">Tensor</span><span class="o">.</span><span class="n">from_lol</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">])</span>
@@ -767,7 +767,7 @@
     <script id="__config" type="application/json">{"base": "..", "features": [], "search": "../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="../assets/javascripts/bundle.e1c3ead8.min.js"></script>
+      <script src="../assets/javascripts/bundle.8fd75fb4.min.js"></script>
       
     
   </body>
