@@ -1,6 +1,7 @@
-from nox import Session, options, parametrize, session
+from nox import options, parametrize
+from nox_poetry import Session, session
 
-options.sessions = ["test", "test_numpy", "test_taco", "coverage", "lint"]
+options.sessions = ["test", "test_taco", "test_numpy", "coverage", "lint"]
 
 
 @session(python=["3.10", "3.11", "3.12"])
