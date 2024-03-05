@@ -42,9 +42,12 @@ def generate_c_code_taco(
             case KernelType.assemble:
                 kernel_type_arguments.append("-print-assembly")
 
-    taco_arguments = (
-        [expression_string, "-print-nocolor"] + kernel_type_arguments + format_string_arguments
-    )
+    taco_arguments = [
+        expression_string,
+        "-print-nocolor",
+        *kernel_type_arguments,
+        *format_string_arguments,
+    ]
 
     match taco_cli(taco_arguments):
         case Success(code):

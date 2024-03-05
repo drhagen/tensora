@@ -15,13 +15,13 @@ format_strings = [
 ]
 
 
-@pytest.mark.parametrize("string,format", format_strings)
+@pytest.mark.parametrize(("string", "format"), format_strings)
 def test_parse_format(string, format):
     actual = parse_format(string).unwrap()
     assert actual == format
 
 
-@pytest.mark.parametrize("string,format", format_strings)
+@pytest.mark.parametrize(("string", "format"), format_strings)
 def test_deparse_format(string, format):
     actual = format.deparse()
     assert actual == string
@@ -69,7 +69,7 @@ def test_mode_sparse_attributes():
 
 
 def test_mode_from_illegal_int():
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="No member of Mode"):
         Mode.from_c_int(3)
 
 

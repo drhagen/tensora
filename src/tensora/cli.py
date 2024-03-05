@@ -35,7 +35,7 @@ def tensora(
                 "Unmentioned tensors are be assumed to be all dense."
             ),
         ),
-    ] = [],
+    ] = [],  # noqa: B006; Typer does not support Sequence or tuple
     kernel_types: Annotated[
         list[KernelType],
         typer.Option(
@@ -43,7 +43,7 @@ def tensora(
             "-t",
             help="The type of kernel that will be generated. Can be mentioned multiple times.",
         ),
-    ] = [KernelType.compute],
+    ] = [KernelType.compute],  # noqa: B006; Typer does not support Sequence or tuple
     tensor_compiler: Annotated[
         TensorCompiler,
         typer.Option(

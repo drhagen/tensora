@@ -201,7 +201,7 @@ def assert_all_methods_same(lol, dimensions, format):
             dok[indexes] = tree
         else:
             for i_element, element in enumerate(tree):
-                recurse(element, indexes + (i_element,))
+                recurse(element, (*indexes, i_element))
 
     recurse(lol, ())
 
@@ -253,7 +253,7 @@ def test_convert_0(lol):
 
 
 @pytest.mark.parametrize(
-    "lol,dimensions",
+    ("lol", "dimensions"),
     [
         ([], (0,)),
         ([3], (1,)),
@@ -266,7 +266,7 @@ def test_convert_1(lol, dimensions, format):
 
 
 @pytest.mark.parametrize(
-    "lol,dimensions",
+    ("lol", "dimensions"),
     [
         ([], (0, 0)),
         ([], (0, 3)),
@@ -283,7 +283,7 @@ def test_convert_2(lol, dimensions, format):
 
 
 @pytest.mark.parametrize(
-    "lol,dimensions",
+    ("lol", "dimensions"),
     [
         ([], (0, 0, 0)),
         ([], (0, 2, 3)),

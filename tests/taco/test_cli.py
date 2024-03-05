@@ -54,6 +54,6 @@ def test_write_to_file():
     ],
 )
 def test_bad_input(command):
-    result = runner.invoke(app, command + ["-c", "taco"], catch_exceptions=False)
+    result = runner.invoke(app, [*command, "-c", "taco"], catch_exceptions=False)
 
     assert result.exit_code == 1
