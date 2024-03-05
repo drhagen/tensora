@@ -42,13 +42,13 @@ assignment_strings = [
 ]
 
 
-@pytest.mark.parametrize("string,assignment", assignment_strings)
+@pytest.mark.parametrize(("string", "assignment"), assignment_strings)
 def test_assignment_parsing(string, assignment):
     actual = parse_assignment(string).unwrap()
     assert actual == assignment
 
 
-@pytest.mark.parametrize("string,assignment", assignment_strings)
+@pytest.mark.parametrize(("string", "assignment"), assignment_strings)
 def test_assignment_deparsing(string, assignment):
     deparsed = assignment.deparse()
     assert deparsed == string
@@ -96,7 +96,7 @@ def test_assignment_to_string():
 
 
 @pytest.mark.parametrize(
-    "string,output",
+    ("string", "output"),
     [
         (
             "y(i) = 0.5 * (b() - a()) * (x1(i,j) + x2(i,j)) * z(j)",
@@ -110,7 +110,7 @@ def test_variable_order(string, output):
 
 
 @pytest.mark.parametrize(
-    "string,output",
+    ("string", "output"),
     [
         (
             "y(i) = 0.5 * (b() - a()) * (x1(i,j) + x2(i,j)) * z(j)",

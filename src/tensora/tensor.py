@@ -4,7 +4,7 @@ __all__ = ["Tensor"]
 
 import itertools
 from numbers import Real
-from typing import Any, Dict, Iterable, Iterator, List, Optional, Tuple, Union
+from typing import Any, Dict, Iterable, Iterator, List, Optional, Sequence, Tuple, Union
 
 from .compile import taco_structure_to_cffi
 from .format import Format, Mode, parse_format
@@ -230,14 +230,14 @@ class Tensor:
                 if modes[i_level] == Mode.dense:
                     for index in range(level_dimensions[i_level]):
                         next_position = level_dimensions[i_level] * position + index
-                        yield from recurse(i_level + 1, prefix + (index,), next_position)
+                        yield from recurse(i_level + 1, (*prefix, index), next_position)
                 elif modes[i_level] == Mode.compressed:
                     start = cffi_indexes[i_level][0][position]
                     end = cffi_indexes[i_level][0][position + 1]
 
                     for next_position in range(start, end):
                         index = cffi_indexes[i_level][1][next_position]
-                        yield from recurse(i_level + 1, prefix + (index,), next_position)
+                        yield from recurse(i_level + 1, (*prefix, index), next_position)
             else:
                 coordinate = tuple(prefix[mode_ordering[i]] for i in range(order))
                 yield coordinate, cffi_values[position]
@@ -246,7 +246,7 @@ class Tensor:
 
     def to_dok(self, *, explicit_zeros=False) -> Dict[Tuple[int, ...], float]:
         if explicit_zeros:
-            return {key: value for key, value in self.items()}
+            return dict(self.items())
         else:
             return {key: value for key, value in self.items() if value != 0.0}
 
@@ -320,7 +320,7 @@ class Tensor:
             return NotImplemented
 
     def __repr__(self):
-        return f"Tensor.from_dok({str(self.to_dok())}, dimensions={self.dimensions}, format={self.format.deparse()!r})"
+        return f"Tensor.from_dok({self.to_dok()}, dimensions={self.dimensions}, format={self.format.deparse()!r})"
 
 
 def lol_to_coordinates_and_values(
@@ -337,7 +337,7 @@ def lol_to_coordinates_and_values(
                 values.append(tree)
         else:
             for i_element, element in enumerate(tree):
-                recurse(element, indexes + (i_element,))
+                recurse(element, (*indexes, i_element))
 
     recurse(data, ())
 
@@ -378,7 +378,7 @@ def tree_to_indices_and_values(
     # Initialize indexes structure
     indexes = []
     values = []
-    for mode, dimension in zip(modes, dimensions, strict=True):
+    for mode, _dimension in zip(modes, dimensions, strict=True):
         if mode == Mode.dense:
             indexes.append([])
         elif mode == Mode.compressed:
@@ -388,7 +388,7 @@ def tree_to_indices_and_values(
         if modes[i_level] == Mode.dense:
             iter_next_level = range(dimensions[i_level])
         elif modes[i_level] == Mode.compressed:
-            idx = sorted([key for key in node.keys()])
+            idx = sorted(node.keys())
             indexes[i_level][0].append(indexes[i_level][0][-1] + len(idx))
             indexes[i_level][1].extend(idx)
 
@@ -503,20 +503,44 @@ def evaluate_matrix_multiplication_operator(left: Tensor, right: Tensor):
 
     if isinstance(left, Tensor) and isinstance(right, Tensor):
         if left.order == 1 and right.order == 1:
+            if left.dimensions != right.dimensions:
+                raise ValueError(
+                    f"Cannot apply operator @ between tensor with dimensions {left.dimensions} and "
+                    f"tensor with dimensions {right.dimensions}"
+                )
+
             return evaluate_tensora("output() = left(i) * right(i)", "", left=left, right=right)
         elif left.order == 2 and right.order == 1:
+            if left.dimensions[1] != right.dimensions[0]:
+                raise ValueError(
+                    f"Cannot apply operator @ between tensor with dimensions {left.dimensions} and "
+                    f"tensor with dimensions {right.dimensions}"
+                )
+
             # Output format is the uncontracted dimension of the matrix
             output_format = left.format.modes[left.format.ordering[0]].character
             return evaluate_tensora(
                 "output(i) = left(i,j) * right(j)", output_format, left=left, right=right
             )
         elif left.order == 1 and right.order == 2:
+            if left.dimensions[0] != right.dimensions[0]:
+                raise ValueError(
+                    f"Cannot apply operator @ between tensor with dimensions {left.dimensions} and "
+                    f"tensor with dimensions {right.dimensions}"
+                )
+
             # Output format is the uncontracted dimension of the matrix
             output_format = right.format.modes[right.format.ordering[1]].character
             return evaluate_tensora(
                 "output(j) = left(i) * right(i,j)", output_format, left=left, right=right
             )
         elif left.order == 2 and right.order == 2:
+            if left.dimensions[1] != right.dimensions[0]:
+                raise ValueError(
+                    f"Cannot apply operator @ between tensor with dimensions {left.dimensions} and "
+                    f"tensor with dimensions {right.dimensions}"
+                )
+
             # Output format are the uncontracted dimensions of the matrices
             left_output_format = left.format.modes[left.format.ordering[0]].character
             right_output_format = right.format.modes[right.format.ordering[1]].character
@@ -584,11 +608,11 @@ def default_aos_dimensions(coordinates: Iterable[Tuple[int, ...]]) -> Tuple[int,
 
 
 def default_format_given_nnz(dimensions: Tuple[int, ...], nnz: int) -> Format:
-    # The default format is to use dense dimensions as long as the number of nonzeros is larger than the product
-    # of those dimensions.
+    # The default format is to use dense dimensions as long as the number of nonzeros is larger
+    # than the product of those dimensions.
     needed_dense = 0
     required_threshold = 1
-    for needed_dense, dimension in enumerate(dimensions):
+    for needed_dense, dimension in enumerate(dimensions):  # noqa: B007; needed_dense is used
         required_threshold *= dimension
         if nnz < required_threshold:
             break
@@ -611,16 +635,13 @@ def taco_indexes_from_aos_coordinates(
 
     class CartesianAppend(Iterable):
         # Does a cartesian product, but assumes
-        def __init__(self, base: Iterable[List[Any]], append: Iterable[Any]):
+        def __init__(self, base: Iterable[Sequence[Any]], append: Iterable[Any]):
             self.base = base
             self.append = append
 
         def __iter__(self):
             for prefix, suffix in itertools.product(self.base, self.append):
-                if isinstance(prefix, tuple):
-                    yield prefix + (suffix,)
-                else:
-                    yield prefix + [suffix]
+                yield (*prefix, suffix)
 
     # Sort coordinates
     sorted_coordinates_and_values = sorted(

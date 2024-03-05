@@ -18,7 +18,7 @@ figure_5_taco_data = [
 ]
 
 
-@pytest.mark.parametrize("format,indices,vals", figure_5_taco_data)
+@pytest.mark.parametrize(("format", "indices", "vals"), figure_5_taco_data)
 def test_figure_5(format, indices, vals):
     data = [[6, 0, 9, 8], [0, 0, 0, 0], [5, 0, 0, 7]]
     A = Tensor.from_lol(data, dimensions=(3, 4), format=format)
@@ -27,7 +27,7 @@ def test_figure_5(format, indices, vals):
     assert A.taco_vals == vals
 
 
-@pytest.mark.parametrize("format,indices,vals", figure_5_taco_data)
+@pytest.mark.parametrize(("format", "indices", "vals"), figure_5_taco_data)
 @pytest.mark.parametrize(
     "permutation",
     [
@@ -68,7 +68,7 @@ def test_unsorted_coordinates(format, indices, vals, permutation):
 # The example tensors from the follow-up taco paper:
 # https://tensor-compiler.org/chou-oopsla18-taco-formats.pdf
 @pytest.mark.parametrize(
-    "format,indices,vals",
+    ("format", "indices", "vals"),
     [("d", [[]], [5, 1, 0, 0, 2, 0, 8, 0]), ("s", [[[0, 4], [0, 1, 4, 6]]], [5, 1, 2, 8])],
 )
 def test_figure_2a(format, indices, vals):
@@ -80,7 +80,7 @@ def test_figure_2a(format, indices, vals):
 
 
 @pytest.mark.parametrize(
-    "format,indices,vals",
+    ("format", "indices", "vals"),
     [
         ("ds", [[], [[0, 2, 4, 4, 7], [0, 1, 0, 1, 0, 3, 4]]], [5, 1, 7, 3, 8, 4, 9]),
         (
@@ -107,7 +107,7 @@ def test_figure_2e(format, indices, vals):
 
 
 @pytest.mark.parametrize(
-    "format,indices,vals",
+    ("format", "indices", "vals"),
     [
         (
             "sss",
@@ -253,12 +253,12 @@ def test_to_float():
 
 def test_nonscalar_to_float():
     x = Tensor.from_lol([1, 2])
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Can only convert Tensor of order 0 to float"):
         _ = float(x)
 
 
 @pytest.mark.parametrize(
-    "a,b,c",
+    ("a", "b", "c"),
     [
         ([0, 0, 1], 3, [3, 3, 4]),
         (3, [0, 0, 1], [3, 3, 4]),
@@ -277,7 +277,7 @@ def test_add(a, b, c):
 
 
 @pytest.mark.parametrize(
-    "a,b,c",
+    ("a", "b", "c"),
     [
         ([0, 0, 1], 3, [-3, -3, -2]),
         (3, [0, 0, 1], [3, 3, 2]),
@@ -296,7 +296,7 @@ def test_subtract(a, b, c):
 
 
 @pytest.mark.parametrize(
-    "a,b,c",
+    ("a", "b", "c"),
     [
         ([0, 0, 1], 3, [0, 0, 3]),
         (3, [0, 0, 2], [0, 0, 6]),
@@ -315,7 +315,7 @@ def test_multiply(a, b, c):
 
 
 @pytest.mark.parametrize(
-    "a,b,c",
+    ("a", "b", "c"),
     [
         ([3, 2, 5], [1, 2, 0], 7),
         ([0, 0, 1], [[0, 0], [4, -1], [0, 2]], [0, 2]),
@@ -336,21 +336,23 @@ def test_binary_mismatched_dimensions():
     a = Tensor.from_lol([3, 2, 5])
     b = Tensor.from_lol([1, 2, 0, 4])
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Cannot apply operator +"):
         _ = a + b
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Cannot apply operator -"):
         _ = a - b
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Cannot apply operator *"):
         _ = a * b
 
 
-def test_matrix_multiply_mismatched_dimensions():
-    a = Tensor.from_lol([3, 2, 5])
-    b = Tensor.from_lol([1, 2, 0, 4])
+@pytest.mark.parametrize("left", [[3, 2, 5], [[0, 1, 0], [0, 2, 0]]])
+@pytest.mark.parametrize("right", [[4, 1], [[0, 1, 0], [0, 2, 0]]])
+def test_matrix_multiply_mismatched_dimensions(left, right):
+    a = Tensor.from_lol(left)
+    b = Tensor.from_lol(right)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Cannot apply operator @"):
         _ = a @ b
 
 
@@ -366,7 +368,7 @@ def test_matrix_multiply_too_many_dimensions():
         dimensions=(3, 3, 3),
     )
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Matrix multiply is only defined"):
         _ = a @ b
 
 

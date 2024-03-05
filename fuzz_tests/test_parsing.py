@@ -23,7 +23,7 @@ def test_format_parsing_cannot_crash(string):
         case Failure(ParseError() | InvalidModeOrderingError()):
             pass
         case _:
-            assert False
+            raise RuntimeError("Unexpected result")
 
 
 @given(formats())
@@ -46,7 +46,7 @@ def test_expression_parsing_cannot_crash(string):
         ):
             pass
         case _:
-            assert False
+            raise RuntimeError("Unexpected result")
 
 
 @given(assignments())

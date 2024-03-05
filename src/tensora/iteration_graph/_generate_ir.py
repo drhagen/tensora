@@ -183,7 +183,7 @@ def to_ir_iteration_variable(self: IterationNode, output: Output, kernel_type: K
 
             for leaf in maybe_dense_output + dense_subnode_leaves:
                 needed_indexes: set[str] = set()
-                for i_layer in reversed(range(0, leaf.layer)):
+                for i_layer in reversed(range(leaf.layer)):
                     if leaf.tensor.modes[i_layer] == Mode.dense:
                         needed_indexes.add(leaf.tensor.indexes[i_layer])
                     else:

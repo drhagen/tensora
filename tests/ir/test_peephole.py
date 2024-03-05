@@ -180,7 +180,7 @@ changed = [
 ]
 
 
-@pytest.mark.parametrize("before,after", changed)
+@pytest.mark.parametrize(("before", "after"), changed)
 def test_peephole(before: Statement, after: Statement):
     assert peephole(before) == after
 

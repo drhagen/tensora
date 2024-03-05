@@ -112,7 +112,7 @@ single_lines = [
 ]
 
 
-@pytest.mark.parametrize("ast,code", single_lines)
+@pytest.mark.parametrize(("ast", "code"), single_lines)
 def test_single_lines(ast: Expression, code: str):
     assert ir_to_c(ast) == code + ";"
 
@@ -322,6 +322,6 @@ multiple_lines = [
 ]
 
 
-@pytest.mark.parametrize("ast,code", multiple_lines)
+@pytest.mark.parametrize(("ast", "code"), multiple_lines)
 def test_multiple_lines(ast: Expression, code: str):
     assert ir_to_c(ast) == clean(code)
