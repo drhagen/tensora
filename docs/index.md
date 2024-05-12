@@ -1,3 +1,7 @@
+---
+icon: material/home
+---
+
 # Tensora
 
 Tensora is a tensor algebra library for Python. You can create `Tensor` objects in a variety of sparse and dense formats. You can do calculations with these tensors by passing the them to the `evaluate` function along with an expression (e.g. `y = evaluate('y(i) = A(i,j) * x(j)', A=A, x=x)`). The expression is parsed, a kernel is generated, the C code is compiled on the fly, the binary is invoked, and the result is packaged into a output `Tensor`.

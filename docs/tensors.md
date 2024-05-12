@@ -1,3 +1,7 @@
+---
+icon: material/cube-outline
+---
+
 # Tensors
 
 The main type in Tensora is the `Tensor` class. `Tensor`s are immutable. New tensors may be constructed from operations on other `Tensor`s, but no property of a `Tensor` may change once it is constructed. This is different from NumPy arrays and Scipy matrices, which may be mutated in-place.
