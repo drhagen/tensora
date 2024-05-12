@@ -1,3 +1,7 @@
+---
+icon: material/function-variant
+---
+
 # Evaluate
 
 ```

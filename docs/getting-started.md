@@ -1,3 +1,7 @@
+---
+icon: material/sign-direction
+---
+
 # Getting started
 
 Tensors are n-dimensional generalizations of matrices. Instead of being limited to 2 dimensions, tensors may have 3, 4, or more dimensions. They may also have 0 or 1 dimensions. The number of dimensions is the called the order. NumPy is the best known tensor library in Python; its central `ndarray` object is an example of a dense tensor.

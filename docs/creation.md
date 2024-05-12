@@ -1,3 +1,7 @@
+---
+icon: material/tree
+---
+
 # Creation
 
 Creating a `Tensor` is best done via the `Tensor.from_*` methods. These methods convert a variety of data types into a `Tensor`. Most of the conversion methods optionally take both dimensions and format to determine the `dimensions` and `format` of the resulting tensor.
