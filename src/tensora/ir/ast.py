@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Sequence
-
 __all__ = [
     "Statement",
     "Expression",
@@ -43,10 +41,12 @@ __all__ = [
     "Break",
     "Return",
     "FunctionDefinition",
+    "Module",
 ]
 
 from dataclasses import dataclass
 from functools import reduce
+from typing import Sequence
 
 from ..format import Mode
 from .types import Type
@@ -262,7 +262,7 @@ class Min(Expression):
 
 @dataclass(frozen=True, slots=True)
 class Address(Expression):
-    target: Variable
+    target: Assignable
 
 
 @dataclass(frozen=True, slots=True)
@@ -357,8 +357,13 @@ class Return(Statement):
 
 
 @dataclass(frozen=True, slots=True)
-class FunctionDefinition(Statement):
+class FunctionDefinition:
     name: Variable
     parameters: list[Declaration]
     return_type: Type
     body: Statement
+
+
+@dataclass(frozen=True, slots=True)
+class Module:
+    definitions: list[FunctionDefinition]

@@ -11,7 +11,8 @@ from ..desugar import (
     index_dimensions,
     to_identifiable,
 )
-from ..ir import SourceBuilder, peephole
+from ..ir import peephole
+from ..ir.ast import Module
 from ..iteration_graph import Definition, generate_ir
 from ..kernel_type import KernelType
 from ..problem import Problem
@@ -36,8 +37,7 @@ def generate_c_code_tensora(
         case _:
             raise NotImplementedError()
 
-    ir = SourceBuilder()
-    for kernel_type in kernel_types:
-        ir.append(generate_ir(definition, graph, kernel_type).finalize())
+    functions = [generate_ir(definition, graph, kernel_type) for kernel_type in kernel_types]
+    module = Module(functions)
 
-    return Success(ir_to_c(peephole(ir.finalize())))
+    return Success(ir_to_c(peephole(module)))

@@ -11,8 +11,10 @@ from ..ir.ast import (
     Block,
     BooleanToInteger,
     Branch,
+    Declaration,
     Equal,
     Expression,
+    FunctionDefinition,
     GreaterThan,
     IntegerLiteral,
     LessThan,
@@ -342,49 +344,58 @@ def to_ir_sum(self: SumNode, output: Output, kernel_type: KernelType):
     return source
 
 
-def generate_ir(definition: Definition, graph: IterationGraph, kernel_type: KernelType):
+def generate_ir(
+    definition: Definition, graph: IterationGraph, kernel_type: KernelType
+) -> FunctionDefinition:
+    # Function body
     source = SourceBuilder()
 
+    # Dimensions of all index variables
+    with source.block("Extract dimensions"):
+        for index_name, tensor_layer in definition.indexes.items():
+            declaration = dimension_name(index_name).declare(types.integer)
+            value = Variable(tensor_layer.name).attr("dimensions").idx(tensor_layer.dimension)
+            source.append(declaration.assign(value))
+
+    # Unpack tensors
+    with source.block("Unpack tensors"):
+        for tensor_name, format in definition.formats.items():
+            for i, mode in enumerate(format.modes):
+                match mode:
+                    case Mode.dense:
+                        pass
+                    case Mode.compressed:
+                        pos_declaration = pos_name(tensor_name, i).declare(
+                            types.Pointer(types.integer)
+                        )
+                        pos_value = Variable(tensor_name).attr("indices").idx(i).idx(0)
+                        source.append(pos_declaration.assign(pos_value))
+                        crd_declaration = crd_name(tensor_name, i).declare(
+                            types.Pointer(types.integer)
+                        )
+                        crd_value = Variable(tensor_name).attr("indices").idx(i).idx(1)
+                        source.append(crd_declaration.assign(crd_value))
+
+            vals_declaration = vals_name(tensor_name).declare(types.Pointer(types.float))
+            vals_value = Variable(tensor_name).attr("vals")
+            source.append(vals_declaration.assign(vals_value))
+
+    output = AppendOutput(definition.output_variable, 0)
+    source.append(output.write_declarations(kernel_type))
+
+    source.append(to_ir_iteration_graph(graph, output, kernel_type))
+
+    source.append(output.write_cleanup(kernel_type))
+
+    source.append(Return(IntegerLiteral(0)))
+
     # Function declaration
-    parameters = {name: types.Pointer(types.tensor) for name in definition.formats.keys()}
-    with source.function_definition(kernel_type.name, parameters, types.integer):
-        # Dimensions of all index variables
-        with source.block("Extract dimensions"):
-            for index_name, tensor_layer in definition.indexes.items():
-                declaration = dimension_name(index_name).declare(types.integer)
-                value = Variable(tensor_layer.name).attr("dimensions").idx(tensor_layer.dimension)
-                source.append(declaration.assign(value))
+    parameters = [
+        Declaration(Variable(name), types.Pointer(types.tensor))
+        for name in definition.formats.keys()
+    ]
+    function_definition = FunctionDefinition(
+        Variable(kernel_type.name), parameters, types.integer, source.finalize()
+    )
 
-        # Unpack tensors
-        with source.block("Unpack tensors"):
-            for tensor_name, format in definition.formats.items():
-                for i, mode in enumerate(format.modes):
-                    match mode:
-                        case Mode.dense:
-                            pass
-                        case Mode.compressed:
-                            pos_declaration = pos_name(tensor_name, i).declare(
-                                types.Pointer(types.integer)
-                            )
-                            pos_value = Variable(tensor_name).attr("indices").idx(i).idx(0)
-                            source.append(pos_declaration.assign(pos_value))
-                            crd_declaration = crd_name(tensor_name, i).declare(
-                                types.Pointer(types.integer)
-                            )
-                            crd_value = Variable(tensor_name).attr("indices").idx(i).idx(1)
-                            source.append(crd_declaration.assign(crd_value))
-
-                vals_declaration = vals_name(tensor_name).declare(types.Pointer(types.float))
-                vals_value = Variable(tensor_name).attr("vals")
-                source.append(vals_declaration.assign(vals_value))
-
-        output = AppendOutput(definition.output_variable, 0)
-        source.append(output.write_declarations(kernel_type))
-
-        source.append(to_ir_iteration_graph(graph, output, kernel_type))
-
-        source.append(output.write_cleanup(kernel_type))
-
-        source.append(Return(IntegerLiteral(0)))
-
-    return source
+    return function_definition

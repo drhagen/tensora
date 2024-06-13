@@ -19,7 +19,7 @@ Current optimization implemented:
 * redundant_assignment: a = a => {}
 """
 
-__all__ = ["peephole"]
+__all__ = ["peephole_function_definition", "peephole_statement", "peephole"]
 
 from dataclasses import replace
 from functools import singledispatch
@@ -58,6 +58,7 @@ from .ast import (
     Max,
     Min,
     ModeLiteral,
+    Module,
     Multiply,
     NotEqual,
     Or,
@@ -68,18 +69,6 @@ from .ast import (
 )
 
 
-@singledispatch
-def peephole(self: Statement) -> Statement:
-    raise NotImplementedError(f"peephole not implemented for {type(self)}: {self}")
-
-
-@peephole.register(Expression)
-@singledispatch
-def peephole_expression(self: Expression) -> Expression:
-    raise NotImplementedError(f"peephole_expression not implemented for {type(self)}: {self}")
-
-
-@peephole_expression.register(Assignable)
 @singledispatch
 def peephole_assignable(self: Assignable) -> Assignable:
     raise NotImplementedError(f"peephole_assignable not implemented for {type(self)}: {self}")
@@ -98,6 +87,17 @@ def peephole_attribute_access(self: AttributeAccess) -> Assignable:
 @peephole_assignable.register(ArrayIndex)
 def peephole_array_index(self: ArrayIndex) -> Assignable:
     return ArrayIndex(peephole_assignable(self.target), peephole_expression(self.index))
+
+
+@singledispatch
+def peephole_expression(self: Expression) -> Expression:
+    raise NotImplementedError(f"peephole_expression not implemented for {type(self)}: {self}")
+
+
+@peephole_expression.register(Assignable)
+def peephole_expression_assignable(self: Assignable) -> Assignable:
+    # Assignables are expressions in their own right
+    return peephole_assignable(self)
 
 
 @peephole_expression.register(IntegerLiteral)
@@ -255,17 +255,28 @@ def peephole_array_reallocate(self: ArrayReallocate) -> Expression:
     return replace(self, old=old, n_elements=n_elements)
 
 
-@peephole.register(Declaration)
+@singledispatch
+def peephole_statement(self: Statement) -> Statement:
+    raise NotImplementedError(f"peephole not implemented for {type(self)}: {self}")
+
+
+@peephole_statement.register(Expression)
+def peephole_expression_statement(self: Expression) -> Expression:
+    # Expressions are statements in their own right
+    return peephole_expression(self)
+
+
+@peephole_statement.register(Declaration)
 def peephole_declaration(self: Declaration) -> Declaration:
     return self
 
 
-@peephole.register(Free)
+@peephole_statement.register(Free)
 def peephole_free(self: Free) -> Statement:
     return Free(peephole_assignable(self.target))
 
 
-@peephole.register(Assignment)
+@peephole_statement.register(Assignment)
 def peephole_assignment(self: Assignment) -> Statement:
     target = peephole_assignable(self.target)
     value = peephole_expression(self.value)
@@ -276,17 +287,17 @@ def peephole_assignment(self: Assignment) -> Statement:
         return Assignment(target, value)
 
 
-@peephole.register(DeclarationAssignment)
+@peephole_statement.register(DeclarationAssignment)
 def peephole_declaration_assignment(self: DeclarationAssignment) -> Statement:
     value = peephole_expression(self.value)
     return replace(self, value=value)
 
 
-@peephole.register(Block)
+@peephole_statement.register(Block)
 def peephole_block(self: Block) -> Statement:
     statements = []
     for old_statement in self.statements:
-        statement = peephole(old_statement)
+        statement = peephole_statement(old_statement)
         if isinstance(statement, Block) and statement.is_empty():
             pass
         else:
@@ -295,11 +306,11 @@ def peephole_block(self: Block) -> Statement:
     return replace(self, statements=statements)
 
 
-@peephole.register(Branch)
+@peephole_statement.register(Branch)
 def peephole_branch(self: Branch) -> Statement:
     condition = peephole_expression(self.condition)
-    if_true = peephole(self.if_true)
-    if_false = peephole(self.if_false)
+    if_true = peephole_statement(self.if_true)
+    if_false = peephole_statement(self.if_false)
 
     if condition == BooleanLiteral(True):
         return if_true
@@ -316,10 +327,10 @@ def peephole_branch(self: Branch) -> Statement:
         return Branch(condition, if_true, if_false)
 
 
-@peephole.register(Loop)
+@peephole_statement.register(Loop)
 def peephole_loop(self: Loop) -> Statement:
     condition = peephole_expression(self.condition)
-    body = peephole(self.body)
+    body = peephole_statement(self.body)
 
     if condition == BooleanLiteral(False):
         return Block([])
@@ -329,18 +340,22 @@ def peephole_loop(self: Loop) -> Statement:
         return Loop(condition, body)
 
 
-@peephole.register(Break)
+@peephole_statement.register(Break)
 def peephole_break(self: Break) -> Statement:
     return self
 
 
-@peephole.register(Return)
+@peephole_statement.register(Return)
 def peephole_return(self: Return) -> Statement:
     value = peephole_expression(self.value)
     return Return(value)
 
 
-@peephole.register(FunctionDefinition)
-def peephole_function_definition(self: FunctionDefinition) -> Statement:
-    body = peephole(self.body)
+def peephole_function_definition(self: FunctionDefinition) -> FunctionDefinition:
+    body = peephole_statement(self.body)
     return replace(self, body=body)
+
+
+def peephole(self: Module) -> Module:
+    functions = [peephole_function_definition(function) for function in self.definitions]
+    return Module(functions)

@@ -2,7 +2,7 @@ from textwrap import dedent
 
 import pytest
 
-from tensora.codegen import ir_to_c
+from tensora.codegen import ir_to_c, ir_to_c_function_definition, ir_to_c_statement
 from tensora.ir.ast import *
 from tensora.ir.types import *
 
@@ -114,7 +114,7 @@ single_lines = [
 
 @pytest.mark.parametrize(("ast", "code"), single_lines)
 def test_single_lines(ast: Expression, code: str):
-    assert ir_to_c(ast) == code + ";"
+    assert ir_to_c_statement(ast) == [code + ";"]
 
 
 multiple_lines = [
@@ -306,22 +306,44 @@ multiple_lines = [
         }
         """,
     ),
-    (
-        FunctionDefinition(
-            Variable("double_x"),
-            [Declaration(Variable("x"), integer)],
-            integer,
-            Return(Multiply(Variable("x"), IntegerLiteral(2))),
-        ),
-        """
-        int32_t double_x(int32_t x) {
-          return x * 2;
-        }
-        """,
-    ),
 ]
 
 
 @pytest.mark.parametrize(("ast", "code"), multiple_lines)
-def test_multiple_lines(ast: Expression, code: str):
-    assert ir_to_c(ast) == clean(code)
+def test_multiple_lines(ast: Statement, code: str):
+    assert "\n".join(ir_to_c_statement(ast)) == clean(code)
+
+
+def test_function_definition():
+    function = FunctionDefinition(
+        Variable("double_x"),
+        [Declaration(Variable("x"), integer)],
+        integer,
+        Return(Multiply(Variable("x"), IntegerLiteral(2))),
+    )
+    expected = """
+        int32_t double_x(int32_t x) {
+          return x * 2;
+        }
+        """
+    assert ir_to_c_function_definition(function) == clean(expected)
+
+
+def test_module():
+    function = FunctionDefinition(
+        Variable("double_x"),
+        [Declaration(Variable("x"), integer)],
+        integer,
+        Return(Multiply(Variable("x"), IntegerLiteral(2))),
+    )
+    module = Module([function, function])
+    expected = """
+        int32_t double_x(int32_t x) {
+          return x * 2;
+        }
+
+        int32_t double_x(int32_t x) {
+          return x * 2;
+        }
+        """
+    assert ir_to_c(module) == clean(expected)
