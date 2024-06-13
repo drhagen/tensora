@@ -1,4 +1,4 @@
-__all__ = ["ir_to_c"]
+__all__ = ["ir_to_c_statement", "ir_to_c_function_definition", "ir_to_c"]
 
 from functools import singledispatch
 
@@ -36,6 +36,7 @@ from ..ir.ast import (
     Max,
     Min,
     ModeLiteral,
+    Module,
     Multiply,
     NotEqual,
     Or,
@@ -323,17 +324,19 @@ def ir_to_c_return(self: Return) -> list[str]:
     return [f"return {ir_to_c_expression(self.value)};"]
 
 
-@ir_to_c_statement.register(FunctionDefinition)
-def ir_to_c_function_definition(self: FunctionDefinition) -> list[str]:
+def ir_to_c_function_definition(self: FunctionDefinition) -> str:
     return_type_string = type_to_c(self.return_type)
     name_string = ir_to_c_expression(self.name)
     parameters_string = ", ".join(map(ir_to_c_declaration, self.parameters))
-    return [
+
+    lines = [
         f"{return_type_string} {name_string}({parameters_string}) {{",
         *indent_lines(ir_to_c_statement(self.body)),
         "}",
     ]
 
+    return "\n".join(lines)
 
-def ir_to_c(self: Statement) -> str:
-    return "\n".join(ir_to_c_statement(self))
+
+def ir_to_c(self: Module) -> str:
+    return "\n\n".join((ir_to_c_function_definition(function) for function in self.definitions))

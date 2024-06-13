@@ -1,6 +1,6 @@
 import pytest
 
-from tensora.ir import peephole
+from tensora.ir import peephole, peephole_function_definition, peephole_statement
 from tensora.ir.ast import *
 from tensora.ir.types import *
 
@@ -163,26 +163,12 @@ changed = [
         Return(Add(IntegerLiteral(0), Variable("x"))),
         Return(Variable("x")),
     ),
-    (
-        FunctionDefinition(
-            Variable("f"),
-            [Declaration(Variable("x"), tensor)],
-            integer,
-            Return(Multiply(IntegerLiteral(0), IntegerLiteral(1))),
-        ),
-        FunctionDefinition(
-            Variable("f"),
-            [Declaration(Variable("x"), tensor)],
-            integer,
-            Return(IntegerLiteral(0)),
-        ),
-    ),
 ]
 
 
 @pytest.mark.parametrize(("before", "after"), changed)
-def test_peephole(before: Statement, after: Statement):
-    assert peephole(before) == after
+def test_peephole_statement(before: Statement, after: Statement):
+    assert peephole_statement(before) == after
 
 
 left_right_classes = [
@@ -207,8 +193,8 @@ def test_pass_through_left_right(cls):
     left = Add(IntegerLiteral(0), Variable("x"))
     right = Add(IntegerLiteral(0), Variable("y"))
     expected = cls(Variable("x"), Variable("y"))
-    assert peephole(cls(left, Variable("y"))) == expected
-    assert peephole(cls(Variable("x"), right)) == expected
+    assert peephole_statement(cls(left, Variable("y"))) == expected
+    assert peephole_statement(cls(Variable("x"), right)) == expected
 
 
 unchanged = [
@@ -223,14 +209,46 @@ unchanged = [
     FunctionCall(Variable("f"), [Variable("x")]),
     Loop(BooleanLiteral(True), Variable("x")),
     Assignment(Variable("x"), ArrayIndex(ArrayIndex(Variable("y"), Variable("i")), Variable("j"))),
-    FunctionDefinition(
-        Variable("f"), [Declaration(Variable("x"), tensor)], integer, Return(IntegerLiteral(0))
-    ),
     Break(),
     Declaration(Variable("x"), float),
 ]
 
 
 @pytest.mark.parametrize("input", unchanged)
-def test_peephole_noop(input: Statement):
-    assert peephole(input) == input
+def test_peephole_statement_noop(input: Statement):
+    assert peephole_statement(input) == input
+
+
+def test_peephole_function_definition():
+    function = FunctionDefinition(
+        Variable("f"),
+        [Declaration(Variable("x"), tensor)],
+        integer,
+        Return(Multiply(IntegerLiteral(0), IntegerLiteral(1))),
+    )
+    expected = FunctionDefinition(
+        Variable("f"),
+        [Declaration(Variable("x"), tensor)],
+        integer,
+        Return(IntegerLiteral(0)),
+    )
+    assert peephole_function_definition(function) == expected
+
+
+def test_peephole_module():
+    input_function = FunctionDefinition(
+        Variable("f"),
+        [Declaration(Variable("x"), tensor)],
+        integer,
+        Return(Multiply(IntegerLiteral(0), IntegerLiteral(1))),
+    )
+    expected_function = FunctionDefinition(
+        Variable("f"),
+        [Declaration(Variable("x"), tensor)],
+        integer,
+        Return(IntegerLiteral(0)),
+    )
+
+    module = Module([input_function, input_function])
+    expected = Module([expected_function, expected_function])
+    assert peephole(module) == expected
