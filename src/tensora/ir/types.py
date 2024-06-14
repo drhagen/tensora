@@ -8,8 +8,6 @@ __all__ = [
     "tensor",
     "Mode",
     "mode",
-    "HashTable",
-    "hash_table",
     "Pointer",
     "Array",
     "FixedArray",
@@ -52,14 +50,6 @@ class Mode(Type):
 
 
 mode = Mode()
-
-
-@dataclass(frozen=True, slots=True)
-class HashTable(Type):
-    pass
-
-
-hash_table = HashTable()
 
 
 @dataclass(frozen=True, slots=True)

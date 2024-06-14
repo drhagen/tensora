@@ -2,7 +2,7 @@ __all__ = ["type_to_c"]
 
 from functools import singledispatch
 
-from ..ir.types import Array, FixedArray, Float, HashTable, Integer, Mode, Pointer, Tensor, Type
+from ..ir.types import Array, FixedArray, Float, Integer, Mode, Pointer, Tensor, Type
 
 
 def space_variable(variable: str | None = None) -> str:
@@ -35,11 +35,6 @@ def type_to_c_tensor(self: Tensor, variable: str | None = None) -> str:
 @type_to_c.register(Mode)
 def type_to_c_mode(self: Mode, variable: str | None = None) -> str:
     return "taco_mode_t" + space_variable(variable)
-
-
-@type_to_c.register(HashTable)
-def type_to_c_hash_table(self: HashTable, variable: str | None = None) -> str:
-    return "hash_table_t" + space_variable(variable)
 
 
 @type_to_c.register(Pointer)
