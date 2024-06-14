@@ -21,7 +21,6 @@ from ..identifiable_expression import TensorLayer
 from ..identifiable_expression import ast as ie_ast
 from ._base import Output
 from ._bucket import BucketOutput
-from ._hash import HashOutput
 
 default_array_size = Multiply(IntegerLiteral(1024), IntegerLiteral(1024))
 
@@ -151,9 +150,8 @@ class AppendOutput(Output):
                 )
                 return next_output, next_output.write_declarations(bucket), SourceBuilder()
             else:
-                next_output = HashOutput(self.output, self.next_layer)
-                return (
-                    next_output,
-                    next_output.write_declarations(),
-                    next_output.write_cleanup(kernel_type),
+                raise NotImplementedError(
+                    "Encountered a sparse output layer preceded by a contraction layer or a later "
+                    "output layer. This requires a hash table to store intermediate outputs, "
+                    "which is not currently implemented."
                 )

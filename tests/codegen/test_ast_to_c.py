@@ -90,7 +90,6 @@ single_lines = [
     (Declaration(Variable("x"), integer), "int32_t x"),
     (Declaration(Variable("x"), float), "double x"),
     (Declaration(Variable("x"), tensor), "taco_tensor_t x"),
-    (Declaration(Variable("x"), hash_table), "hash_table_t x"),
     (Declaration(Variable("x"), Pointer(float)), "double* restrict x"),
     (Declaration(Variable("x"), Pointer(Pointer(integer))), "int32_t* restrict* restrict x"),
     (Declaration(Variable("x"), Array(float)), "double x[]"),
