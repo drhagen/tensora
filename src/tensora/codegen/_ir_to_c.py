@@ -10,7 +10,6 @@ from ..ir.ast import (
     And,
     ArrayAllocate,
     ArrayIndex,
-    ArrayLiteral,
     ArrayReallocate,
     Assignment,
     AttributeAccess,
@@ -101,11 +100,6 @@ def ir_to_c_mode_literal(self: ModeLiteral) -> str:
             return "taco_mode_dense"
         case Mode.compressed:
             return "taco_mode_sparse"
-
-
-@ir_to_c_expression.register(ArrayLiteral)
-def ir_to_c_array_literal(self: ArrayLiteral) -> str:
-    return "{" + ", ".join(map(ir_to_c_expression, self.elements)) + "}"
 
 
 @ir_to_c_expression.register(Add)

@@ -81,10 +81,6 @@ changed = [
         AttributeAccess(ArrayIndex(Variable("x"), Variable("i")), "modes"),
     ),
     (
-        ArrayLiteral([Add(FloatLiteral(0.0), Variable("x"))]),
-        ArrayLiteral([Variable("x")]),
-    ),
-    (
         FunctionCall(Variable("f"), [Add(FloatLiteral(0.0), Variable("x"))]),
         FunctionCall(Variable("f"), [Variable("x")]),
     ),

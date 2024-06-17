@@ -11,7 +11,6 @@ __all__ = [
     "FloatLiteral",
     "BooleanLiteral",
     "ModeLiteral",
-    "ArrayLiteral",
     "Add",
     "Subtract",
     "Multiply",
@@ -139,11 +138,6 @@ class BooleanLiteral(Expression):
 @dataclass(frozen=True, slots=True)
 class ModeLiteral(Expression):
     value: Mode
-
-
-@dataclass(frozen=True, slots=True)
-class ArrayLiteral(Expression):
-    elements: Sequence[Expression]
 
 
 @dataclass(frozen=True, slots=True)
