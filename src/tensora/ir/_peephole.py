@@ -31,7 +31,6 @@ from .ast import (
     And,
     ArrayAllocate,
     ArrayIndex,
-    ArrayLiteral,
     ArrayReallocate,
     Assignable,
     Assignment,
@@ -108,11 +107,6 @@ def peephole_expression_assignable(self: Assignable) -> Assignable:
 @peephole_expression.register(Allocate)
 def peephole_noop(self: Expression) -> Expression:
     return self
-
-
-@peephole_expression.register(ArrayLiteral)
-def peephole_array_literal(self: ArrayLiteral) -> Expression:
-    return ArrayLiteral([peephole_expression(element) for element in self.elements])
 
 
 @peephole_expression.register(Add)
