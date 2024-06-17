@@ -22,7 +22,6 @@ __all__ = [
     "LessThanOrEqual",
     "And",
     "Or",
-    "FunctionCall",
     "Max",
     "Min",
     "Address",
@@ -224,12 +223,6 @@ class Or(Expression):
     def join(operands: Sequence[Expression | int | str]) -> Expression:
         expression_operands = [to_expression(operand) for operand in operands]
         return reduce(Or, expression_operands, BooleanLiteral(False))
-
-
-@dataclass(frozen=True, slots=True)
-class FunctionCall(Expression):
-    name: Variable
-    arguments: list[Expression]
 
 
 @dataclass(frozen=True, slots=True)

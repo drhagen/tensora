@@ -55,9 +55,6 @@ single_lines = [
     # Boolean operators
     (And(Variable("x"), Variable("y")), "x && y"),
     (Or(Variable("x"), Variable("y")), "x || y"),
-    # Function call
-    (FunctionCall(Variable("f"), [Variable("x")]), "f(x)"),
-    (FunctionCall(Variable("f"), [Variable("x"), Variable("y")]), "f(x, y)"),
     # Max/min
     (Max(Variable("x"), Variable("y")), "TACO_MAX(x, y)"),
     (Min(Variable("x"), Variable("y")), "TACO_MIN(x, y)"),

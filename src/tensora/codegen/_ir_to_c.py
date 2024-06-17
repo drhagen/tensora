@@ -24,7 +24,6 @@ from ..ir.ast import (
     Expression,
     FloatLiteral,
     Free,
-    FunctionCall,
     FunctionDefinition,
     GreaterThan,
     GreaterThanOrEqual,
@@ -157,11 +156,6 @@ def ir_to_c_and(self: And) -> str:
 @ir_to_c_expression.register(Or)
 def ir_to_c_or(self: Or) -> str:
     return f"{ir_to_c_expression(self.left)} || {ir_to_c_expression(self.right)}"
-
-
-@ir_to_c_expression.register(FunctionCall)
-def ir_to_c_function_call(self: FunctionCall) -> str:
-    return f"{ir_to_c_expression(self.name)}({', '.join(map(ir_to_c_expression, self.arguments))})"
 
 
 @ir_to_c_expression.register(Max)

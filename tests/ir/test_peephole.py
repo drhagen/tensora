@@ -81,10 +81,6 @@ changed = [
         AttributeAccess(ArrayIndex(Variable("x"), Variable("i")), "modes"),
     ),
     (
-        FunctionCall(Variable("f"), [Add(FloatLiteral(0.0), Variable("x"))]),
-        FunctionCall(Variable("f"), [Variable("x")]),
-    ),
-    (
         BooleanToInteger(And(BooleanLiteral(True), Variable("t"))),
         BooleanToInteger(Variable("t")),
     ),
@@ -202,7 +198,6 @@ unchanged = [
     NotEqual(Variable("x"), Variable("y")),
     LessThan(Variable("x"), Variable("y")),
     GreaterThan(Variable("x"), Variable("y")),
-    FunctionCall(Variable("f"), [Variable("x")]),
     Loop(BooleanLiteral(True), Variable("x")),
     Assignment(Variable("x"), ArrayIndex(ArrayIndex(Variable("y"), Variable("i")), Variable("j"))),
     Break(),
