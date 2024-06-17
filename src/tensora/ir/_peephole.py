@@ -46,7 +46,6 @@ from .ast import (
     Expression,
     FloatLiteral,
     Free,
-    FunctionCall,
     FunctionDefinition,
     GreaterThan,
     GreaterThanOrEqual,
@@ -206,12 +205,6 @@ def peephole_or(self: Or) -> Expression:
         return left
     else:
         return Or(left, right)
-
-
-@peephole_expression.register(FunctionCall)
-def peephole_function_call(self: FunctionCall) -> Expression:
-    arguments = [peephole_expression(argument) for argument in self.arguments]
-    return replace(self, arguments=arguments)
 
 
 @peephole_expression.register(Max)
