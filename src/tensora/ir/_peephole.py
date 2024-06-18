@@ -39,7 +39,6 @@ from .ast import (
     BooleanLiteral,
     BooleanToInteger,
     Branch,
-    Break,
     Declaration,
     DeclarationAssignment,
     Equal,
@@ -325,11 +324,6 @@ def peephole_loop(self: Loop) -> Statement:
         return Block([])
     else:
         return Loop(condition, body)
-
-
-@peephole_statement.register(Break)
-def peephole_break(self: Break) -> Statement:
-    return self
 
 
 @peephole_statement.register(Return)

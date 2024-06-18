@@ -100,8 +100,6 @@ single_lines = [
     (Assignment(Variable("x"), Subtract(Variable("x"), IntegerLiteral(2))), "x -= 2"),
     (Assignment(Variable("x"), Multiply(Variable("x"), IntegerLiteral(2))), "x *= 2"),
     (DeclarationAssignment(Declaration(Variable("x"), integer), Variable("y")), "int32_t x = y"),
-    # Break
-    (Break(), "break"),
     # Return
     (Return(IntegerLiteral(0)), "return 0"),
 ]

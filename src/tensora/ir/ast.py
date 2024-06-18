@@ -36,7 +36,6 @@ __all__ = [
     "Block",
     "Branch",
     "Loop",
-    "Break",
     "Return",
     "FunctionDefinition",
     "Module",
@@ -331,11 +330,6 @@ class Branch(Statement):
 class Loop(Statement):
     condition: Expression
     body: Statement
-
-
-@dataclass(frozen=True, slots=True)
-class Break(Statement):
-    pass
 
 
 @dataclass(frozen=True, slots=True)
