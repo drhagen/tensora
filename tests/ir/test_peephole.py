@@ -200,7 +200,6 @@ unchanged = [
     GreaterThan(Variable("x"), Variable("y")),
     Loop(BooleanLiteral(True), Variable("x")),
     Assignment(Variable("x"), ArrayIndex(ArrayIndex(Variable("y"), Variable("i")), Variable("j"))),
-    Break(),
     Declaration(Variable("x"), float),
 ]
 

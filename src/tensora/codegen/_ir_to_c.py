@@ -17,7 +17,6 @@ from ..ir.ast import (
     BooleanLiteral,
     BooleanToInteger,
     Branch,
-    Break,
     Declaration,
     DeclarationAssignment,
     Equal,
@@ -300,11 +299,6 @@ def ir_to_c_loop(self: Loop) -> list[str]:
         *indent_lines(ir_to_c_statement(self.body)),
         "}",
     ]
-
-
-@ir_to_c_statement.register(Break)
-def ir_to_c_break(self: Break) -> list[str]:
-    return ["break;"]
 
 
 @ir_to_c_statement.register(Return)
