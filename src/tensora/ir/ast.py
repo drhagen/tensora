@@ -10,7 +10,6 @@ __all__ = [
     "IntegerLiteral",
     "FloatLiteral",
     "BooleanLiteral",
-    "ModeLiteral",
     "Add",
     "Subtract",
     "Multiply",
@@ -24,12 +23,9 @@ __all__ = [
     "Or",
     "Max",
     "Min",
-    "Address",
     "BooleanToInteger",
-    "Allocate",
     "ArrayAllocate",
     "ArrayReallocate",
-    "Free",
     "Declaration",
     "Assignment",
     "DeclarationAssignment",
@@ -45,7 +41,6 @@ from dataclasses import dataclass
 from functools import reduce
 from typing import Sequence
 
-from ..format import Mode
 from .types import Type
 
 
@@ -131,11 +126,6 @@ class FloatLiteral(Expression):
 @dataclass(frozen=True, slots=True)
 class BooleanLiteral(Expression):
     value: bool
-
-
-@dataclass(frozen=True, slots=True)
-class ModeLiteral(Expression):
-    value: Mode
 
 
 @dataclass(frozen=True, slots=True)
@@ -247,18 +237,8 @@ class Min(Expression):
 
 
 @dataclass(frozen=True, slots=True)
-class Address(Expression):
-    target: Assignable
-
-
-@dataclass(frozen=True, slots=True)
 class BooleanToInteger(Expression):
     expression: Expression
-
-
-@dataclass(frozen=True, slots=True)
-class Allocate(Expression):
-    type: Type
 
 
 @dataclass(frozen=True, slots=True)
@@ -272,11 +252,6 @@ class ArrayReallocate(Expression):
     old: Assignable
     type: Type
     n_elements: Expression
-
-
-@dataclass(frozen=True, slots=True)
-class Free(Statement):
-    target: Assignable
 
 
 @dataclass(frozen=True, slots=True)
