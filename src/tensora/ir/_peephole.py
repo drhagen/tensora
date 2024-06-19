@@ -26,8 +26,6 @@ from functools import singledispatch
 
 from .ast import (
     Add,
-    Address,
-    Allocate,
     And,
     ArrayAllocate,
     ArrayIndex,
@@ -44,7 +42,6 @@ from .ast import (
     Equal,
     Expression,
     FloatLiteral,
-    Free,
     FunctionDefinition,
     GreaterThan,
     GreaterThanOrEqual,
@@ -54,7 +51,6 @@ from .ast import (
     Loop,
     Max,
     Min,
-    ModeLiteral,
     Module,
     Multiply,
     NotEqual,
@@ -100,9 +96,6 @@ def peephole_expression_assignable(self: Assignable) -> Assignable:
 @peephole_expression.register(IntegerLiteral)
 @peephole_expression.register(FloatLiteral)
 @peephole_expression.register(BooleanLiteral)
-@peephole_expression.register(ModeLiteral)
-@peephole_expression.register(Address)
-@peephole_expression.register(Allocate)
 def peephole_noop(self: Expression) -> Expression:
     return self
 
@@ -255,11 +248,6 @@ def peephole_expression_statement(self: Expression) -> Expression:
 @peephole_statement.register(Declaration)
 def peephole_declaration(self: Declaration) -> Declaration:
     return self
-
-
-@peephole_statement.register(Free)
-def peephole_free(self: Free) -> Statement:
-    return Free(peephole_assignable(self.target))
 
 
 @peephole_statement.register(Assignment)

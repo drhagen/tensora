@@ -2,11 +2,8 @@ __all__ = ["ir_to_c_statement", "ir_to_c_function_definition", "ir_to_c"]
 
 from functools import singledispatch
 
-from ..format import Mode
 from ..ir.ast import (
     Add,
-    Address,
-    Allocate,
     And,
     ArrayAllocate,
     ArrayIndex,
@@ -22,7 +19,6 @@ from ..ir.ast import (
     Equal,
     Expression,
     FloatLiteral,
-    Free,
     FunctionDefinition,
     GreaterThan,
     GreaterThanOrEqual,
@@ -32,7 +28,6 @@ from ..ir.ast import (
     Loop,
     Max,
     Min,
-    ModeLiteral,
     Module,
     Multiply,
     NotEqual,
@@ -89,15 +84,6 @@ def ir_to_c_float_literal(self: FloatLiteral) -> str:
 @ir_to_c_expression.register(BooleanLiteral)
 def ir_to_c_boolean_literal(self: BooleanLiteral) -> str:
     return str(int(self.value))
-
-
-@ir_to_c_expression.register(ModeLiteral)
-def ir_to_c_mode_literal(self: ModeLiteral) -> str:
-    match self.value:
-        case Mode.dense:
-            return "taco_mode_dense"
-        case Mode.compressed:
-            return "taco_mode_sparse"
 
 
 @ir_to_c_expression.register(Add)
@@ -167,19 +153,9 @@ def ir_to_c_min(self: Min) -> str:
     return f"TACO_MIN({ir_to_c_expression(self.left)}, {ir_to_c_expression(self.right)})"
 
 
-@ir_to_c_expression.register(Address)
-def ir_to_c_address(self: Address) -> str:
-    return f"&{ir_to_c_expression(self.target)}"
-
-
 @ir_to_c_expression.register(BooleanToInteger)
 def ir_to_c_boolean_to_integer(self: BooleanToInteger) -> str:
     return f"(int32_t)({ir_to_c_expression(self.expression)})"
-
-
-@ir_to_c_expression.register(Allocate)
-def ir_to_c_allocate(self: Allocate) -> str:
-    return f"malloc(sizeof({type_to_c(self.type)}))"
 
 
 @ir_to_c_expression.register(ArrayAllocate)
@@ -206,11 +182,6 @@ def ir_to_c_statement(self: Statement) -> list[str]:
 def convert_expression_to_statement(self: Expression) -> list[str]:
     # Every expression can also be a statement; convert it here
     return [ir_to_c_expression(self) + ";"]
-
-
-@ir_to_c_statement.register(Free)
-def ir_to_c_free(self: Free) -> list[str]:
-    return [f"free({ir_to_c_expression(self.target)});"]
 
 
 @ir_to_c_statement.register(Declaration)

@@ -60,13 +60,9 @@ single_lines = [
     (Min(Variable("x"), Variable("y")), "TACO_MIN(x, y)"),
     (Max(Max(Variable("x"), Variable("y")), Variable("z")), "TACO_MAX(TACO_MAX(x, y), z)"),
     (Min(Min(Variable("x"), Variable("y")), Variable("z")), "TACO_MIN(TACO_MIN(x, y), z)"),
-    # Address
-    (Address(Variable("x")), "&x"),
-    (Address(ArrayIndex(Variable("x"), Variable("i"))), "&x[i]"),
     # Cast
     (BooleanToInteger(Equal(Variable("x"), Variable("y"))), "(int32_t)(x == y)"),
     # Allocate
-    (Allocate(tensor), "malloc(sizeof(taco_tensor_t))"),
     (ArrayAllocate(integer, Variable("capacity")), "malloc(sizeof(int32_t) * capacity)"),
     (
         ArrayAllocate(float, Add(Variable("previous"), Variable("new"))),
@@ -80,8 +76,6 @@ single_lines = [
         ArrayReallocate(Variable("old"), float, Add(Variable("previous"), Variable("new"))),
         "realloc(old, sizeof(double) * (previous + new))",
     ),
-    # Free
-    (Free(Variable("x")), "free(x)"),
     # Declaration and types
     (Declaration(Variable("x"), integer), "int32_t x"),
     (Declaration(Variable("x"), float), "double x"),
