@@ -103,12 +103,16 @@ class Variable(Assignable):
 
 @dataclass(frozen=True, slots=True)
 class AttributeAccess(Assignable):
+    # For languages that care, this represents attribute access to an object on
+    # the heap. There is no way to use an object on the stack in this IR.
     target: Assignable
     attribute: str
 
 
 @dataclass(frozen=True, slots=True)
 class ArrayIndex(Assignable):
+    # For languages that care, this represents attribute access to an array on
+    # the heap. There is no way to use an array on the stack in this IR.
     target: Assignable
     index: Expression
 
@@ -243,14 +247,14 @@ class BooleanToInteger(Expression):
 
 @dataclass(frozen=True, slots=True)
 class ArrayAllocate(Expression):
-    type: Type
+    element_type: Type
     n_elements: Expression
 
 
 @dataclass(frozen=True, slots=True)
 class ArrayReallocate(Expression):
     old: Assignable
-    type: Type
+    element_type: Type
     n_elements: Expression
 
 

@@ -160,13 +160,13 @@ def ir_to_c_boolean_to_integer(self: BooleanToInteger) -> str:
 
 @ir_to_c_expression.register(ArrayAllocate)
 def ir_to_c_array_allocate(self: ArrayAllocate) -> str:
-    return f"malloc(sizeof({type_to_c(self.type)}) * {parens(self.n_elements, (Add, Subtract))})"
+    return f"malloc(sizeof({type_to_c(self.element_type)}) * {parens(self.n_elements, (Add, Subtract))})"
 
 
 @ir_to_c_expression.register(ArrayReallocate)
 def ir_to_c_array_reallocate(self: ArrayReallocate) -> str:
     old = ir_to_c_expression(self.old)
-    return f"realloc({old}, sizeof({type_to_c(self.type)}) * {parens(self.n_elements, (Add, Subtract))})"
+    return f"realloc({old}, sizeof({type_to_c(self.element_type)}) * {parens(self.n_elements, (Add, Subtract))})"
 
 
 def ir_to_c_declaration(self: Declaration) -> str:
