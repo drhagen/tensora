@@ -21,9 +21,10 @@ classifiers = [
 python = "^3.10"
 returns = "^0.20|^0.21|^0.22"
 cffi = "^1.16"
-# setuptools is required by cffi on Python 3.12 and up
+# setuptools is required for cffi compilation on Python 3.12 and up
 # https://cffi.readthedocs.io/en/latest/whatsnew.html#v1-16-0rc1
-setuptools = { version = "^69", python = ">=3.12" }
+setuptools = { version = "^69", python = ">=3.12", optional = true }
+llvmlite = "^0.42"
 parsita = "^2.0"
 typer = "^0.9"
 tensora-taco = { version = "^0.1.2", optional = true }
@@ -51,7 +52,8 @@ mkdocs-material = "^9"
 tensora = "tensora.cli:app"
 
 [tool.poetry.extras]
-taco = ["tensora-taco"]
+taco = ["tensora-taco", "setuptools"]
+cffi = ["setuptools"]
 numpy = ["numpy"]
 scipy = ["scipy"]
 
@@ -98,7 +100,7 @@ extend-immutable-calls = ["hypothesis.strategies.integers"]
 
 [tool.ruff.lint.per-file-ignores]
 # Allow glob imports and uppercase identifiers in tests
-"tests/*" = ["F403", "F405", "N802", "N806"]
+"tests*/*" = ["F403", "F405", "N802", "N806"]
 
 # F401: Allow unused imports in __init__.py
 "__init__.py" = ["F401"]

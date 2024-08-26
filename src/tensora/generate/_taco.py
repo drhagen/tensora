@@ -1,5 +1,6 @@
 __all__ = ["generate_c_code_taco", "TacoError"]
 
+import re
 from dataclasses import dataclass
 
 from returns.result import Failure, Result, Success
@@ -51,6 +52,16 @@ def generate_c_code_taco(
 
     match taco_cli(taco_arguments):
         case Success(code):
-            return Success(code)
+            declaration_regex = r"^int (evaluate|compute|assemble)\([^(]\)"
+
+            argument_string = ", ".join(
+                [f"taco_tensora_t *{name}" for name in problem.formats.keys()]
+            )
+
+            reordered_code = re.sub(
+                declaration_regex, rf"int \1({argument_string})", code, flags=re.MULTILINE
+            )
+
+            return Success(reordered_code)
         case Failure(message):
             return Failure(TacoError(message))

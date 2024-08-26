@@ -423,7 +423,7 @@ def tree_to_indices_and_values(
 def evaluate_binary_operator(
     left: Union[Tensor, Real], right: Union[Tensor, Real], operator: str
 ) -> Tensor:
-    from .function import evaluate_tensora
+    from .compile import evaluate_tensora
 
     def indexes_string(tensor):
         return ",".join(f"i{i}" for i in range(tensor.order))
@@ -499,7 +499,7 @@ def evaluate_binary_operator(
 
 
 def evaluate_matrix_multiplication_operator(left: Tensor, right: Tensor):
-    from .function import evaluate_tensora
+    from .compile import evaluate_tensora
 
     if isinstance(left, Tensor) and isinstance(right, Tensor):
         if left.order == 1 and right.order == 1:

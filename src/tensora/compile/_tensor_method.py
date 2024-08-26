@@ -1,25 +1,22 @@
 __all__ = [
-    "tensor_method",
-    "evaluate",
-    "evaluate_taco",
-    "evaluate_tensora",
     "TensorMethod",
+    "BackendCompiler",
     "BroadcastTargetIndexError",
+    "UnsupportedBackendCompilerError",
 ]
 
 from dataclasses import dataclass
-from functools import lru_cache
+from enum import Enum
 from inspect import Parameter, Signature
 
-from returns.functions import raise_exception
+from returns.result import Failure, Success
 
-from .compile import allocate_taco_structure, generate_library, take_ownership_of_arrays
-from .expression import parse_assignment
-from .expression.ast import Assignment
-from .format import parse_format
-from .generate import TensorCompiler
-from .problem import Problem, make_problem
-from .tensor import Tensor
+from ..expression.ast import Assignment
+from ..generate import Language, TensorCompiler, generate_code, generate_module_tensora
+from ..kernel_type import KernelType
+from ..problem import Problem
+from ..tensor import Tensor
+from ._cffi_ownership import allocate_taco_structure, take_ownership_of_arrays, tensor_cdefs
 
 
 @dataclass(frozen=True, slots=True)
@@ -37,10 +34,29 @@ class BroadcastTargetIndexError(Exception):
         )
 
 
+class BackendCompiler(Enum):
+    llvm = "llvm"
+    cffi = "cffi"
+
+
+@dataclass(frozen=True, slots=True)
+class UnsupportedBackendCompilerError(Exception):
+    backend_compiler: BackendCompiler
+    tensor_compiler: TensorCompiler
+
+    def __str__(self):
+        return f"Backend compiler {self.backend_compiler} is not supported for tensor compiler {self.tensor_compiler}"
+
+
 class TensorMethod:
     """A function taking specific tensor arguments."""
 
-    def __init__(self, problem: Problem, compiler: TensorCompiler = TensorCompiler.tensora):
+    def __init__(
+        self,
+        problem: Problem,
+        compiler: TensorCompiler = TensorCompiler.tensora,
+        backend: BackendCompiler = BackendCompiler.llvm,
+    ):
         # Reject broadcasting to outputs because there is no way to specify output dimensions that
         # do not have a corresponding input dimension
         input_indexes = set(problem.assignment.expression.index_participants().keys())
@@ -64,8 +80,35 @@ class TensorMethod:
             ]
         )
 
-        # Compile taco function
-        self._parameter_order, self._cffi_lib = generate_library(problem, compiler)
+        match backend:
+            case BackendCompiler.llvm:
+                match compiler:
+                    case TensorCompiler.tensora:
+                        match generate_module_tensora(problem, [KernelType.evaluate]):
+                            case Failure(error):
+                                raise error
+                            case Success(tensora_module):
+                                from ._compile_llvm import compile_module
+
+                                self._lib = compile_module(tensora_module)
+
+                                # Convert ctypes function to cffi function
+                                function_type = (
+                                    f"int32_t (*)({', '.join(['void *'] * len(problem.formats))})"
+                                )
+                                function_pointer = self._lib.get_function_address("evaluate")
+                                self._evaluate = tensor_cdefs.cast(function_type, function_pointer)
+                    case TensorCompiler.taco:
+                        raise UnsupportedBackendCompilerError(backend, compiler)
+            case BackendCompiler.cffi:
+                match generate_code(problem, [KernelType.evaluate], compiler, Language.c):
+                    case Failure(error):
+                        raise error
+                    case Success(c_code):
+                        from ._compile_cffi import compile_evaluate
+
+                        self._lib = compile_evaluate(c_code)
+                        self._evaluate = self._lib.evaluate
 
     def __call__(self, *args, **kwargs):
         # Handle arguments like normal Python function
@@ -137,9 +180,9 @@ class TensorMethod:
 
         all_arguments = {self._output_name: output, **bound_arguments}
 
-        cffi_args = [all_arguments[name].cffi_tensor for name in self._parameter_order]
+        cffi_args = [all_arguments[name].cffi_tensor for name in self._problem.formats.keys()]
 
-        return_value = self._cffi_lib.evaluate(*cffi_args)
+        return_value = self._evaluate(*cffi_args)
 
         take_ownership_of_arrays(cffi_output)
 
@@ -147,56 +190,3 @@ class TensorMethod:
             raise RuntimeError(f"Kernel evaluation failed with error code {return_value}")
 
         return output
-
-
-@lru_cache()
-def cachable_tensor_method(problem: Problem, compiler: TensorCompiler) -> TensorMethod:
-    return TensorMethod(problem, compiler)
-
-
-def tensor_method(
-    assignment: str,
-    formats: dict[str, str],
-    compiler: TensorCompiler = TensorCompiler.tensora,
-) -> TensorMethod:
-    parsed_assignment = parse_assignment(assignment).alt(raise_exception).unwrap()
-    parsed_formats = {
-        name: parse_format(format).alt(raise_exception).unwrap()
-        for name, format in formats.items()
-    }
-
-    problem = make_problem(parsed_assignment, parsed_formats).alt(raise_exception).unwrap()
-
-    return cachable_tensor_method(problem, compiler)
-
-
-def evaluate_taco(assignment: str, output_format: str, **inputs: Tensor) -> Tensor:
-    parsed_assignment = parse_assignment(assignment).alt(raise_exception).unwrap()
-    input_formats = {name: tensor.format for name, tensor in inputs.items()}
-    parsed_output_format = parse_format(output_format).alt(raise_exception).unwrap()
-
-    formats = {parsed_assignment.target.name: parsed_output_format} | input_formats
-
-    problem = make_problem(parsed_assignment, formats).alt(raise_exception).unwrap()
-
-    function = cachable_tensor_method(problem, TensorCompiler.taco)
-
-    return function(**inputs)
-
-
-def evaluate_tensora(assignment: str, output_format: str, **inputs: Tensor) -> Tensor:
-    parsed_assignment = parse_assignment(assignment).alt(raise_exception).unwrap()
-    input_formats = {name: tensor.format for name, tensor in inputs.items()}
-    parsed_output_format = parse_format(output_format).alt(raise_exception).unwrap()
-
-    formats = {parsed_assignment.target.name: parsed_output_format} | input_formats
-
-    problem = make_problem(parsed_assignment, formats).alt(raise_exception).unwrap()
-
-    function = cachable_tensor_method(problem, TensorCompiler.tensora)
-
-    return function(**inputs)
-
-
-def evaluate(assignment: str, output_format: str, **inputs: Tensor) -> Tensor:
-    return evaluate_tensora(assignment, output_format, **inputs)

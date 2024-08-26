@@ -1,29 +1,16 @@
 __all__ = [
-    "generate_library",
     "allocate_taco_structure",
     "taco_structure_to_cffi",
     "take_ownership_of_arrays",
-    "tensor_cdefs",
     "take_ownership_of_tensor_members",
+    "take_ownership_of_tensor",
+    "taco_type_header",
+    "tensor_cdefs",
 ]
 
-import re
-import tempfile
-import threading
-from pathlib import Path
-from typing import Any
 from weakref import WeakKeyDictionary
 
 from cffi import FFI
-from returns.result import Failure, Success
-
-from .generate import TensorCompiler, generate_c_code
-from .kernel_type import KernelType
-from .problem import Problem
-
-lock = threading.Lock()
-
-taco_binary = Path(__file__).parent.joinpath("taco/bin/taco")
 
 global_weakkeydict = WeakKeyDictionary()
 
@@ -58,14 +45,6 @@ global_weakkeydict = WeakKeyDictionary()
 #   coordinate of each value
 # vals_size: Deprecated https://github.com/tensor-compiler/taco/issues/208#issuecomment-476314322
 
-taco_define_header = """
-    #ifndef TACO_C_HEADERS
-    #define TACO_C_HEADERS
-    #define TACO_MIN(_a,_b) ((_a) < (_b) ? (_a) : (_b))
-    #define TACO_MAX(_a,_b) ((_a) > (_b) ? (_a) : (_b))
-    #endif
-"""
-
 taco_type_header = """
     typedef enum { taco_mode_dense, taco_mode_sparse } taco_mode_t;
 
@@ -76,7 +55,7 @@ taco_type_header = """
       int32_t*     mode_ordering; // mode storage ordering
       taco_mode_t* mode_types;    // mode storage types
       int32_t***   indices;       // tensor index data (per mode)
-      double*     vals;          // tensor values
+      double*      vals;          // tensor values
       int32_t      vals_size;     // values array size
     } taco_tensor_t;
 
@@ -96,71 +75,10 @@ tensor_cdefs.set_source("_main", "")
 tensor_lib = tensor_cdefs.dlopen(None)
 
 
-def generate_library(
-    problem: Problem, compiler: TensorCompiler = TensorCompiler.tensora
-) -> tuple[list[str], Any]:
-    """Generate source, compile it, and load it.
-
-    Given a problem:
-    (1) invoke the tensor algebra compiler to generate C code for evaluate
-    (2) parse the signature in the source to determine the order of arguments
-    (3) compile the source with cffi
-    (4) return the list of parameter names and the compiled library
-
-    Args:
-        problem: A valid tensor algebra expression and associated tensor formats
-        compiler: The tensor algebra compiler to use to generate the C code
-
-    Returns:
-        A tuple where the first element is the list of variable names in the order they appear in the function
-        signature, and the second element is the compiled FFILibrary which has a single method `evaluate` which expects
-        cffi pointers to taco_tensor_t instances in order specified by the list of variable names.
-    """
-    match generate_c_code(problem, [KernelType.evaluate], compiler):
-        case Failure(error):
-            raise error
-        case Success(source):
-            pass
-        case _:
-            raise NotImplementedError()
-
-    # Determine signature
-    # 1) Find function by name and capture its parameter list
-    # 2) Find each parameter by `*` and capture its name
-    signature_match = re.search(r"int(32_t)? evaluate\(([^)]*)\)", source)
-    signature = signature_match.group(0)
-    parameter_list_matches = re.finditer(r"\*([ ]*restrict[ ]*)?([^,]*)", signature_match.group(2))
-    parameter_names = [match.group(2) for match in parameter_list_matches]
-
-    # Use cffi to compile the kernels
-    ffibuilder = FFI()
-    ffibuilder.include(tensor_cdefs)
-    ffibuilder.cdef(signature + ";")
-    ffibuilder.set_source(
-        "taco_kernel",
-        taco_define_header + taco_type_header + source,
-        extra_compile_args=["-Wno-unused-variable", "-Wno-unknown-pragmas"],
-    )
-
-    with tempfile.TemporaryDirectory() as temp_dir:
-        # Lock because FFI.compile is not thread safe: https://foss.heptapod.net/pypy/cffi/-/issues/490
-        with lock:
-            # Create shared object in temporary directory
-            lib_path = ffibuilder.compile(tmpdir=temp_dir)
-
-        # Load the shared object
-        lib = ffibuilder.dlopen(lib_path)
-
-    # Return the parameter names because we need to know the order in which to send the arguments. It appears that this
-    # order is always the order in which the name first appears in the expression left-to-right, but it is not clear
-    # that this is guaranteed.
-    # Return the entire library rather than just the function because it appears that the memory containing the compiled
-    # code is freed as soon as the library goes out of scope: https://stackoverflow.com/q/55323592/1485877
-    return parameter_names, lib
-
-
 def allocate_taco_structure(
-    mode_types: tuple[int, ...], dimensions: tuple[int, ...], mode_ordering: tuple[int, ...]
+    mode_types: tuple[int, ...],
+    dimensions: tuple[int, ...],
+    mode_ordering: tuple[int, ...],
 ):
     """Allocate all parts of a taco tensor except growable arrays.
 

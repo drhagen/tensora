@@ -36,6 +36,13 @@ def test_multiple_kernels():
     assert "assemble" in result.stdout
 
 
+def test_llvm_language():
+    result = runner.invoke(app, ["y(i) = A(i,j) * x(j)", "-l", "llvm"])
+
+    assert result.exit_code == 0
+    assert "getelementptr" in result.stdout
+
+
 def test_write_to_file():
     with NamedTemporaryFile(suffix=".c") as f:
         result = runner.invoke(app, ["y(i) = A(i,j) * x(j)", "-o", f.name])

@@ -1,8 +1,8 @@
 import pytest
 
 from tensora import Tensor, tensor_method
+from tensora.compile import BroadcastTargetIndexError
 from tensora.desugar import DiagonalAccessError, NoKernelFoundError
-from tensora.function import BroadcastTargetIndexError
 
 
 def test_tensor_method():

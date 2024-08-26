@@ -44,10 +44,12 @@ from typing import Sequence
 from .types import Type
 
 
-def to_expression(expression: Expression | int | str) -> Expression:
+def to_expression(expression: Expression | float | int | str) -> Expression:
     match expression:
         case Expression():
             return expression
+        case float():
+            return FloatLiteral(expression)
         case int():
             return IntegerLiteral(expression)
         case str():
@@ -84,11 +86,11 @@ class Assignable(Expression):
         index = to_expression(index)
         return ArrayIndex(self, index)
 
-    def assign(self, value: Expression | int | str) -> Statement:
+    def assign(self, value: Expression | float | int | str) -> Statement:
         value = to_expression(value)
         return Assignment(self, value)
 
-    def increment(self, amount: Expression | int | str = 1) -> Statement:
+    def increment(self, amount: Expression | float | int | str = 1) -> Statement:
         amount = to_expression(amount)
         return self.assign(self.plus(amount))
 
