@@ -9,7 +9,7 @@ from returns.result import Failure, Success
 
 from .expression import parse_assignment
 from .format import parse_named_format
-from .generate import TensorCompiler, generate_c_code
+from .generate import Language, TensorCompiler, generate_code
 from .kernel_type import KernelType
 from .problem import make_problem
 
@@ -52,6 +52,14 @@ def tensora(
             help="The tensor algebra compiler to use to generate the kernel.",
         ),
     ] = TensorCompiler.tensora,
+    language: Annotated[
+        Language,
+        typer.Option(
+            "--language",
+            "-l",
+            help="The language in which to generate the kernel.",
+        ),
+    ] = Language.c,
     output_path: Annotated[
         Optional[Path],
         typer.Option(
@@ -107,7 +115,7 @@ def tensora(
             raise NotImplementedError()
 
     # Generate code
-    match generate_c_code(problem, kernel_types, tensor_compiler):
+    match generate_code(problem, kernel_types, tensor_compiler, language):
         case Failure(error):
             typer.echo(str(error), err=True)
             raise typer.Exit(1)

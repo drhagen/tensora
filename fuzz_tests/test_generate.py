@@ -1,7 +1,7 @@
 from hypothesis import given
 
+from tensora.compile import BroadcastTargetIndexError, TensorMethod
 from tensora.desugar import DiagonalAccessError, NoKernelFoundError
-from tensora.function import BroadcastTargetIndexError, TensorMethod
 
 from .strategies import problem_and_tensors
 

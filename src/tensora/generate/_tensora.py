@@ -1,8 +1,7 @@
-__all__ = ["generate_c_code_tensora"]
+__all__ = ["generate_module_tensora"]
 
 from returns.result import Failure, Result, Success
 
-from ..codegen import ir_to_c
 from ..desugar import (
     DiagonalAccessError,
     NoKernelFoundError,
@@ -18,9 +17,9 @@ from ..kernel_type import KernelType
 from ..problem import Problem
 
 
-def generate_c_code_tensora(
+def generate_module_tensora(
     problem: Problem, kernel_types: list[KernelType]
-) -> Result[str, DiagonalAccessError | NoKernelFoundError]:
+) -> Result[Module, DiagonalAccessError | NoKernelFoundError]:
     formats = problem.formats
 
     desugar = desugar_assignment(problem.assignment)
@@ -40,4 +39,4 @@ def generate_c_code_tensora(
     functions = [generate_ir(definition, graph, kernel_type) for kernel_type in kernel_types]
     module = Module(functions)
 
-    return Success(ir_to_c(peephole(module)))
+    return Success(peephole(module))
