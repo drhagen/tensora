@@ -35,15 +35,15 @@ scipy = { version = "^1.7", optional = true }
 nox_poetry = "^1.0.3"
 
 # Test
-pytest = "^8"
+pytest = "^7"  # Upgrading to pytest 8 breaks hypofuzz
 pytest-cov = "*"
 
 # Fuzzing
-hypothesis = "^6.75"
-hypofuzz = "^23.7"
+hypothesis = "^6"
+hypofuzz = "^24"
 
 # Lint
-ruff = "^0.1"
+ruff = "^0.6"
 
 # Docs
 mkdocs-material = "^9"
