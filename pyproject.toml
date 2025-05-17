@@ -36,7 +36,7 @@ nox_poetry = "^1.0.3"
 
 # Test
 pytest = "^7"  # Upgrading to pytest 8 breaks hypofuzz
-pytest-cov = "*"
+coverage = "*"
 
 # Fuzzing
 hypothesis = "^6"
