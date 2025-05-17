@@ -8,41 +8,49 @@ on:
 
 env:
   python-version: "3.10"
-  poetry-version: "1.7.1"
+  poetry-version: "1.8.4"
 
 jobs:
   test:
     strategy:
       matrix:
-        python-version: ["3.10", "3.11", "3.12"]
-        os: ["ubuntu-22.04", "macos-12"]
-    runs-on: ${{ matrix.os }}
+        platform:
+          # Upgrading to Ubuntu 24.04 breaks compilation of tensora-taco
+          - ubuntu-22.04
+          - ubuntu-22.04-arm
+          - macos-13
+          - macos-15
+        python:
+          - "3.10"
+          - "3.11"
+          - "3.12"
+          - "3.13"
+    runs-on: ${{ matrix.platform }}
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
       - name: Install Poetry
         run: pipx install poetry==${{ env.poetry-version }}
-      - name: Install Python ${{ matrix.python-version }}
+      - name: Install Python ${{ matrix.python }}
         uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: ${{ matrix.python }}
           cache: poetry
       - name: Install environment
         run: poetry install
       - name: Test with nox
         run: >-
           poetry run nox -s
-          test-${{ matrix.python-version }}
-          test_numpy-${{ matrix.python-version }}
-          test_taco-${{ matrix.python-version }}
-      - name: Delete extraneous Mac files
-        # I have no idea where these come from, but they break report generation
-        run: find . -name ".coverage.*.Mac-*" -delete
+          test-${{ matrix.python }}
+          test_numpy-${{ matrix.python }}
+          test_taco-${{ matrix.python }}
       - name: Store coverage
         uses: actions/upload-artifact@v4
         with:
-          name: coverage-${{ matrix.python-version }}-${{ matrix.os }}
+          name: coverage-${{ matrix.python }}-${{ matrix.platform }}
           path: .coverage.*
+          include-hidden-files: true
+          if-no-files-found: error
   coverage:
     needs: test
     runs-on: ubuntu-22.04
