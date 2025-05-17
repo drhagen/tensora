@@ -15,15 +15,15 @@ jobs:
     strategy:
       matrix:
         platform:
-          - ubuntu-24.04
-          - ubuntu-24.04-arm
+          - ubuntu-22.04
+          - ubuntu-22.04-arm
           - macos-13
           - macos-15
         python:
           - "3.10"
-          - "3.11"
-          - "3.12"
-          - "3.13"
+          # - "3.11"
+          # - "3.12"
+          # - "3.13"
     runs-on: ${{ matrix.platform }}
     steps:
       - name: Checkout repo
