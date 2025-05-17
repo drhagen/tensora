@@ -73,9 +73,7 @@ exclude_lines = [
 [tool.coverage.paths]
 source = [
     "src/",
-    ".nox/test*/lib/python*/site-packages/",
-    ".nox/test*/Lib/site-packages/",
-    "*/tensora/src/",
+    "**/site-packages/",
 ]
 
 [tool.ruff]
