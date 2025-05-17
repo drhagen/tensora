@@ -59,6 +59,7 @@ scipy = ["scipy"]
 
 [tool.coverage.run]
 branch = true
+source = ["tensora"]
 
 [tool.coverage.report]
 exclude_lines = [

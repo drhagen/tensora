@@ -1,3 +1,5 @@
+import platform
+
 from nox import options, parametrize
 from nox_poetry import Session, session
 
@@ -7,29 +9,29 @@ options.sessions = ["test", "test_taco", "test_cffi", "test_numpy", "coverage", 
 @session(python=["3.10", "3.11", "3.12", "3.13"])
 def test(s: Session):
     s.install(".", "pytest", "pytest-cov")
-    s.env["COVERAGE_FILE"] = f".coverage.{s.python}"
-    s.run("python", "-m", "pytest", "--cov", "tensora", "tests")
+    coverage_file = f".coverage.{platform.machine()}.{platform.system()}.{s.python}"
+    s.run("coverage", "run", "--data-file", coverage_file, "-m", "pytest", "tests")
 
 
 @session(python=["3.10", "3.11", "3.12", "3.13"])
 def test_taco(s: Session):
     s.install(".[taco]", "pytest", "pytest-cov")
-    s.env["COVERAGE_FILE"] = f".coverage.taco.{s.python}"
-    s.run("python", "-m", "pytest", "--cov", "tensora", "tests/taco")
+    coverage_file = f".coverage.{platform.machine()}.{platform.system()}.{s.python}.taco"
+    s.run("coverage", "run", "--data-file", coverage_file, "-m", "pytest", "tests/taco")
 
 
 @session(python=["3.10", "3.11", "3.12", "3.13"])
 def test_cffi(s: Session):
     s.install(".[cffi]", "pytest", "pytest-cov")
-    s.env["COVERAGE_FILE"] = f".coverage.cffi.{s.python}"
-    s.run("python", "-m", "pytest", "--cov", "tensora", "tests_cffi")
+    coverage_file = f".coverage.{platform.machine()}.{platform.system()}.{s.python}.cffi"
+    s.run("coverage", "run", "--data-file", coverage_file, "-m", "pytest", "tests_cffi")
 
 
 @session(python=["3.10", "3.11", "3.12", "3.13"])
 def test_numpy(s: Session):
     s.install(".[numpy]", "pytest", "pytest-cov")
-    s.env["COVERAGE_FILE"] = f".coverage.numpy.{s.python}"
-    s.run("python", "-m", "pytest", "--cov", "tensora", "tests/test_numpy.py")
+    coverage_file = f".coverage.{platform.machine()}.{platform.system()}.{s.python}.numpy"
+    s.run("coverage", "run", "--data-file", coverage_file, "-m", "pytest", "tests/test_numpy.py")
 
 
 @session(venv_backend="none")

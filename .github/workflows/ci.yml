@@ -43,14 +43,13 @@ jobs:
           test-${{ matrix.python }}
           test_numpy-${{ matrix.python }}
           test_taco-${{ matrix.python }}
-      - name: Delete extraneous Mac files
-        # I have no idea where these come from, but they break report generation
-        run: find . -name ".coverage.*.Mac-*" -delete
       - name: Store coverage
         uses: actions/upload-artifact@v4
         with:
           name: coverage-${{ matrix.python }}-${{ matrix.platform }}
           path: .coverage.*
+          include-hidden-files: true
+
   coverage:
     needs: test
     runs-on: ubuntu-22.04
@@ -78,6 +77,7 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: true
+
   lint:
     runs-on: ubuntu-22.04
     steps:
@@ -94,6 +94,7 @@ jobs:
         run: poetry install
       - name: Run code quality checks
         run: poetry run nox -s lint
+
   poetry-check:
     runs-on: ubuntu-22.04
     steps:
