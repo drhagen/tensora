@@ -8,7 +8,7 @@ Tensora is a tensor algebra library for Python. You can create `Tensor` objects 
 
 Tensora also comes with the `tensora` command line tool that can be used to generate the kernel code for external use.
 
-Tensora is based on the [Tensor Algebra Compiler](http://tensor-compiler.org/) (TACO) and can use either TACO or its own compiler to generate kernels.
+Tensora is based on the [Tensor Algebra Compiler](http://tensor-compiler.org/) (TACO).
 
 ## Installation
 
@@ -18,7 +18,11 @@ The recommended means of installation is with `pip` from PyPI.
 pip install tensora
 ```
 
-You must have a C compiler installed that is compatible with and available to [CFFI API mode](https://cffi.readthedocs.io/en/latest/overview.html#purely-for-performance-api-level-out-of-line). Tensora definitely works on Mac and Linux and definitely does not work on Windows. It will probably work on any system where [`ffi.dlopen(None)`](https://cffi.readthedocs.io/en/latest/cdef.html#ffi-dlopen-loading-libraries-in-abi-mode) works.
+Tensora definitely works on Mac and Linux and definitely does not work on Windows. It will probably work on any system where [`ffi.dlopen(None)`](https://cffi.readthedocs.io/en/latest/cdef.html#ffi-dlopen-loading-libraries-in-abi-mode) works.
+
+By default, Tensora uses its own code to generate the kernels. The `tensora[taco]` extra makes available the option to generate the kernels with the TACO binary, which is provided by the `tensora-taco` PyPI package.
+
+By default, Tensora uses LLVM to compile the kernels. THe LLVM is installed via the `llvmlite` PyPI dependency and does not need to be installed on the system. The `tensora[cffi]` extra makes available the option to compile the kernels with CFFI. To do that, a C compiler must be installed on the system in a way that it is available to [CFFI API mode](https://cffi.readthedocs.io/en/latest/overview.html#purely-for-performance-api-level-out-of-line).
 
 ## Hello world
 
