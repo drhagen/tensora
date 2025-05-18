@@ -528,12 +528,14 @@
 <h1 id="tensora">Tensora</h1>
 <p>Tensora is a tensor algebra library for Python. You can create <code>Tensor</code> objects in a variety of sparse and dense formats. You can do calculations with these tensors by passing the them to the <code>evaluate</code> function along with an expression (e.g. <code>y = evaluate('y(i) = A(i,j) * x(j)', A=A, x=x)</code>). The expression is parsed, a kernel is generated, the C code is compiled on the fly, the binary is invoked, and the result is packaged into a output <code>Tensor</code>.</p>
 <p>Tensora also comes with the <code>tensora</code> command line tool that can be used to generate the kernel code for external use.</p>
-<p>Tensora is based on the <a href="http://tensor-compiler.org/">Tensor Algebra Compiler</a> (TACO) and can use either TACO or its own compiler to generate kernels.</p>
+<p>Tensora is based on the <a href="http://tensor-compiler.org/">Tensor Algebra Compiler</a> (TACO).</p>
 <h2 id="installation">Installation</h2>
 <p>The recommended means of installation is with <code>pip</code> from PyPI.</p>
 <div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>tensora
 </code></pre></div>
-<p>You must have a C compiler installed that is compatible with and available to <a href="https://cffi.readthedocs.io/en/latest/overview.html#purely-for-performance-api-level-out-of-line">CFFI API mode</a>. Tensora definitely works on Mac and Linux and definitely does not work on Windows. It will probably work on any system where <a href="https://cffi.readthedocs.io/en/latest/cdef.html#ffi-dlopen-loading-libraries-in-abi-mode"><code>ffi.dlopen(None)</code></a> works.</p>
+<p>Tensora definitely works on Mac and Linux and definitely does not work on Windows. It will probably work on any system where <a href="https://cffi.readthedocs.io/en/latest/cdef.html#ffi-dlopen-loading-libraries-in-abi-mode"><code>ffi.dlopen(None)</code></a> works.</p>
+<p>By default, Tensora uses its own code to generate the kernels. The <code>tensora[taco]</code> extra makes available the option to generate the kernels with the TACO binary, which is provided by the <code>tensora-taco</code> PyPI package.</p>
+<p>By default, Tensora uses LLVM to compile the kernels. The LLVM is provided by the <code>llvmlite</code> PyPI dependency and does not need to be installed on the system. The <code>tensora[cffi]</code> extra makes available the option to compile the kernels with CFFI. To do that, a C compiler must be installed on the system in a way that it is available to <a href="https://cffi.readthedocs.io/en/latest/overview.html#purely-for-performance-api-level-out-of-line">CFFI API mode</a>.</p>
 <h2 id="hello-world">Hello world</h2>
 <p>Here is an example of multiplying a sparse matrix in CSR format with a dense vector:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">tensora</span><span class="w"> </span><span class="kn">import</span> <span class="n">Tensor</span><span class="p">,</span> <span class="n">evaluate</span>
