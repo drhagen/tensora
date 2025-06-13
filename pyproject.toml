@@ -76,10 +76,12 @@ docs = [
 
 [tool.uv]
 default-groups = "all"
+python-preference = "only-managed"
 
 [tool.coverage.run]
 branch = true
-source = ["tensora"]
+source_pkgs = ["tensora"]
+relative_files = true
 
 [tool.coverage.report]
 exclude_lines = [
