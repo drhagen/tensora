@@ -7,8 +7,7 @@ on:
       - master
 
 env:
-  python-version: "3.10"
-  poetry-version: "1.8.4"
+  uv-version: "0.7.13"
 
 jobs:
   test:
@@ -29,18 +28,13 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
-      - name: Install Poetry
-        run: pipx install poetry==${{ env.poetry-version }}
-      - name: Install Python ${{ matrix.python }}
-        uses: actions/setup-python@v5
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
         with:
-          python-version: ${{ matrix.python }}
-          cache: poetry
-      - name: Install environment
-        run: poetry install
+          version: ${{ env.uv-version }}
       - name: Test with nox
         run: >-
-          poetry run nox -s
+          uv run --locked --only-group nox nox -s
           test-${{ matrix.python }}
           test_numpy-${{ matrix.python }}
           test_taco-${{ matrix.python }}
@@ -51,58 +45,38 @@ jobs:
           path: .coverage.*
           include-hidden-files: true
           if-no-files-found: error
+
   coverage:
     needs: test
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
-      - name: Install Poetry
-        run: pipx install poetry==${{ env.poetry-version }}
-      - name: Install Python
-        uses: actions/setup-python@v5
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
         with:
-          python-version: ${{ env.python-version }}
-          cache: poetry
-      - name: Install environment
-        run: poetry install
+          version: ${{ env.uv-version }}
       - name: Fetch coverage
         uses: actions/download-artifact@v4
         with:
           pattern: coverage-*
           merge-multiple: true
       - name: Combine coverage and generate report
-        run: poetry run nox -s coverage
+        run: uv run --locked nox -s coverage
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: true
+
   lint:
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
-      - name: Install Poetry
-        run: pipx install poetry==${{ env.poetry-version }}
-      - name: Install Python
-        uses: actions/setup-python@v5
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
         with:
-          python-version: ${{ env.python-version }}
-          cache: poetry
-      - name: Install environment
-        run: poetry install
+          version: ${{ env.uv-version }}
       - name: Run code quality checks
-        run: poetry run nox -s lint
-  poetry-check:
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install Poetry
-        run: pipx install poetry==${{ env.poetry-version }}
-      - name: Install Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.python-version }}
-      - name: Validate Poetry configuration and lockfile freshness
-        run: poetry lock --check
+        run: uv run --locked nox -s lint
