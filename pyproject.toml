@@ -39,6 +39,8 @@ taco = [
     "setuptools >= 69; python_version >= '3.12'",
 ]
 cffi = [
+    # setuptools is required for cffi compilation on Python 3.12+
+    # https://cffi.readthedocs.io/en/latest/whatsnew.html#v1-16-0
     "setuptools >= 69; python_version >= '3.12'",
 ]
 numpy = [
@@ -60,8 +62,8 @@ nox = [
     "nox-uv == 0.6.*",
 ]
 test = [
-    "pytest == 7.*",
-    "coverage"
+    "pytest == 7.*",  # Upgrading to pytest 8 breaks hypofuzz
+    "coverage == 7.*"
 ]
 fuzz = [
     "hypothesis == 6.*",

@@ -1364,7 +1364,7 @@ fuzz = [
 lint = [{ name = "ruff", specifier = "==0.6.*" }]
 nox = [{ name = "nox-uv", specifier = "==0.6.*" }]
 test = [
-    { name = "coverage" },
+    { name = "coverage", specifier = "==7.*" },
     { name = "pytest", specifier = "==7.*" },
 ]
 
