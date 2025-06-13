@@ -47,14 +47,14 @@ def test_unsorted_coordinates(format, indices, vals, permutation):
     ]
 
     permutated_data = [data[i] for i in permutation]
-    coordinates, values = zip(*permutated_data)
+    coordinates, values = zip(*permutated_data, strict=False)
 
     A = Tensor.from_aos(coordinates, values, dimensions=(3, 4), format=format)
 
     assert A.taco_indices == indices
     assert A.taco_vals == vals
 
-    A = Tensor.from_soa(zip(*coordinates), values, dimensions=(3, 4), format=format)
+    A = Tensor.from_soa(zip(*coordinates, strict=False), values, dimensions=(3, 4), format=format)
 
     assert A.taco_indices == indices
     assert A.taco_vals == vals
