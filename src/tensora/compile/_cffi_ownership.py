@@ -8,6 +8,7 @@ __all__ = [
     "tensor_cdefs",
 ]
 
+from itertools import pairwise
 from weakref import WeakKeyDictionary
 
 from cffi import FFI
@@ -367,4 +368,4 @@ def take_ownership_of_tensor(cffi_tensor) -> None:
 
 
 def weakly_increasing(list: list[int]):
-    return all(x <= y for x, y in zip(list[:-1], list[1:], strict=True))
+    return all(x <= y for x, y in pairwise(list))

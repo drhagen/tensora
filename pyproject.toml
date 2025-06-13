@@ -1,65 +1,89 @@
-[tool.poetry]
+[build-system]
+requires = ["hatchling>=1.18.0"]
+build-backend = "hatchling.build"
+
+[project]
 name = "tensora"
 version = "0.4.0"
 description = "Library for dense and sparse tensors built on the tensor algebra compiler"
-authors = ["David Hagen <david@drhagen.com>"]
+authors = [ { name = "David Hagen", email = "david@drhagen.com" } ]
 license = "MIT"
 readme = "README.md"
-documentation = "https://tensora.drhagen.com"
-repository = "https://github.com/drhagen/tensora"
 keywords = ["tensor", "sparse", "matrix", "array"]
+requires-python = ">=3.10"
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Science/Research",
     "Intended Audience :: Developers",
-    "Topic :: Software Development :: Libraries :: Python Modules",
-    "Operating System :: MacOS",
+    "License :: OSI Approved :: MIT License",
     "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS :: MacOS X",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11", 
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dependencies = [
+    "returns >= 0.20,<0.26",
+    "cffi ~= 1.16",
+    "llvmlite == 0.44.*",
+    "parsita == 2.*",
+    "typer == 0.15.*",
 ]
 
-[tool.poetry.dependencies]
-python = "^3.10"
-returns = "^0.20|^0.21|^0.22|^0.23|^0.24|^0.25"
-cffi = "^1.16"
-# setuptools is required for cffi compilation on Python 3.12 and up
-# https://cffi.readthedocs.io/en/latest/whatsnew.html#v1-16-0rc1
-setuptools = { version = "^69", python = ">=3.12", optional = true }
-llvmlite = "^0.44"
-parsita = "^2.0"
-typer = "^0.15"
-tensora-taco = { version = "^0.1.2", optional = true }
-numpy = { version = "^1.24", optional = true }
-scipy = { version = "^1.7", optional = true }
+[project.optional-dependencies]
+taco = [
+    "tensora-taco ~= 0.1.2",
+    "setuptools >= 69; python_version >= '3.12'",
+]
+cffi = [
+    # setuptools is required for cffi compilation on Python 3.12+
+    # https://cffi.readthedocs.io/en/latest/whatsnew.html#v1-16-0
+    "setuptools >= 69; python_version >= '3.12'",
+]
+numpy = [
+    "numpy ~= 1.24",
+]
+scipy = [
+    "scipy ~= 1.7",
+]
 
-[tool.poetry.dev-dependencies]
-nox_poetry = "^1.0.3"
+[project.urls]
+Documentation = "https://tensora.drhagen.com"
+Repository = "https://github.com/drhagen/tensora"
 
-# Test
-pytest = "^7"  # Upgrading to pytest 8 breaks hypofuzz
-coverage = "*"
-
-# Fuzzing
-hypothesis = "^6"
-hypofuzz = "^24"
-
-# Lint
-ruff = "^0.6"
-
-# Docs
-mkdocs-material = "^9"
-
-[tool.poetry.scripts]
+[project.scripts]
 tensora = "tensora.cli:app"
 
-[tool.poetry.extras]
-taco = ["tensora-taco", "setuptools"]
-cffi = ["setuptools"]
-numpy = ["numpy"]
-scipy = ["scipy"]
+[dependency-groups]
+nox = [
+    "nox-uv == 0.6.*",
+]
+test = [
+    "pytest == 7.*",  # Upgrading to pytest 8 breaks hypofuzz
+    "coverage == 7.*"
+]
+fuzz = [
+    "hypothesis == 6.*",
+    "hypofuzz == 24.*"
+]
+lint = [
+    "ruff == 0.6.*"
+]
+docs = [
+    "mkdocs-material == 9.*"
+]
+
+[tool.uv]
+default-groups = "all"
+python-preference = "only-managed"
 
 [tool.coverage.run]
 branch = true
-source = ["tensora"]
+source_pkgs = ["tensora"]
+relative_files = true
 
 [tool.coverage.report]
 exclude_lines = [
@@ -103,7 +127,3 @@ extend-immutable-calls = ["hypothesis.strategies.integers"]
 
 # F401: Allow unused imports in __init__.py
 "__init__.py" = ["F401"]
-
-[build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"

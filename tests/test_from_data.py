@@ -237,7 +237,7 @@ def assert_all_methods_same(lol, dimensions, format):
             # zip only transposes if the iterable is not empty
             soa = ([], [])
         else:
-            soa = tuple(zip(*coordinates))
+            soa = tuple(zip(*coordinates, strict=False))
         scipy_csc_matrix = scipy_sparse.csc_matrix((values, soa), shape=dimensions)
         scipy_csr_matrix = scipy_sparse.csr_matrix((values, soa), shape=dimensions)
         scipy_coo_matrix = scipy_sparse.coo_matrix((values, soa), shape=dimensions)

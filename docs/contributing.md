@@ -20,11 +20,10 @@ git clone https://github.com/drhagen/tensora.git
 
 ## Installing from source
 
-Tensora uses Poetry as its packaging and dependency manager. In whatever Python environment you prefer, [install Poetry](https://python-poetry.org/docs/) and then use Poetry to install Tensora and its dependencies:
+Tensora uses uv for project and environment management with Hatchling as its build backend. In whatever environment you prefer, ensure [uv](https://github.com/astral-sh/uv) is installed and then use uv to install Tensora and its dependencies:
 
 ```shell
-pip install poetry
-poetry install
+uv sync
 ```
 
 ## Testing
@@ -32,13 +31,13 @@ poetry install
 Tensora uses pytest to run the tests in the `tests/` directory. The test command is encapsulated with Nox:
 
 ```shell
-poetry run nox -s test test_taco test_numpy
+uv run nox -s test test_taco test_numpy
 ```
 
 This will try to test with all compatible Python versions that `nox` can find. To run the tests with only a particular version, run something like this:
 
 ```shell
-poetry run nox -s test-3.10 test_taco-3.10 test_numpy-3.10
+uv run nox -s test-3.10 test_taco-3.10 test_numpy-3.10
 ```
 
 It is good to run the tests locally before making a PR, but it is not necessary to have all Python versions run. It is rare for a failure to appear in a single version, and the CI will catch it anyway.
@@ -48,8 +47,8 @@ It is good to run the tests locally before making a PR, but it is not necessary 
 Tensora uses Ruff to ensure a minimum standard of code quality. The code quality commands are encapsulated with Nox:
 
 ```shell
-poetry run nox -s format
-poetry run nox -s lint
+uv run nox -s format
+uv run nox -s lint
 ```
 
 ## Generating the docs
@@ -57,13 +56,13 @@ poetry run nox -s lint
 Tensora uses MkDocs to generate HTML docs from Markdown. For development purposes, they can be served locally without needing to build them first:
 
 ```shell
-poetry run mkdocs serve
+uv run mkdocs serve
 ```
 
 To deploy the current docs to GitHub Pages, Tensora uses the MkDocs `gh-deploy` command that builds the static site on the `gh-pages` branch, commits, and pushes to the origin:
 
 ```shell
-poetry run mkdocs gh-deploy
+uv run mkdocs gh-deploy
 ```
 
 ## Making a release

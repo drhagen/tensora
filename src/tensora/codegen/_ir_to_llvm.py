@@ -507,7 +507,7 @@ def ir_to_llvm_function_definition(
     locals = {}
 
     # Assign each function parameter to a local variable
-    for parameter, llvm_parameter in zip(self.parameters, function.args):
+    for parameter, llvm_parameter in zip(self.parameters, function.args, strict=False):
         variable = body.alloca(type_to_llvm(parameter.type), name=parameter.name.name)
         body.store(llvm_parameter, variable)
         locals[parameter.name.name] = variable
