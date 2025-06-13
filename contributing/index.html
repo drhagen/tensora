@@ -606,29 +606,28 @@
 <div class="highlight"><pre><span></span><code>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/drhagen/tensora.git
 </code></pre></div>
 <h2 id="installing-from-source">Installing from source</h2>
-<p>Tensora uses Poetry as its packaging and dependency manager. In whatever Python environment you prefer, <a href="https://python-poetry.org/docs/">install Poetry</a> and then use Poetry to install Tensora and its dependencies:</p>
-<div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>poetry
-poetry<span class="w"> </span>install
+<p>Tensora uses uv for project and environment management with Hatchling as its build backend. In whatever environment you prefer, ensure <a href="https://github.com/astral-sh/uv">uv</a> is installed and then use uv to install Tensora and its dependencies:</p>
+<div class="highlight"><pre><span></span><code>uv<span class="w"> </span>sync
 </code></pre></div>
 <h2 id="testing">Testing</h2>
 <p>Tensora uses pytest to run the tests in the <code>tests/</code> directory. The test command is encapsulated with Nox:</p>
-<div class="highlight"><pre><span></span><code>poetry<span class="w"> </span>run<span class="w"> </span>nox<span class="w"> </span>-s<span class="w"> </span><span class="nb">test</span><span class="w"> </span>test_taco<span class="w"> </span>test_numpy
+<div class="highlight"><pre><span></span><code>uv<span class="w"> </span>run<span class="w"> </span>nox<span class="w"> </span>-s<span class="w"> </span><span class="nb">test</span><span class="w"> </span>test_taco<span class="w"> </span>test_numpy
 </code></pre></div>
 <p>This will try to test with all compatible Python versions that <code>nox</code> can find. To run the tests with only a particular version, run something like this:</p>
-<div class="highlight"><pre><span></span><code>poetry<span class="w"> </span>run<span class="w"> </span>nox<span class="w"> </span>-s<span class="w"> </span>test-3.10<span class="w"> </span>test_taco-3.10<span class="w"> </span>test_numpy-3.10
+<div class="highlight"><pre><span></span><code>uv<span class="w"> </span>run<span class="w"> </span>nox<span class="w"> </span>-s<span class="w"> </span>test-3.10<span class="w"> </span>test_taco-3.10<span class="w"> </span>test_numpy-3.10
 </code></pre></div>
 <p>It is good to run the tests locally before making a PR, but it is not necessary to have all Python versions run. It is rare for a failure to appear in a single version, and the CI will catch it anyway.</p>
 <h2 id="code-quality">Code quality</h2>
 <p>Tensora uses Ruff to ensure a minimum standard of code quality. The code quality commands are encapsulated with Nox:</p>
-<div class="highlight"><pre><span></span><code>poetry<span class="w"> </span>run<span class="w"> </span>nox<span class="w"> </span>-s<span class="w"> </span>format
-poetry<span class="w"> </span>run<span class="w"> </span>nox<span class="w"> </span>-s<span class="w"> </span>lint
+<div class="highlight"><pre><span></span><code>uv<span class="w"> </span>run<span class="w"> </span>nox<span class="w"> </span>-s<span class="w"> </span>format
+uv<span class="w"> </span>run<span class="w"> </span>nox<span class="w"> </span>-s<span class="w"> </span>lint
 </code></pre></div>
 <h2 id="generating-the-docs">Generating the docs</h2>
 <p>Tensora uses MkDocs to generate HTML docs from Markdown. For development purposes, they can be served locally without needing to build them first:</p>
-<div class="highlight"><pre><span></span><code>poetry<span class="w"> </span>run<span class="w"> </span>mkdocs<span class="w"> </span>serve
+<div class="highlight"><pre><span></span><code>uv<span class="w"> </span>run<span class="w"> </span>mkdocs<span class="w"> </span>serve
 </code></pre></div>
 <p>To deploy the current docs to GitHub Pages, Tensora uses the MkDocs <code>gh-deploy</code> command that builds the static site on the <code>gh-pages</code> branch, commits, and pushes to the origin:</p>
-<div class="highlight"><pre><span></span><code>poetry<span class="w"> </span>run<span class="w"> </span>mkdocs<span class="w"> </span>gh-deploy
+<div class="highlight"><pre><span></span><code>uv<span class="w"> </span>run<span class="w"> </span>mkdocs<span class="w"> </span>gh-deploy
 </code></pre></div>
 <h2 id="making-a-release">Making a release</h2>
 <ol>
