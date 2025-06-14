@@ -13,10 +13,10 @@ def test(s: Session):
     s.run("coverage", "run", "--data-file", coverage_file, "-m", "pytest", "tests")
 
 
-@session(python=["3.10", "3.11", "3.12", "3.13"], uv_groups=["test"], uv_extras=["taco"])
-def test_taco(s: Session):
-    coverage_file = f".coverage.{platform.machine()}.{platform.system()}.{s.python}.taco"
-    s.run("coverage", "run", "--data-file", coverage_file, "-m", "pytest", "tests/taco")
+@session(python=["3.10", "3.11", "3.12", "3.13"], uv_groups=["test"], uv_extras=["numpy"])
+def test_numpy(s: Session):
+    coverage_file = f".coverage.{platform.machine()}.{platform.system()}.{s.python}.numpy"
+    s.run("coverage", "run", "--data-file", coverage_file, "-m", "pytest", "tests/test_numpy.py")
 
 
 @session(python=["3.10", "3.11", "3.12", "3.13"], uv_groups=["test"], uv_extras=["cffi"])
@@ -25,10 +25,10 @@ def test_cffi(s: Session):
     s.run("coverage", "run", "--data-file", coverage_file, "-m", "pytest", "tests_cffi")
 
 
-@session(python=["3.10", "3.11", "3.12", "3.13"], uv_groups=["test"], uv_extras=["numpy"])
-def test_numpy(s: Session):
-    coverage_file = f".coverage.{platform.machine()}.{platform.system()}.{s.python}.numpy"
-    s.run("coverage", "run", "--data-file", coverage_file, "-m", "pytest", "tests/test_numpy.py")
+@session(python=["3.10", "3.11", "3.12", "3.13"], uv_groups=["test"], uv_extras=["taco"])
+def test_taco(s: Session):
+    coverage_file = f".coverage.{platform.machine()}.{platform.system()}.{s.python}.taco"
+    s.run("coverage", "run", "--data-file", coverage_file, "-m", "pytest", "tests/taco")
 
 
 @session(venv_backend="none")

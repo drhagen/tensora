@@ -35,6 +35,18 @@ class BroadcastTargetIndexError(Exception):
 
 
 class BackendCompiler(Enum):
+    """The tool to generate the machine code.
+
+    Attributes
+    ----------
+    llvm
+        Generate LLVM IR and compile with the llvmlite package.
+        Not available with TensorCompiler.taco.
+    cffi
+        Generate C code and compile with the cffi package.
+        Not available on Windows.
+    """
+
     llvm = "llvm"
     cffi = "cffi"
 

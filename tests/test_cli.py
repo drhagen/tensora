@@ -1,5 +1,5 @@
 from pathlib import Path
-from tempfile import NamedTemporaryFile
+from tempfile import TemporaryDirectory
 
 import pytest
 from typer.testing import CliRunner
@@ -44,13 +44,15 @@ def test_llvm_language():
 
 
 def test_write_to_file():
-    with NamedTemporaryFile(suffix=".c") as f:
-        result = runner.invoke(app, ["y(i) = A(i,j) * x(j)", "-o", f.name])
+    # Use a temporary directory instead of a temporary file to avoid issue on Windows
+    # where the same file cannot be opened by two processes at the same time.
+    with TemporaryDirectory() as tmpdir:
+        file = Path(tmpdir) / "output.c"
+        result = runner.invoke(app, ["y(i) = A(i,j) * x(j)", "-o", str(file)])
 
         assert result.exit_code == 0
         assert result.stdout == ""
-
-        assert Path(f.name).read_text().startswith("int32_t compute(taco_tensor_t* restrict y,")
+        assert file.read_text().startswith("int32_t compute(taco_tensor_t* restrict y,")
 
 
 @pytest.mark.parametrize(
