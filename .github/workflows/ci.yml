@@ -19,6 +19,7 @@ jobs:
           - ubuntu-22.04-arm
           - macos-13
           - macos-15
+          - windows-2025
         python:
           - "3.10"
           - "3.11"
@@ -32,11 +33,16 @@ jobs:
         uses: astral-sh/setup-uv@v5
         with:
           version: ${{ env.uv-version }}
-      - name: Test with nox
+      - name: Test with nox (all platforms)
         run: >-
           uv run --locked --only-group nox nox -s
           test-${{ matrix.python }}
           test_numpy-${{ matrix.python }}
+      - name: Test with nox (non-Windows)
+        if: runner.os != 'Windows'
+        run: >-
+          uv run --locked --only-group nox nox -s
+          test_cffi-${{ matrix.python }}
           test_taco-${{ matrix.python }}
       - name: Store coverage
         uses: actions/upload-artifact@v4

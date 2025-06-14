@@ -13,6 +13,19 @@ from ._tensora import generate_module_tensora
 
 
 class TensorCompiler(str, Enum):
+    """The tool to generate the tensor kernel.
+
+    Attributes
+    ----------
+    tensora
+        The tensor compiler included with Tensora.
+    taco
+        The original TACO binary repackaged in `tensora-taco`.
+        Only available via the `taco` extra.
+        Not compatible with `Language.llvm`.
+        Not available on Windows.
+    """
+
     # Python 3.10 does not support StrEnum, so do it manually
     tensora = "tensora"
     taco = "taco"
@@ -22,6 +35,17 @@ class TensorCompiler(str, Enum):
 
 
 class Language(str, Enum):
+    """The language to be generated.
+
+    Attributes
+    ----------
+    c
+        C language.
+    llvm
+        LLVM IR.
+        Not compatible with `TensorCompiler.taco`.
+    """
+
     # Python 3.10 does not support StrEnum, so do it manually
     c = "c"
     llvm = "llvm"

@@ -8,6 +8,7 @@ __all__ = [
     "tensor_cdefs",
 ]
 
+import platform
 from itertools import pairwise
 from weakref import WeakKeyDictionary
 
@@ -72,8 +73,12 @@ tensor_cdefs.cdef(taco_type_header)
 # This library only has definitions, in order to `include` it elsewhere, `set_source` must be called with empty `source` first
 tensor_cdefs.set_source("_main", "")
 
-# Open the base C library, which works on Linux and Mac
-tensor_lib = tensor_cdefs.dlopen(None)
+if platform.system() == "Windows":
+    # On Windows, standard C functions like free are in msvcrt.dll
+    tensor_lib = tensor_cdefs.dlopen("msvcrt.dll")
+else:
+    # On Linux and Mac, standard C functions like free are in the system C library
+    tensor_lib = tensor_cdefs.dlopen(None)
 
 
 def allocate_taco_structure(
