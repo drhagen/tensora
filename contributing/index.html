@@ -611,10 +611,10 @@
 </code></pre></div>
 <h2 id="testing">Testing</h2>
 <p>Tensora uses pytest to run the tests in the <code>tests/</code> directory. The test command is encapsulated with Nox:</p>
-<div class="highlight"><pre><span></span><code>uv<span class="w"> </span>run<span class="w"> </span>nox<span class="w"> </span>-s<span class="w"> </span><span class="nb">test</span><span class="w"> </span>test_taco<span class="w"> </span>test_numpy
+<div class="highlight"><pre><span></span><code>uv<span class="w"> </span>run<span class="w"> </span>nox<span class="w"> </span>-s<span class="w"> </span><span class="nb">test</span><span class="w"> </span>test_taco<span class="w"> </span>test_cffi<span class="w"> </span>test_numpy
 </code></pre></div>
 <p>This will try to test with all compatible Python versions that <code>nox</code> can find. To run the tests with only a particular version, run something like this:</p>
-<div class="highlight"><pre><span></span><code>uv<span class="w"> </span>run<span class="w"> </span>nox<span class="w"> </span>-s<span class="w"> </span>test-3.10<span class="w"> </span>test_taco-3.10<span class="w"> </span>test_numpy-3.10
+<div class="highlight"><pre><span></span><code>uv<span class="w"> </span>run<span class="w"> </span>nox<span class="w"> </span>-s<span class="w"> </span>test-3.10<span class="w"> </span>test_taco-3.10<span class="w"> </span>test_cffi-3.10<span class="w"> </span>test_numpy-3.10
 </code></pre></div>
 <p>It is good to run the tests locally before making a PR, but it is not necessary to have all Python versions run. It is rare for a failure to appear in a single version, and the CI will catch it anyway.</p>
 <h2 id="code-quality">Code quality</h2>
@@ -633,6 +633,7 @@ uv<span class="w"> </span>run<span class="w"> </span>nox<span class="w"> </span>
 <ol>
 <li>Bump<ol>
 <li>Increment version in <code>pyproject.toml</code></li>
+<li>Run <code>uv lock</code></li>
 <li>Commit with message "Bump version number to X.Y.Z"</li>
 <li>Push commit to GitHub</li>
 <li>Check <a href="https://github.com/drhagen/tensora/actions/workflows/ci.yml">CI</a> to ensure all tests pass</li>
