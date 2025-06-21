@@ -1,5 +1,6 @@
 __all__ = ["to_iteration_graphs"]
 
+from collections import defaultdict
 from dataclasses import replace
 from functools import reduce, singledispatch
 from itertools import chain, count, permutations, product
@@ -95,42 +96,50 @@ def to_iteration_graphs_tensor(
         yield graph
 
 
-def simplify_add(graph: ig.SumNode) -> Iterator[ig.IterationGraph]:
+def simplify_add(graph: ig.SumNode) -> ig.IterationGraph:
     """Simplify an Add by combining terms with the same index variable.
 
-    An Add node can be simplified if all its terms are `IterationVariable`s with
-    the same index variable. In this case, the IterationVariable can be pulled
-    above the Add node.
+    An Add node can be simplified by combining all its `TerminalExpression`s into a single
+    expression and by combinbing all its `IterationVariable`s with the same index variable into a
+    single loop.
     """
     # graph.terms are guaranteed to be IterationVariable or TerminalExpression
 
-    # This could yield all the intermediate graphs, but the last one might
-    # always be the most efficient.
+    terminal_nodes: list[ig.TerminalNode] = []
+    iteration_nodes: defaultdict[str, list[ig.IterationNode]] = defaultdict(list)
+    for term in graph.terms:
+        match term:
+            case ig.TerminalNode():
+                terminal_nodes.append(term)
+            case ig.IterationNode():
+                iteration_nodes[term.index_variable].append(term)
 
-    if all(isinstance(term, ig.IterationNode) for term in graph.terms):
-        unique_terms = {term.index_variable for term in graph.terms}
-        if len(unique_terms) == 1:
-            head = graph.terms[0]
+    combined_nodes = []
 
-            # Flatten nested Adds
-            terms = []
-            for term in graph.terms:
-                if isinstance(term.next, ig.SumNode):
-                    terms.extend(term.next.terms)
-                else:
-                    terms.append(term.next)
+    if len(terminal_nodes) > 0:
+        expression = reduce(id.Add, [term.expression for term in terminal_nodes])
+        combined_nodes.append(ig.TerminalNode(expression))
 
-            for next_graph in simplify_add(ig.SumNode(graph.name, terms)):
-                yield replace(head, next=next_graph)
-        else:
-            yield graph
-    elif all(isinstance(term, ig.TerminalNode) for term in graph.terms):
-        expression = reduce(id.Add, [term.expression for term in graph.terms])
-        yield ig.TerminalNode(expression)
-    else:
-        if not any(term.has_output() for term in graph.terms):
-            # Output iterations are not permitted downstream of an Add
-            yield graph
+    for terms in iteration_nodes.values():
+        # Zip the iteration nodes as far as they will go
+        head = terms[0]
+
+        next_terms = []
+        for term in terms:
+            match term.next:
+                case ig.SumNode():
+                    # Merge sum nodes
+                    next_terms.extend(term.next.terms)
+                case _:
+                    next_terms.append(term.next)
+
+        combined_nodes.append(replace(head, next=simplify_add(ig.SumNode(graph.name, next_terms))))
+
+    match combined_nodes:
+        case [single_term]:
+            return single_term
+        case _:
+            return ig.SumNode(graph.name, combined_nodes)
 
 
 @to_iteration_graphs_expression.register(ast.Add)
@@ -153,7 +162,7 @@ def to_iteration_graphs_add(
                 case (_, _):
                     graph = ig.SumNode(name, [left, right])
 
-            yield from simplify_add(graph)
+            yield simplify_add(graph)
 
 
 def merge_multiply(
@@ -236,7 +245,7 @@ def merge_assignment(
             for merged_terms in product(
                 *(merge_assignment(target, term, output_layers) for term in terms)
             ):
-                yield from simplify_add(ig.SumNode(name, list(merged_terms)))
+                yield simplify_add(ig.SumNode(name, list(merged_terms)))
 
 
 def to_iteration_graphs(
