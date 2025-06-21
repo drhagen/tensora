@@ -89,14 +89,17 @@ def to_ir_iteration_variable(self: IterationNode, output: Output, kernel_type: K
     source = SourceBuilder(f"*** Iteration over {self.index_variable} ***")
 
     if not kernel_type.is_compute() and not self.has_assemble():
-        # If not doing compute and no assembly is left, return early
+        # If not doing compute and no assembly is left, return early. This optimization avoids
+        # generating unecessary looping that would make the code look bad (because the peephole
+        # optimizer won't remove it) but wouldn't affect performance (because the backend compiler
+        # would remove it).
         return source
 
     loop_variable = Variable(self.index_variable)
 
-    # If this node is sparse, then we can use efficient sparse iteration. Sparse graphs produce
-    # sparse subgraphs, so sparsity is a constant for this iteration. A node is sparse if its input
-    # graph is sparse and either its output graph is sparse or it is a contraction.
+    # If this node is sparse, then we can use efficient sparse iteration. Sparse nodes produce
+    # sparse subnodes, so sparsity is a constant for this iteration. A node is sparse if its input
+    # is sparse and either its output is sparse or it is a contraction.
     is_sparse = self.is_sparse_input() and (self.output is None or self.is_sparse_output())
 
     # Compute the next output
@@ -109,7 +112,11 @@ def to_ir_iteration_variable(self: IterationNode, output: Output, kernel_type: K
     # Initialization #
     ##################
     if not is_sparse:
-        # If this loop is dense, we need to initialize the index variable
+        # If this node is dense, we need to initialize the index variable, which will be advanced
+        # by each subnode loop. This could be done even if the node were sparse, but it would be
+        # dead code since the sparse index advancement would overwrite it. The sparse index
+        # advancement is guaranteed to set the index variable to at least zero, but it also could
+        # set it to a larger value.
         source.append(loop_variable.declare(types.integer).assign(0))
 
     for leaf in self.sparse_leaves():
@@ -118,13 +125,28 @@ def to_ir_iteration_variable(self: IterationNode, output: Output, kernel_type: K
     ############
     # Subnodes #
     ############
+    # Whether the node is sparse or dense, we need to handle the fact that there may be sparse
+    # layers in this computation. We need to extract the next index from each sparse layer to check
+    # if it matches the current index variable. Extracting this index is illegal if the layer is
+    # exhausted, so we split the node into subnodes, which is all possible combinations of the
+    # sparse leaves zeroed out. Each subnode is emitted one after the other, each advancing the
+    # iteration, but only while all its leaves are not exhausted. Once any leaf of a subnode is
+    # exhausted, the subnode falls through to the next subnode.
+
     subnodes = generate_subgraphs(self)
     for subnode in subnodes:
         if is_sparse and len(subnode.compressed_dimensions()) == 0:
-            # If the loop is sparse and the subnode has no sparse leaves, then
-            # it is a sparse zero and should be skipped. Such node is
-            # necessarily the last one, so break or continue would do the same
-            # thing.
+            # If there are no sparse leaves, then this is the last subnode and we are in one of
+            # these four situations:
+            # 1. The input and output are both and dense, so we simply finish the loop.
+            # 2. The input is sparse, but the output is dense, so we finish the loop, writing zeros
+            #    to the dense layer.
+            # 3. The input is dense, but the output is sparse, so we finish the loop, writing
+            #    explicit zeros to the sparse layer.
+            # 4. The input and output are both sparse, so we skip the implicit zero entirely.
+            #
+            # This last case is handled by this if statement. Because it is guarenteed to the be
+            # the last subnode, break or continue would do the same thing.
             continue
 
         sparse_subnode_leaves = subnode.sparse_leaves()
@@ -134,6 +156,8 @@ def to_ir_iteration_variable(self: IterationNode, output: Output, kernel_type: K
         # Loop #
         ########
         if len(sparse_subnode_leaves) > 0:
+            # Loop inside this subnode only as long as the all sparse leaves have not been
+            # exhausted.
             while_criteria = And.join(
                 [
                     LessThan(leaf.layer_pointer(), leaf.sparse_end_name())
@@ -141,7 +165,11 @@ def to_ir_iteration_variable(self: IterationNode, output: Output, kernel_type: K
                 ]
             )
         else:
-            # Last subnode may be dense, so the last loop should finish out the index variable
+            # The last subnode may be dense, so the last loop should finish out the index variable.
+            # This condition could be folded into the sparse leaves condition above, but it would
+            # be dead code because all the sparse leaves will always be exhausted first. This dead
+            # code would not even be optimized out because the backend compiler does not know that
+            # all sparse indexes are (or must be) less than the dimension size.
             while_criteria = LessThan(loop_variable, dimension_name(self.index_variable))
 
         with source.loop(while_criteria):
@@ -159,8 +187,8 @@ def to_ir_iteration_variable(self: IterationNode, output: Output, kernel_type: K
                 )
 
             if is_sparse:
-                # If the loop is sparse, the index variable is the closest value
-                # among all the sparse layers
+                # If the node is sparse, the index variable is the closest value among all the
+                # sparse layers.
                 source.append(
                     loop_variable.declare(types.integer).assign(Min.join(index_variables))
                 )
@@ -220,14 +248,25 @@ def to_ir_iteration_variable(self: IterationNode, output: Output, kernel_type: K
             ###############
             # Subsubnodes #
             ###############
+            # Before recursing, we need to filter out the sparse leaves with an implicit zero at
+            # the current index. We generate all possible combinations of zeroed-out sparse leaves
+            # and emit them one after the other in exclusive branches. Each branch is entered on
+            # the correct leaves having the current index variable value.
+
             subsubnodes = generate_subgraphs(subnode)
             subsubnode_leaves: list[tuple[Expression, Block]] = []
             for subsubnode in subsubnodes:
                 if is_sparse and len(subsubnode.compressed_dimensions()) == 0:
-                    # If the loop is sparse and the subsubnode has no sparse
-                    # leaves, then it is a sparse zero and should be skipped.
-                    # Such node is necessarily the last one, so break or
-                    # continue would do the same thing.
+                    # If there are no sparse leaves, then this is the last subsubnode and we are in
+                    # the same four situations as for subnodes above:
+                    # 1. The input and output are both and dense, so we write the value.
+                    # 2. The input is sparse, but the output is dense, so we write a zero.
+                    # 3. The input is dense, but the output is sparse, so we write an explicit
+                    #    zero to the sparse layer.
+                    # 4. The input and output are both sparse, so we write nothing.
+                    #
+                    # Like above, this is necessarily the last subsubnode, so break or continue
+                    # would do the same thing.
                     continue
 
                 sparse_subsubnode_leaves = subsubnode.sparse_leaves()
@@ -246,9 +285,8 @@ def to_ir_iteration_variable(self: IterationNode, output: Output, kernel_type: K
                 ###################################
                 # Allocate space for pos and vals #
                 ###################################
-                # This is done at this level, rather than up a level, because none
-                # of the if-statements may hit. In that case, no allocation should
-                # be done.
+                # This is done at this level, rather than up a level, because none of the
+                # subsubnode conditions may hit. In that case, no allocation should be done.
                 if (
                     kernel_type.is_assemble()
                     and self.is_sparse_output()
@@ -259,9 +297,12 @@ def to_ir_iteration_variable(self: IterationNode, output: Output, kernel_type: K
                 ################################
                 # Store position of next layer #
                 ################################
-                # This allows the current sparse layer to remember if the next sparse layer
-                # had any nonzeros. This is conceptually part of the next layer, but it is used
-                # by this layer's crd assembly, so we put it here.
+                # This allows the current sparse layer to remember if the next sparse layer had any
+                # nonzeros. This is conceptually part of the next layer, but it is used by this
+                # layer's crd assembly, so we put it here. We could constitutively have each layer
+                # store a bool indicating whether or not it wrote anything, which woould be
+                # optimized out when either layer was not sparse, but the upper layer would still
+                # need to probe the lower layer, so not that much would be gained.
                 if self.is_sparse_output() and self.next.is_sparse_output():
                     with block.block("Save next layer's position"):
                         next_output_layer: TensorLayer = self.next.output
@@ -302,14 +343,24 @@ def to_ir_iteration_variable(self: IterationNode, output: Output, kernel_type: K
             #######################
             # Increment positions #
             #######################
+            # Increment the position of each sparse layer inside the subnode (because that's where
+            # the loop is and accessing the position of an exhausted layer is a memory violation)
+            # but outside the subsubnode (because all matching layers need to be incremented, even
+            # those that were not computed because they were multiplied with a leaf that had a zero
+            # at this index)
             for leaf in sparse_subnode_leaves:
                 source.append(
                     leaf.layer_pointer().increment(
                         BooleanToInteger(Equal(leaf.value_from_crd(), loop_variable))
                     )
                 )
+
             if not is_sparse:
-                # If this loop is dense, we need to increment the index variable
+                # If this node is dense, we need to increment the index variable. This could be
+                # done even if the node were sparse, but it would be dead code since the sparse
+                # index advancement would overwrite it. The sparse index advancement is guaranteed
+                # to advance the index at least one to match this increment, but it also could
+                # advance further.
                 source.append(loop_variable.increment())
 
     ################################
