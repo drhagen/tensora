@@ -41,6 +41,7 @@ from ..ir.ast import (
     Subtract,
     Variable,
 )
+from ._hoist_declarations import hoist_declarations
 from ._type_to_llvm import (
     attribute_indexes,
     llvm_boolean_type,
@@ -391,9 +392,8 @@ def ir_to_llvm_array_reallocate(
 def ir_to_llvm_declaration(
     self: Declaration, builder: llvm.IRBuilder, locals: dict[str, llvm.Value]
 ) -> llvm.Value:
-    variable = builder.alloca(type_to_llvm(self.type), name=self.name.name)
-    locals[self.name.name] = variable
-    return variable
+    # All declarations are hoisted in LLVM, so this merely fetches the previously declared variable
+    return locals[self.name.name]
 
 
 @singledispatch
@@ -512,7 +512,12 @@ def ir_to_llvm_function_definition(
         body.store(llvm_parameter, variable)
         locals[parameter.name.name] = variable
 
-    ir_to_llvm_statement(self.body, body, {**locals, **functions})
+    # Hoist all declarations in the function body
+    for name, type in hoist_declarations(self).items():
+        variable = body.alloca(type_to_llvm(type), name=name)
+        locals[name] = variable
+
+    ir_to_llvm_statement(self.body, body, locals | functions)
 
 
 def ir_to_llvm(self: Module) -> llvm.Module:

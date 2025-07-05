@@ -64,6 +64,15 @@ def test_rhs():
     assert actual == expected
 
 
+def test_many_elements():
+    size = 1000000  # Big enough to trigger stack overflow
+
+    a = Tensor.from_dok({}, dimensions=(size,), format="d")
+    b = evaluate("b(i) = a(i)", "d", a=a)
+
+    assert b == Tensor.from_dok({}, dimensions=(size,), format="d")
+
+
 def test_multithread_evaluation():
     # As of version 1.14.4 of cffi, the FFI.compile method is not thread safe. This tests that evaluation of different
     # kernels is thread safe.
