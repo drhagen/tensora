@@ -112,6 +112,20 @@ def test_matrix_multiply_add(dense1, dense2, dense3, format1, format2, format3, 
     )
 
 
+@pytest.mark.parametrize("dense_b", [[0, 2, 4], [0, 0, 0]])
+@pytest.mark.parametrize("dense_c", [[-1, 3.5, 0], [0, 0, 0]])
+@pytest.mark.parametrize("format_b", ["d", "s"])
+@pytest.mark.parametrize("format_c", ["d", "s"])
+@pytest.mark.parametrize("format_out", ["d", "s"])
+def test_nested_add(dense_b, dense_c, format_b, format_c, format_out):
+    assert_same_as_dense(
+        "a(i) = b(i) * (c(i) + 1)",
+        format_out,
+        b=(dense_b, format_b),
+        c=(dense_c, format_c),
+    )
+
+
 @pytest.mark.parametrize(
     "dense_b",
     [
