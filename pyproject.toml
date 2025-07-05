@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "tensora"
-version = "0.4.1"
+version = "0.4.2"
 description = "Library for dense and sparse tensors built on the tensor algebra compiler"
 authors = [ { name = "David Hagen", email = "david@drhagen.com" } ]
 license = "MIT"
