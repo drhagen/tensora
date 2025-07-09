@@ -64,13 +64,22 @@ def test_rhs():
     assert actual == expected
 
 
-def test_many_elements():
+def test_many_elements_stack_overflow():
     size = 1000000  # Big enough to trigger stack overflow
 
     a = Tensor.from_dok({}, dimensions=(size,), format="d")
     b = evaluate("b(i) = a(i)", "d", a=a)
 
     assert b == Tensor.from_dok({}, dimensions=(size,), format="d")
+
+
+def test_many_elements_realloc():
+    size = 2000000  # Big enough to trigger realloc
+
+    a = Tensor.from_dok({}, dimensions=(size,), format="d")
+    b = evaluate("b(i) = a(i)", "s", a=a)
+
+    assert b == Tensor.from_dok({}, dimensions=(size,), format="s")
 
 
 def test_multithread_evaluation():

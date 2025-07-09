@@ -377,7 +377,7 @@ def ir_to_llvm_array_allocate(
 def ir_to_llvm_array_reallocate(
     self: ArrayReallocate, builder: llvm.IRBuilder, locals: dict[str, llvm.Value]
 ) -> llvm.Value:
-    old_array_pointer = get_element_pointer(self.old, builder, locals)
+    old_array_pointer = ir_to_llvm_expression(self.old, builder, locals)
     old_memory_pointer = builder.bitcast(old_array_pointer, llvm.IntType(8).as_pointer())
     element_size = llvm.Constant(
         llvm_integer_type, type_to_llvm(self.element_type).get_abi_size(target_machine.target_data)
