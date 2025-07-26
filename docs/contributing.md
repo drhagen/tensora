@@ -37,7 +37,7 @@ uv run nox -s test test_taco test_cffi test_numpy
 This will try to test with all compatible Python versions that `nox` can find. To run the tests with only a particular version, run something like this:
 
 ```shell
-uv run nox -s test-3.10 test_taco-3.10 test_cffi-3.10 test_numpy-3.10
+uv run nox -s test-3.13 test_taco-3.13 test_cffi-3.13 test_numpy-3.13
 ```
 
 It is good to run the tests locally before making a PR, but it is not necessary to have all Python versions run. It is rare for a failure to appear in a single version, and the CI will catch it anyway.
