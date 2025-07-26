@@ -7,7 +7,7 @@ on:
       - master
 
 env:
-  uv-version: "0.7.13"
+  uv-version: "0.8.3"
 
 jobs:
   test:
@@ -33,12 +33,12 @@ jobs:
         uses: astral-sh/setup-uv@v5
         with:
           version: ${{ env.uv-version }}
-      - name: Test with nox (all platforms)
+      - name: Test with Nox (all platforms)
         run: >-
           uv run --locked --only-group nox nox -s
           test-${{ matrix.python }}
           test_numpy-${{ matrix.python }}
-      - name: Test with nox (non-Windows)
+      - name: Test with Nox (non-Windows)
         if: runner.os != 'Windows'
         run: >-
           uv run --locked --only-group nox nox -s
@@ -84,5 +84,5 @@ jobs:
         uses: astral-sh/setup-uv@v5
         with:
           version: ${{ env.uv-version }}
-      - name: Run code quality checks
+      - name: Check code quality with Nox
         run: uv run --locked nox -s lint
