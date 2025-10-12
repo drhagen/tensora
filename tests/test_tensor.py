@@ -336,13 +336,13 @@ def test_binary_mismatched_dimensions():
     a = Tensor.from_lol([3, 2, 5])
     b = Tensor.from_lol([1, 2, 0, 4])
 
-    with pytest.raises(ValueError, match="Cannot apply operator +"):
+    with pytest.raises(ValueError, match="Cannot apply operator \\+"):
         _ = a + b
 
     with pytest.raises(ValueError, match="Cannot apply operator -"):
         _ = a - b
 
-    with pytest.raises(ValueError, match="Cannot apply operator *"):
+    with pytest.raises(ValueError, match="Cannot apply operator \\*"):
         _ = a * b
 
 

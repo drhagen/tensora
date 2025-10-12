@@ -612,7 +612,7 @@ def default_format_given_nnz(dimensions: Tuple[int, ...], nnz: int) -> Format:
     # than the product of those dimensions.
     needed_dense = 0
     required_threshold = 1
-    for needed_dense, dimension in enumerate(dimensions):  # noqa: B007; needed_dense is used
+    for needed_dense, dimension in enumerate(dimensions):  # noqa: B007 needed_dense is used
         required_threshold *= dimension
         if nnz < required_threshold:
             break

@@ -384,9 +384,7 @@ def to_ir_sum(self: SumNode, output: Output, kernel_type: KernelType):
 
     if kernel_type.is_compute():
         # No assembly is currently allowed downstream of a Sum node
-        next_output, next_output_declarations, next_output_cleanup = output.next_output(
-            None, kernel_type
-        )
+        next_output, next_output_declarations, _ = output.next_output(None, kernel_type)
         source.append(next_output_declarations)
 
         for term in self.terms:

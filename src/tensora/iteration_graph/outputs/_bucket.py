@@ -68,10 +68,10 @@ class BucketOutput(Output):
         return Add.join(list(reversed(terms)))
 
     def name(self) -> Variable:
-        return Variable(f'bucket_{self.output.id}{"".join(f"_{x}" for x in self.layers)}')
+        return Variable(f"bucket_{self.output.id}{''.join(f'_{x}' for x in self.layers)}")
 
     def loop_name(self) -> Variable:
-        return Variable(f'i_bucket_{self.output.id}{"".join(f"_{x}" for x in self.layers)}')
+        return Variable(f"i_bucket_{self.output.id}{''.join(f'_{x}' for x in self.layers)}")
 
     def dimension_names(self):
         return [dimension_name(self.output.indexes[layer]) for layer in self.layers]
