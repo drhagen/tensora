@@ -1,13 +1,13 @@
 __all__ = [
-    "Expression",
-    "Literal",
-    "Integer",
-    "Float",
-    "Tensor",
     "Add",
-    "Multiply",
-    "Contract",
     "Assignment",
+    "Contract",
+    "Expression",
+    "Float",
+    "Integer",
+    "Literal",
+    "Multiply",
+    "Tensor",
 ]
 
 from dataclasses import dataclass

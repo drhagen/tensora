@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-__all__ = ["Mode", "Format"]
+__all__ = ["Format", "Mode"]
 
 from dataclasses import dataclass
 from enum import Enum

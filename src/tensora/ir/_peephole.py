@@ -19,7 +19,7 @@ Current optimization implemented:
 * redundant_assignment: a = a => {}
 """
 
-__all__ = ["peephole_function_definition", "peephole_statement", "peephole"]
+__all__ = ["peephole", "peephole_function_definition", "peephole_statement"]
 
 from dataclasses import replace
 from functools import singledispatch

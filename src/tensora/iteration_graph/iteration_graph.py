@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-__all__ = ["IterationGraph", "TerminalNode", "IterationNode", "SumNode"]
+__all__ = ["IterationGraph", "IterationNode", "SumNode", "TerminalNode"]
 
 from abc import abstractmethod
 from dataclasses import dataclass, replace

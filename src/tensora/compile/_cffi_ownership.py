@@ -1,10 +1,10 @@
 __all__ = [
     "allocate_taco_structure",
     "taco_structure_to_cffi",
-    "take_ownership_of_arrays",
-    "take_ownership_of_tensor_members",
-    "take_ownership_of_tensor",
     "taco_type_header",
+    "take_ownership_of_arrays",
+    "take_ownership_of_tensor",
+    "take_ownership_of_tensor_members",
     "tensor_cdefs",
 ]
 

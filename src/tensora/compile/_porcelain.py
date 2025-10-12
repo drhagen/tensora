@@ -1,4 +1,4 @@
-__all__ = ["tensor_method", "evaluate", "evaluate_cffi", "evaluate_tensora"]
+__all__ = ["evaluate", "evaluate_cffi", "evaluate_tensora", "tensor_method"]
 
 from functools import lru_cache
 

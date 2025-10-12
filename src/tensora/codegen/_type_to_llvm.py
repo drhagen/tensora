@@ -1,11 +1,11 @@
 __all__ = [
-    "llvm_integer_type",
-    "llvm_float_type",
+    "attribute_indexes",
     "llvm_boolean_type",
+    "llvm_float_type",
+    "llvm_integer_type",
     "llvm_mode_type",
     "llvm_size_type",
     "type_to_llvm",
-    "attribute_indexes",
 ]
 
 from functools import singledispatch

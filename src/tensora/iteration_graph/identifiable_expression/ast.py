@@ -1,4 +1,4 @@
-__all__ = ["Expression", "Literal", "Integer", "Float", "Tensor", "Add", "Multiply"]
+__all__ = ["Add", "Expression", "Float", "Integer", "Literal", "Multiply", "Tensor"]
 
 from dataclasses import dataclass
 

@@ -1,8 +1,8 @@
 __all__ = [
-    "write_sparse_initialization",
     "write_crd_assembly",
-    "write_pos_assembly",
     "write_pos_allocation",
+    "write_pos_assembly",
+    "write_sparse_initialization",
 ]
 
 from ..format import Mode

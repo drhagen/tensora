@@ -1,16 +1,16 @@
 __all__ = [
-    "Type",
-    "Integer",
-    "integer",
-    "Float",
-    "float",
-    "Tensor",
-    "tensor",
-    "Mode",
-    "mode",
-    "Pointer",
     "Array",
     "FixedArray",
+    "Float",
+    "Integer",
+    "Mode",
+    "Pointer",
+    "Tensor",
+    "Type",
+    "float",
+    "integer",
+    "mode",
+    "tensor",
 ]
 
 from dataclasses import dataclass

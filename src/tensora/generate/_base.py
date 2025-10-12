@@ -1,4 +1,4 @@
-__all__ = ["generate_code", "Language"]
+__all__ = ["Language", "generate_code"]
 
 from enum import Enum
 

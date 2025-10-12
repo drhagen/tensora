@@ -1,7 +1,7 @@
 __all__ = [
-    "TensorMethod",
     "BackendCompiler",
     "BroadcastTargetIndexError",
+    "TensorMethod",
 ]
 
 from dataclasses import dataclass

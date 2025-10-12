@@ -1,9 +1,9 @@
 __all__ = [
-    "Problem",
-    "make_problem",
     "IncorrectDimensionsError",
+    "Problem",
     "UndefinedReferenceError",
     "UnusedFormatError",
+    "make_problem",
 ]
 
 from dataclasses import dataclass

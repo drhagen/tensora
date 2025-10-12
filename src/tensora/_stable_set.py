@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-__all__ = ["StableSet", "StableFrozenSet"]
+__all__ = ["StableFrozenSet", "StableSet"]
 
 from typing import AbstractSet, Hashable, Iterator, MutableSet, TypeVar
 

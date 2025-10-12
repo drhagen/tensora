@@ -1,4 +1,4 @@
-__all__ = ["MutatingAssignmentError", "InconsistentDimensionsError", "NameConflictError"]
+__all__ = ["InconsistentDimensionsError", "MutatingAssignmentError", "NameConflictError"]
 
 from dataclasses import dataclass
 

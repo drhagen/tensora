@@ -1,16 +1,16 @@
 from __future__ import annotations
 
 __all__ = [
-    "dimension_name",
-    "pos_name",
-    "crd_name",
-    "vals_name",
-    "pos_capacity_name",
     "crd_capacity_name",
-    "vals_capacity_name",
+    "crd_name",
+    "dimension_name",
     "layer_pointer",
+    "pos_capacity_name",
+    "pos_name",
     "previous_layer_pointer",
     "sparse_end_name",
+    "vals_capacity_name",
+    "vals_name",
     "value_from_crd",
 ]
 

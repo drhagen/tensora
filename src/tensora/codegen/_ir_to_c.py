@@ -1,4 +1,4 @@
-__all__ = ["ir_to_c_statement", "ir_to_c_function_definition", "ir_to_c"]
+__all__ = ["ir_to_c", "ir_to_c_function_definition", "ir_to_c_statement"]
 
 from functools import singledispatch
 
