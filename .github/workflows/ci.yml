@@ -14,9 +14,8 @@ jobs:
     strategy:
       matrix:
         platform:
-          # Upgrading to Ubuntu 24.04 breaks compilation of tensora-taco
-          - ubuntu-22.04
-          - ubuntu-22.04-arm
+          - ubuntu-24.04
+          - ubuntu-24.04-arm
           - macos-13
           - macos-15
           - windows-2025
@@ -43,7 +42,6 @@ jobs:
         run: >-
           uv run --locked --only-group nox nox -s
           test_cffi-${{ matrix.python }}
-          test_taco-${{ matrix.python }}
       - name: Store coverage
         uses: actions/upload-artifact@v4
         with:

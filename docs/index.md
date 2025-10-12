@@ -18,11 +18,9 @@ The recommended means of installation is with `pip` from PyPI.
 pip install tensora
 ```
 
-By default, Tensora uses its own code to generate the kernels. The `tensora[taco]` extra makes available the option to generate the kernels with the TACO binary, which is provided by the `tensora-taco` PyPI package.
+By default, Tensora uses its own code to generate the kernels and LLVM to compile them (via `llvmlite`). The `tensora[cffi]` extra makes available the option to compile the kernels with CFFI; this requires a system C compiler available to CFFI.
 
-By default, Tensora uses LLVM to compile the kernels. The LLVM is provided by the `llvmlite` PyPI dependency and does not need to be installed on the system. The `tensora[cffi]` extra makes available the option to compile the kernels with CFFI. To do that, a C compiler must be installed on the system in a way that it is available to [CFFI API mode](https://cffi.readthedocs.io/en/latest/overview.html#purely-for-performance-api-level-out-of-line).
-
-Tensora is tested on Linux, Mac, and Windows. Everything works on Linux and Mac. The `tensora[taco]` and `tensora[cffi]` extras do not work on Windows.
+Tensora is tested on Linux, Mac, and Windows. The CFFI backend is not available on Windows.
 
 ## Hello world
 

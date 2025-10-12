@@ -4,7 +4,7 @@ from nox import Session, options, parametrize
 from nox_uv import session
 
 options.default_venv_backend = "uv"
-options.sessions = ["test", "test_taco", "test_cffi", "test_numpy", "coverage", "lint"]
+options.sessions = ["test", "test_cffi", "test_numpy", "coverage", "lint"]
 
 
 @session(python=["3.10", "3.11", "3.12", "3.13"], uv_groups=["test"])
@@ -23,12 +23,6 @@ def test_numpy(s: Session):
 def test_cffi(s: Session):
     coverage_file = f".coverage.{platform.machine()}.{platform.system()}.{s.python}.cffi"
     s.run("coverage", "run", "--data-file", coverage_file, "-m", "pytest", "tests_cffi")
-
-
-@session(python=["3.10", "3.11", "3.12", "3.13"], uv_groups=["test"], uv_extras=["taco"])
-def test_taco(s: Session):
-    coverage_file = f".coverage.{platform.machine()}.{platform.system()}.{s.python}.taco"
-    s.run("coverage", "run", "--data-file", coverage_file, "-m", "pytest", "tests/taco")
 
 
 @session(venv_backend="none")

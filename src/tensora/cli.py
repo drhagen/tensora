@@ -9,7 +9,7 @@ from returns.result import Failure, Success
 
 from .expression import parse_assignment
 from .format import parse_named_format
-from .generate import Language, TensorCompiler, generate_code
+from .generate import Language, generate_code
 from .kernel_type import KernelType
 from .problem import make_problem
 
@@ -44,14 +44,6 @@ def tensora(
             help="The type of kernel that will be generated. Can be mentioned multiple times.",
         ),
     ] = [KernelType.compute],  # noqa: B006; Typer does not support Sequence or tuple
-    tensor_compiler: Annotated[
-        TensorCompiler,
-        typer.Option(
-            "--compiler",
-            "-c",
-            help="The tensor algebra compiler to use to generate the kernel.",
-        ),
-    ] = TensorCompiler.tensora,
     language: Annotated[
         Language,
         typer.Option(
@@ -115,7 +107,7 @@ def tensora(
             raise NotImplementedError()
 
     # Generate code
-    match generate_code(problem, kernel_types, tensor_compiler, language):
+    match generate_code(problem, kernel_types, language):
         case Failure(error):
             typer.echo(str(error), err=True)
             raise typer.Exit(1)

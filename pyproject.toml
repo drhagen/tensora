@@ -6,7 +6,7 @@ build-backend = "uv_build"
 name = "tensora"
 version = "0.4.3"
 description = "Library for dense and sparse tensors built on the tensor algebra compiler"
-authors = [ { name = "David Hagen", email = "david@drhagen.com" } ]
+authors = [{ name = "David Hagen", email = "david@drhagen.com" }]
 license = "MIT"
 readme = "README.md"
 keywords = ["tensor", "sparse", "matrix", "array"]
@@ -21,7 +21,7 @@ classifiers = [
     "Operating System :: Microsoft :: Windows",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11", 
+    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Topic :: Software Development :: Libraries :: Python Modules",
@@ -35,10 +35,6 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-taco = [
-    "tensora-taco ~= 0.1.2",
-    "setuptools >= 69; python_version >= '3.12'",
-]
 cffi = [
     # setuptools is required for cffi compilation on Python 3.12+
     # https://cffi.readthedocs.io/en/latest/whatsnew.html#v1-16-0

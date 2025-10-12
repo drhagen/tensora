@@ -21,7 +21,7 @@ The main entry point for mathematical operations in Tensora is the `evaluate` fu
 
 * `inputs` is all the inputs to the expression. There must be one named argument for each variable name in `assignment`. The dimensions of the tensors in `inputs` must be consistent with `assignment` and with each other.
 
-There is also `evaluate_tensora` and `evaluate_taco` that have identical interfaces, but use different tensor algebra compilers. `evaluate` is an alias for the default, which is currently `evaluate_tensora`. `evaluate_taco` is only available if the `tensora[taco]` extra is installed.
+There is also `evaluate_tensora` that exposes the internal compiler explicitly. `evaluate` is an alias for the default, which is currently `evaluate_tensora`.
 
 ```python
 from tensora import Tensor, evaluate
