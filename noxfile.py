@@ -7,19 +7,19 @@ options.default_venv_backend = "uv"
 options.sessions = ["test", "test_cffi", "test_numpy", "coverage", "lint"]
 
 
-@session(python=["3.10", "3.11", "3.12", "3.13"], uv_groups=["test"])
+@session(python=["3.10", "3.11", "3.12", "3.13", "3.14"], uv_groups=["test"])
 def test(s: Session):
     coverage_file = f".coverage.{platform.machine()}.{platform.system()}.{s.python}"
     s.run("coverage", "run", "--data-file", coverage_file, "-m", "pytest", "tests")
 
 
-@session(python=["3.10", "3.11", "3.12", "3.13"], uv_groups=["test"], uv_extras=["numpy"])
+@session(python=["3.10", "3.11", "3.12", "3.13", "3.14"], uv_groups=["test"], uv_extras=["numpy"])
 def test_numpy(s: Session):
     coverage_file = f".coverage.{platform.machine()}.{platform.system()}.{s.python}.numpy"
     s.run("coverage", "run", "--data-file", coverage_file, "-m", "pytest", "tests/test_numpy.py")
 
 
-@session(python=["3.10", "3.11", "3.12", "3.13"], uv_groups=["test"], uv_extras=["cffi"])
+@session(python=["3.10", "3.11", "3.12", "3.13", "3.14"], uv_groups=["test"], uv_extras=["cffi"])
 def test_cffi(s: Session):
     coverage_file = f".coverage.{platform.machine()}.{platform.system()}.{s.python}.cffi"
     s.run("coverage", "run", "--data-file", coverage_file, "-m", "pytest", "tests_cffi")
