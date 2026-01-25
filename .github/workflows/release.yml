@@ -11,15 +11,15 @@ env:
 jobs:
   pypi-publish:
     name: Publish release to PyPI
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     environment: release
     permissions:
       id-token: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Install uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v7
         with:
           version: ${{ env.uv-version }}
       - name: Build release with uv
