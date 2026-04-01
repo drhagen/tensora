@@ -4,7 +4,7 @@ build-backend = "uv_build"
 
 [project]
 name = "tensora"
-version = "0.5.0"
+version = "0.5.1"
 description = "Library for dense and sparse tensors built on the tensor algebra compiler"
 authors = [{ name = "David Hagen", email = "david@drhagen.com" }]
 license = "MIT"
