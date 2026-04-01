@@ -1,5 +1,5 @@
 [build-system]
-requires = ["uv_build == 0.9.*"]
+requires = ["uv_build == 0.11.*"]
 build-backend = "uv_build"
 
 [project]
@@ -29,7 +29,7 @@ classifiers = [
 ]
 dependencies = [
     "returns >= 0.20,<0.27",
-    "cffi ~= 1.16",
+    "cffi >=1.16,<3",
     "llvmlite == 0.46.*",
     "parsita == 2.*",
     "typer == 0.21.*",
@@ -60,7 +60,7 @@ nox = [
     "nox-uv == 0.6.*",
 ]
 test = [
-    "pytest == 9.*",  # Upgrading to pytest 8 breaks hypofuzz
+    "pytest == 9.*",
     "coverage == 7.*"
 ]
 fuzz = [
@@ -68,7 +68,7 @@ fuzz = [
     "hypofuzz == 25.*"
 ]
 lint = [
-    "ruff == 0.14.*"
+    "ruff == 0.15.*"
 ]
 docs = [
     "mkdocs-material == 9.*"
