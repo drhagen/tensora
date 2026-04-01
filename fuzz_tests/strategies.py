@@ -16,12 +16,14 @@ variables = st.builds(
     ast.Tensor, name=names, indexes=st.builds(tuple, st.lists(names, max_size=4))
 )
 expressions = st.deferred(
-    lambda: st.builds(ast.Integer, st.integers(min_value=0, max_value=2**16))
-    | st.builds(ast.Float, st.floats(min_value=0, allow_infinity=False, allow_nan=False))
-    | variables
-    | adds
-    | subtracts
-    | multiplies
+    lambda: (
+        st.builds(ast.Integer, st.integers(min_value=0, max_value=2**16))
+        | st.builds(ast.Float, st.floats(min_value=0, allow_infinity=False, allow_nan=False))
+        | variables
+        | adds
+        | subtracts
+        | multiplies
+    )
 )
 adds = st.builds(ast.Add, expressions, expressions)
 subtracts = st.builds(ast.Subtract, expressions, expressions)
