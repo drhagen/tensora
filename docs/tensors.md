@@ -34,7 +34,11 @@ assert tensor.dimensions == (2, 3)
 
 ### `tensor.format`
 
-The type of `format` is a `tensora.Format` object, which has `modes` and `ordering` attributes. The `format.deparse()` method will give you a human-readable string.
+The `format` is a `tensora.Format` object, which has `modes` and `ordering` attributes.
+`modes` is a sequence of `Mode` enum members; either `dense` or `compressed`.
+`ordering` is a sequence of integers—the ith ordering means the ith mode is for that dimension.
+For example, a format `d2s0s1` means that the first mode is dense, and it is associated with the final dimension.
+The `format.deparse()` method will give you a human-readable string.
 
 ```python
 from tensora import Tensor
