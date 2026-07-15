@@ -8,7 +8,7 @@ Tensors are n-dimensional generalizations of matrices. Instead of being limited 
 
 Each dimension of a tensor has a size. This determines, conceptually, the number of elements in the tensor. "Conceptually" because the number of stored elements and the amount of memory required for the tensor may be smaller than that if the tensor is sparse.
 
-Tensors also have a format. The format has a list of modes, which determines the internal layout of the tensor, and a mode ordering, which maps each dimension to each mode. Each mode can be either sparse or dense. An example of two different formats with the same internal layout would be CSR, which has format `ds` in Tensora, and CSC, which has format `d1s0`.
+Tensors also have a format. The format has a list of modes, which determines the internal layout of the tensor, and a mode ordering, which maps each mode to each dimension. Each mode can be either sparse or dense. An example of two different formats with the same internal layout would be CSR, which has format `ds` in Tensora, and CSC, which has format `d1s0`.
 
 Here are a list of common formats:
 
