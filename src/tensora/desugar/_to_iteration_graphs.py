@@ -217,6 +217,22 @@ def to_iteration_graphs_contract(
     yield from to_iteration_graphs_expression(self.expression, formats, counter)
 
 
+def target_has_pending_compressed(
+    target: ig.IterationGraph, output_layers: dict[str, TensorLayer]
+) -> bool:
+    """Whether any not-yet-placed output layer in the target chain is compressed.
+
+    A compressed output layer cannot be iterated after any contraction iteration. Iteration graphs
+    with such a structure must be rejected.
+    """
+    node = target
+    while isinstance(node, ig.IterationNode):
+        if output_layers[node.index_variable].mode == Mode.compressed:
+            return True
+        node = node.next
+    return False
+
+
 def merge_assignment(
     target: ig.IterationGraph, expression: ig.IterationGraph, output_layers: dict[str, TensorLayer]
 ) -> Iterator[ig.IterationGraph]:
@@ -238,7 +254,10 @@ def merge_assignment(
                     for tail in merge_assignment(target.next, expression, output_layers):
                         yield replace(target, output=output_leaf, next=tail)
 
-                if expression.index_variable not in target.next.later_indexes():
+                if (
+                    expression.index_variable not in target.next.later_indexes()
+                    and not target_has_pending_compressed(target, output_layers)
+                ):
                     for tail in merge_assignment(target, expression.next, output_layers):
                         yield replace(expression, next=tail)
         case (ig.IterationNode(), ig.SumNode(name=name, terms=terms)):
