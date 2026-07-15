@@ -3,6 +3,8 @@ from random import randrange
 
 from tensora import Tensor, evaluate
 
+from .assert_same_as_dense import assert_same_as_dense
+
 
 def test_csr_matrix_vector_product():
     A = Tensor.from_aos([(1, 0), (0, 1), (1, 2)], [2.0, -2.0, 4.0], dimensions=(2, 3), format="ds")
@@ -101,3 +103,17 @@ def test_multithread_evaluation():
 
     for actual in results:
         assert actual == expected
+
+
+def test_output_format_precludes_illegal_iteration_graphs():
+    # This test exercises the logic in merge_assignment to prevent the generation
+    # of iteration graphs where contraction iteration occurs before output
+    # iteration.
+    assert_same_as_dense(
+        "J(i,j) = S(i,r) * rdx(r,j) + S(i,r2) * rdu(r2,y) * udx(y,j)",
+        "ds",
+        S=([[1, 0, 2], [0, 3, 0]], "ds"),
+        rdx=([[1, 0], [0, 4], [5, 0]], "d1s0"),
+        rdu=([[0, 2], [1, 0], [0, 3]], "ds"),
+        udx=([[1, 0], [0, 6]], "d1s0"),
+    )
