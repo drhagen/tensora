@@ -96,6 +96,42 @@ def to_iteration_graphs_tensor(
         yield graph
 
 
+def contains_contraction(self: ast.Expression) -> bool:
+    """Whether an expression contains a contraction."""
+    match self:
+        case ast.Contract():
+            return True
+        case ast.Add() | ast.Multiply():
+            return contains_contraction(self.left) or contains_contraction(self.right)
+        case _:
+            return False
+
+
+def merge_add(left: ig.IterationGraph, right: ig.IterationGraph) -> Iterator[ig.IterationGraph]:
+    """Produce all possible ways to co-iterate two iteration graphs under addition."""
+    match (left, right):
+        case (ig.TerminalNode(), ig.TerminalNode()):
+            yield ig.TerminalNode(id.Add(left.expression, right.expression))
+        case (ig.IterationNode(), ig.TerminalNode()):
+            for tail in merge_add(left.next, right):
+                yield replace(left, next=tail)
+        case (ig.TerminalNode(), ig.IterationNode()):
+            for tail in merge_add(left, right.next):
+                yield replace(right, next=tail)
+        case (ig.IterationNode(), ig.IterationNode()):
+            if left.index_variable == right.index_variable:
+                for tail in merge_add(left.next, right.next):
+                    yield replace(left, next=tail)
+            else:
+                if left.index_variable not in right.next.later_indexes():
+                    for tail in merge_add(left.next, right):
+                        yield replace(left, next=tail)
+
+                if right.index_variable not in left.next.later_indexes():
+                    for tail in merge_add(left, right.next):
+                        yield replace(right, next=tail)
+
+
 def simplify_add(graph: ig.SumNode) -> ig.IterationGraph:
     """Simplify an Add by combining terms with the same index variable.
 
@@ -148,6 +184,13 @@ def to_iteration_graphs_add(
     formats: dict[str, Format],
     counter: Iterator[int],
 ) -> Iterator[ig.IterationGraph]:
+    if not (contains_contraction(self.left) or contains_contraction(self.right)):
+        # A contraction-free sum can be merged into a single iteration node.
+        for left in to_iteration_graphs_expression(self.left, formats, counter):
+            for right in to_iteration_graphs_expression(self.right, formats, counter):
+                yield from merge_add(left, right)
+        return
+
     name = f"sum_{next(counter)}"
     for left in to_iteration_graphs_expression(self.left, formats, counter):
         for right in to_iteration_graphs_expression(self.right, formats, counter):
@@ -189,12 +232,11 @@ def merge_multiply(
                 if right.index_variable not in left.next.later_indexes():
                     for tail in merge_multiply(left, right.next):
                         yield replace(right, next=tail)
-        case (ig.SumNode(), _):
-            for terms in product(*[merge_multiply(term, right) for term in left.terms]):
-                yield ig.SumNode(left.name, list(terms))
-        case (_, ig.SumNode()):
-            for terms in product(*[merge_multiply(left, term) for term in right.terms]):
-                yield ig.SumNode(right.name, list(terms))
+        case (ig.SumNode(), _) | (_, ig.SumNode()):
+            # A surviving SumNode contains a contraction (contraction-free sums are merged into
+            # iteration nodes or terminal nodes by `to_iteration_graphs_add`). Multiplying it would
+            # require a workspace, which is not yet implemented.
+            return
 
 
 @to_iteration_graphs_expression.register(ast.Multiply)
