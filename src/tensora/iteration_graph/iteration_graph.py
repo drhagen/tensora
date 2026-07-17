@@ -34,10 +34,6 @@ class IterationGraph:
     def later_indexes(self) -> frozenset[str]:
         raise NotImplementedError()
 
-    @abstractmethod
-    def has_output(self) -> bool:
-        raise NotImplementedError()
-
 
 @dataclass(frozen=True)
 class TerminalNode(IterationGraph):
@@ -59,9 +55,6 @@ class TerminalNode(IterationGraph):
     def later_indexes(self) -> frozenset[str]:
         return frozenset()
 
-    def has_output(self) -> bool:
-        return False
-
 
 @dataclass(frozen=True)
 class IterationNode(IterationGraph):
@@ -78,7 +71,6 @@ class IterationNode(IterationGraph):
         return replace(
             next_context,
             indexes=next_context.indexes | frozenset([self.index_variable]),
-            has_output=next_context.has_output or self.output is not None,
             has_assemble=next_context.has_assemble or self.is_sparse_output(),
         )
 
@@ -99,17 +91,11 @@ class IterationNode(IterationGraph):
     def is_sparse_input(self) -> bool:
         return self.context.is_sparse
 
-    def is_dense_output(self) -> bool:
-        return self.output is not None and self.output.mode == Mode.dense
-
     def is_sparse_output(self) -> bool:
         return self.output is not None and self.output.mode == Mode.compressed
 
     def later_indexes(self) -> frozenset[str]:
         return self.context.indexes
-
-    def has_output(self) -> bool:
-        return self.context.has_output
 
     def has_assemble(self) -> bool:
         return self.context.has_assemble
@@ -149,6 +135,3 @@ class SumNode(IterationGraph):
 
     def later_indexes(self) -> frozenset[str]:
         return frozenset.union(*(term.later_indexes() for term in self.terms))
-
-    def has_output(self) -> bool:
-        return any(term.has_output() for term in self.terms)
