@@ -91,9 +91,6 @@ class IterationNode(IterationGraph):
     def is_sparse_input(self) -> bool:
         return self.context.is_sparse
 
-    def is_dense_output(self) -> bool:
-        return self.output is not None and self.output.mode == Mode.dense
-
     def is_sparse_output(self) -> bool:
         return self.output is not None and self.output.mode == Mode.compressed
 
