@@ -17,12 +17,18 @@ class BucketOutput(Output):
     output: ie_ast.Tensor
     layers: list[int]
     unfulfilled: set[int]
+    gating_flags: tuple[Variable, ...]
 
     def __init__(
-        self, output: ie_ast.Tensor, layers: list[int], unfulfilled: set[int] | None = None
+        self,
+        output: ie_ast.Tensor,
+        layers: list[int],
+        unfulfilled: set[int] | None = None,
+        gating_flags: tuple[Variable, ...] = (),
     ):
         object.__setattr__(self, "output", output)
         object.__setattr__(self, "layers", layers)
+        object.__setattr__(self, "gating_flags", gating_flags)
         if unfulfilled is not None:
             object.__setattr__(self, "unfulfilled", unfulfilled)
         else:

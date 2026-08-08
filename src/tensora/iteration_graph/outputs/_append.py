@@ -29,6 +29,7 @@ default_array_size = Multiply(IntegerLiteral(1024), IntegerLiteral(1024))
 class AppendOutput(Output):
     output: ie_ast.Tensor
     next_layer: int
+    gating_flags: tuple[Variable, ...] = ()
 
     def vals_pointer(self) -> Expression:
         return previous_layer_pointer(self.output.id, self.output.order)
@@ -130,7 +131,11 @@ class AppendOutput(Output):
         self, iteration_output: TensorLayer | None, kernel_type: KernelType
     ) -> tuple[Output, SourceBuilder, SourceBuilder]:
         if iteration_output is not None and self.next_layer == iteration_output.layer:
-            return AppendOutput(self.output, self.next_layer + 1), SourceBuilder(), SourceBuilder()
+            return (
+                AppendOutput(self.output, self.next_layer + 1, self.gating_flags),
+                SourceBuilder(),
+                SourceBuilder(),
+            )
         else:
             # No layer or wrong layer was encountered
             dense_only_remaining = all(
@@ -138,7 +143,9 @@ class AppendOutput(Output):
             )
             if dense_only_remaining:
                 next_output = BucketOutput(
-                    self.output, list(range(self.next_layer, len(self.output.modes)))
+                    self.output,
+                    list(range(self.next_layer, len(self.output.modes))),
+                    gating_flags=self.gating_flags,
                 )
                 dimension_names = [
                     dimension_name(index) for index in self.output.indexes[self.next_layer :]
@@ -148,7 +155,14 @@ class AppendOutput(Output):
                         Multiply.join(dimension_names)
                     )
                 )
-                return next_output, next_output.write_declarations(bucket), SourceBuilder()
+                # The bucket zero-init and accumulation are value work; the assemble kernel runs
+                # this subtree only to compute the gating flag structurally, so skip it there.
+                declarations = (
+                    next_output.write_declarations(bucket)
+                    if kernel_type.is_compute()
+                    else SourceBuilder()
+                )
+                return next_output, declarations, SourceBuilder()
             else:
                 raise NotImplementedError(
                     "Encountered a sparse output layer preceded by a contraction layer or a later "
