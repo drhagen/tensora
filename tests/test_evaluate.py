@@ -120,10 +120,10 @@ def test_output_format_precludes_illegal_iteration_graphs():
 
 
 def test_compressed_output_omits_explicit_zeros():
-    # A contraction into a densely-iterated compressed output must not store an
-    # explicit zero at coordinates where the contraction is empty. Here S has an
-    # empty second row and rdx has a dense j mode, so a naive kernel would append
-    # J(0,1), J(1,0), and J(1,1) as explicit zeros. Only J(0,0) is a true nonzero.
+    # This test exercises the case where a layer with a dense input and a sparse
+    # output is followed by a contractions. Here the contraction is often empty.
+    # The output is asserted to contain no explicit zeros from those empty
+    # contractions.
     S = Tensor.from_lol([[1, 0, 2], [0, 0, 0]], dimensions=(2, 3), format="ds")
     rdx = Tensor.from_lol([[1, 0], [0, 4], [5, 0]], dimensions=(3, 2), format="d1s0")
 

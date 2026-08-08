@@ -16,7 +16,6 @@ class Context:
     sparse_leaves: list[TensorLayer] = field(default_factory=list)
     dense_leaves: list[TensorLayer] = field(default_factory=list)
     indexes: frozenset[str] = frozenset()
-    has_assemble: bool = False
 
     def add(self, other: Context) -> Context:
         return Context(
@@ -24,7 +23,6 @@ class Context:
             sparse_leaves=self.sparse_leaves + other.sparse_leaves,
             dense_leaves=self.dense_leaves + other.dense_leaves,
             indexes=self.indexes | other.indexes,
-            has_assemble=self.has_assemble or other.has_assemble,
         )
 
     def multiply(self, other: Context) -> Context:
@@ -33,7 +31,6 @@ class Context:
             sparse_leaves=self.sparse_leaves + other.sparse_leaves,
             dense_leaves=self.dense_leaves + other.dense_leaves,
             indexes=self.indexes | other.indexes,
-            has_assemble=self.has_assemble or other.has_assemble,
         )
 
 

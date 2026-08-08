@@ -69,9 +69,7 @@ class IterationNode(IterationGraph):
     def extract_context(self, index: str) -> Context:
         next_context = self.next.extract_context(index)
         return replace(
-            next_context,
-            indexes=next_context.indexes | frozenset([self.index_variable]),
-            has_assemble=next_context.has_assemble or self.is_sparse_output(),
+            next_context, indexes=next_context.indexes | frozenset([self.index_variable])
         )
 
     def exhaust_tensor(self, reference: str) -> IterationGraph:
@@ -96,9 +94,6 @@ class IterationNode(IterationGraph):
 
     def later_indexes(self) -> frozenset[str]:
         return self.context.indexes
-
-    def has_assemble(self) -> bool:
-        return self.context.has_assemble
 
 
 @dataclass(frozen=True)

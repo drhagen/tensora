@@ -31,10 +31,11 @@ class Output:
             if mode == Mode.compressed
         ]
 
-    def has_active_flags(self) -> bool:
-        # A contraction or sum subtree must run structurally (even in the assemble kernel) when it
-        # gates a compressed output layer's flag. Since every compressed output layer sits above
-        # every contraction, this reduces to whether the output has any compressed layer at all.
+    def has_sparse_layer(self) -> bool:
+        # Whether the output has any compressed (sparse) layer. A contraction or sum subtree must
+        # run structurally (even in the assemble kernel) when it gates such a layer's written flag,
+        # and since every compressed output layer sits above every contraction, that need reduces
+        # to this property of the output.
         return any(mode == Mode.compressed for mode in self.output.modes)
 
     @abstractmethod
