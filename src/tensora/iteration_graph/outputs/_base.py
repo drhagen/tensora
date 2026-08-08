@@ -8,7 +8,7 @@ from ...format import Mode
 from ...ir import SourceBuilder
 from ...ir.ast import Expression, Variable
 from ...kernel_type import KernelType
-from .._names import value_written_name
+from .._names import written_name
 from ..identifiable_expression import TensorLayer
 from ..identifiable_expression import ast as ie_ast
 
@@ -26,7 +26,7 @@ class Output:
         # so the set of flags to raise is recovered from the output format rather than threaded
         # down through the iteration.
         return [
-            value_written_name(self.output.id, layer)
+            written_name(self.output.name, layer)
             for layer, mode in enumerate(self.output.modes)
             if mode == Mode.compressed
         ]

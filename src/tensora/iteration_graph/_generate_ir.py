@@ -23,7 +23,7 @@ from ..ir.ast import (
 )
 from ..kernel_type import KernelType
 from ._definition import Definition
-from ._names import crd_name, dimension_name, pos_name, vals_name, value_written_name
+from ._names import crd_name, dimension_name, pos_name, vals_name, written_name
 from ._write_sparse_ir import (
     write_crd_assembly,
     write_pos_allocation,
@@ -121,7 +121,7 @@ def to_ir_iteration_variable(self: IterationNode, output: Output, kernel_type: K
     # down; it works no matter how many sparse or dense layers lie between this one and the value.
     written_flag: Variable | None = None
     if self.is_sparse_output() and isinstance(next_output, AppendOutput):
-        written_flag = value_written_name(self.output.tensor.id, self.output.layer)
+        written_flag = written_name(self.output.tensor.name, self.output.layer)
 
     ##################
     # Initialization #

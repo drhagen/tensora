@@ -12,7 +12,7 @@ __all__ = [
     "vals_capacity_name",
     "vals_name",
     "value_from_crd",
-    "value_written_name",
+    "written_name",
 ]
 
 
@@ -66,5 +66,5 @@ def value_from_crd(reference: str, layer: int) -> Variable:
     return Variable(f"i_{reference}_{layer}")
 
 
-def value_written_name(reference: str, layer: int) -> Variable:
-    return Variable(f"written_{reference}_{layer}")
+def written_name(tensor: str, layer: int) -> Variable:
+    return Variable(f"written_{tensor}_{layer}")
