@@ -62,10 +62,6 @@ def sparse_end_name(reference: str, layer: int) -> Variable:
     return Variable(f"p_{reference}_{layer}_end")
 
 
-def layer_begin_name(reference: str, layer: int) -> Variable:
-    return Variable(f"p_{reference}_{layer}_begin")
-
-
 def value_from_crd(reference: str, layer: int) -> Variable:
     return Variable(f"i_{reference}_{layer}")
 

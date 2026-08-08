@@ -29,7 +29,6 @@ default_array_size = Multiply(IntegerLiteral(1024), IntegerLiteral(1024))
 class AppendOutput(Output):
     output: ie_ast.Tensor
     next_layer: int
-    gating_flags: tuple[Variable, ...] = ()
 
     def vals_pointer(self) -> Expression:
         return previous_layer_pointer(self.output.id, self.output.order)
@@ -131,11 +130,7 @@ class AppendOutput(Output):
         self, iteration_output: TensorLayer | None, kernel_type: KernelType
     ) -> tuple[Output, SourceBuilder, SourceBuilder]:
         if iteration_output is not None and self.next_layer == iteration_output.layer:
-            return (
-                AppendOutput(self.output, self.next_layer + 1, self.gating_flags),
-                SourceBuilder(),
-                SourceBuilder(),
-            )
+            return AppendOutput(self.output, self.next_layer + 1), SourceBuilder(), SourceBuilder()
         else:
             # No layer or wrong layer was encountered
             dense_only_remaining = all(
@@ -143,9 +138,7 @@ class AppendOutput(Output):
             )
             if dense_only_remaining:
                 next_output = BucketOutput(
-                    self.output,
-                    list(range(self.next_layer, len(self.output.modes))),
-                    gating_flags=self.gating_flags,
+                    self.output, list(range(self.next_layer, len(self.output.modes)))
                 )
                 dimension_names = [
                     dimension_name(index) for index in self.output.indexes[self.next_layer :]

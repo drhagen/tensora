@@ -15,7 +15,6 @@ from ..ir.ast import (
     Equal,
     Expression,
     FunctionDefinition,
-    GreaterThan,
     IntegerLiteral,
     LessThan,
     Min,
@@ -51,10 +50,10 @@ def to_ir_iteration_graph(
 def to_ir_terminal_expression(self: TerminalNode, output: Output, kernel_type: KernelType):
     source = SourceBuilder("*** Computation of expression ***")
 
-    # Record that a contribution reached the terminal for this output coordinate. This is
-    # structural (independent of the value), so it is emitted in every kernel type, allowing
-    # assemble and compute to agree on which coordinates are stored.
-    for flag in output.gating_flags:
+    # Record that a contribution reached the terminal for each enclosing compressed output layer.
+    # This is structural (independent of the value), so it is emitted in every kernel type,
+    # allowing assemble and compute to agree on which coordinates are stored.
+    for flag in output.written_flags():
         source.append(flag.assign(1))
 
     if kernel_type.is_compute():
@@ -117,18 +116,13 @@ def to_ir_iteration_variable(self: IterationNode, output: Output, kernel_type: K
     )
     source.append(next_output_declarations)
 
-    # If this is a sparse output layer whose next layer is not itself a sparse output (the "else"
-    # case below), its crd append cannot rely on the next sparse layer's pointer to know whether
-    # anything was written. Instead, gate the append on a flag set at the terminal whenever a
-    # contribution reaches it. The flag is threaded down to the terminal via the output.
+    # A sparse output layer stores a coordinate only if a value is written somewhere below it.
+    # Gate its crd append on a flag that the terminal sets whenever a contribution reaches it. The
+    # terminal recovers this flag's name from the output format, so nothing needs to be threaded
+    # down; it works no matter how many sparse or dense layers lie between this one and the value.
     gating_flag: Variable | None = None
-    if (
-        self.is_sparse_output()
-        and not self.next.is_sparse_output()
-        and isinstance(next_output, AppendOutput)
-    ):
+    if self.is_sparse_output() and isinstance(next_output, AppendOutput):
         gating_flag = value_written_name(self.output.tensor.id, self.output.layer)
-        next_output = next_output.with_flag(gating_flag)
 
     ##################
     # Initialization #
@@ -318,30 +312,13 @@ def to_ir_iteration_variable(self: IterationNode, output: Output, kernel_type: K
                 ):
                     block.append(write_pos_allocation(self.output))
 
-                ################################
-                # Store position of next layer #
-                ################################
-                # This allows the current sparse layer to remember if the next sparse layer had any
-                # nonzeros. This is conceptually part of the next layer, but it is used by this
-                # layer's crd assembly, so we put it here. We could constitutively have each layer
-                # store a bool indicating whether or not it wrote anything, which woould be
-                # optimized out when either layer was not sparse, but the upper layer would still
-                # need to probe the lower layer, so not that much would be gained.
-                if self.is_sparse_output() and self.next.is_sparse_output():
-                    with block.block("Save next layer's position"):
-                        next_output_layer: TensorLayer = self.next.output
-                        next_pointer = next_output_layer.layer_pointer()
-                        next_pointer_begin = next_output_layer.layer_begin_name().declare(
-                            types.integer
-                        )
-                        block.append(next_pointer_begin.assign(next_pointer))
-
-                ##############################
+                ############################
                 # Reset this layer's flag #
-                ##############################
+                ############################
                 # Reset the "value written" flag to zero before the subtree runs. The terminal
-                # sets it back to one if any contribution reaches it. This is reset per iteration
-                # of this output coordinate.
+                # sets it back to one if any contribution reaches it, at which point this layer
+                # knows it must store this coordinate. This is reset per iteration of this output
+                # coordinate.
                 if gating_flag is not None:
                     block.append(gating_flag.declare(types.integer).assign(0))
 
@@ -353,25 +330,16 @@ def to_ir_iteration_variable(self: IterationNode, output: Output, kernel_type: K
                 ########################################################
                 # Write sparse output index and advance output pointer #
                 ########################################################
+                # Only advance the index for this sparse layer if a value was written into this
+                # output coordinate. Otherwise the coordinate is an implicit zero and must not be
+                # stored. The flag is set structurally at the terminal for every enclosing sparse
+                # output layer, so this decision is identical across assemble and compute and needs
+                # no cross-talk between layers.
                 if self.is_sparse_output() and isinstance(next_output, AppendOutput):
-                    if self.next.is_sparse_output():
-                        # Only advance the index for this sparse layer if the next sparse layer
-                        # had any nonzeros.
-                        next_output_layer: TensorLayer = self.next.output
-                        next_pointer = next_output_layer.layer_pointer()
-                        next_pointer_begin = next_output_layer.layer_begin_name()
-                        with block.branch(GreaterThan(next_pointer, next_pointer_begin)):
-                            if kernel_type.is_assemble():
-                                block.append(write_crd_assembly(self.output))
-                            block.append(self.output.layer_pointer().increment())
-                    else:
-                        # Only advance the index for this sparse layer if a value was written into
-                        # this output coordinate. Otherwise the coordinate is an implicit zero and
-                        # must not be stored. The gate is structural, so assemble and compute agree.
-                        with block.branch(NotEqual(gating_flag, IntegerLiteral(0))):
-                            if kernel_type.is_assemble():
-                                block.append(write_crd_assembly(self.output))
-                            block.append(self.output.layer_pointer().increment())
+                    with block.branch(NotEqual(gating_flag, IntegerLiteral(0))):
+                        if kernel_type.is_assemble():
+                            block.append(write_crd_assembly(self.output))
+                        block.append(self.output.layer_pointer().increment())
 
                 subsubnode_leaves.append((condition, block.finalize()))
 
