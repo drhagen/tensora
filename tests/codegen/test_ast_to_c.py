@@ -19,8 +19,8 @@ single_lines = [
     (AttributeAccess(Variable("x"), "modes"), "x->modes"),
     (IntegerLiteral(2), "2"),
     (FloatLiteral(1.0), "1.0"),
-    (BooleanLiteral(False), "0"),
-    (BooleanLiteral(True), "1"),
+    (BooleanLiteral(False), "false"),
+    (BooleanLiteral(True), "true"),
     # Add
     (Add(Variable("x"), Variable("y")), "x + y"),
     (Add(Add(Variable("x"), Variable("y")), Variable("z")), "x + y + z"),

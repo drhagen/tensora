@@ -18,7 +18,6 @@ from ..ir.ast import (
     IntegerLiteral,
     LessThan,
     Min,
-    NotEqual,
     Return,
     Variable,
 )
@@ -54,7 +53,7 @@ def to_ir_terminal_expression(self: TerminalNode, output: Output, kernel_type: K
     # This is structural (independent of the value), so it is emitted in every kernel type,
     # allowing assemble and compute to agree on which coordinates are stored.
     for flag in output.written_flags():
-        source.append(flag.assign(1))
+        source.append(flag.assign(True))
 
     if kernel_type.is_compute():
         source.append(output.write_assignment(to_ir(self.expression), kernel_type))
@@ -98,7 +97,7 @@ def to_ir_iteration_variable(self: IterationNode, output: Output, kernel_type: K
         # If not doing compute and no assembly is left, return early. This optimization avoids
         # generating unecessary looping that would make the code look bad (because the peephole
         # optimizer won't remove it) but wouldn't affect performance (because the backend compiler
-        # would remove it). The exception is when a gating flag is active: this subtree gates an
+        # would remove it). The exception is when a written flag is active: this subtree gates an
         # enclosing sparse output's crd append, so its structure must run even in the assemble
         # kernel to compute the flag.
         return source
@@ -120,9 +119,9 @@ def to_ir_iteration_variable(self: IterationNode, output: Output, kernel_type: K
     # Gate its crd append on a flag that the terminal sets whenever a contribution reaches it. The
     # terminal recovers this flag's name from the output format, so nothing needs to be threaded
     # down; it works no matter how many sparse or dense layers lie between this one and the value.
-    gating_flag: Variable | None = None
+    written_flag: Variable | None = None
     if self.is_sparse_output() and isinstance(next_output, AppendOutput):
-        gating_flag = value_written_name(self.output.tensor.id, self.output.layer)
+        written_flag = value_written_name(self.output.tensor.id, self.output.layer)
 
     ##################
     # Initialization #
@@ -319,8 +318,8 @@ def to_ir_iteration_variable(self: IterationNode, output: Output, kernel_type: K
                 # sets it back to one if any contribution reaches it, at which point this layer
                 # knows it must store this coordinate. This is reset per iteration of this output
                 # coordinate.
-                if gating_flag is not None:
-                    block.append(gating_flag.declare(types.integer).assign(0))
+                if written_flag is not None:
+                    block.append(written_flag.declare(types.boolean).assign(False))
 
                 #####################
                 # Invoke next layer #
@@ -336,7 +335,7 @@ def to_ir_iteration_variable(self: IterationNode, output: Output, kernel_type: K
                 # output layer, so this decision is identical across assemble and compute and needs
                 # no cross-talk between layers.
                 if self.is_sparse_output() and isinstance(next_output, AppendOutput):
-                    with block.branch(NotEqual(gating_flag, IntegerLiteral(0))):
+                    with block.branch(written_flag):
                         if kernel_type.is_assemble():
                             block.append(write_crd_assembly(self.output))
                         block.append(self.output.layer_pointer().increment())
@@ -387,7 +386,7 @@ def to_ir_iteration_variable(self: IterationNode, output: Output, kernel_type: K
 def to_ir_sum(self: SumNode, output: Output, kernel_type: KernelType):
     source = SourceBuilder("*** Sum ***")
 
-    # A Sum node emits its terms during compute (to accumulate values), and also when a gating
+    # A Sum node emits its terms during compute (to accumulate values), and also when a written
     # flag is active: the assemble kernel must run the terms' structural skeleton so it can set
     # the flag and decide whether the enclosing sparse output stores this coordinate. The value
     # work (bucket zero-init and accumulation) is suppressed outside of compute, so this shared

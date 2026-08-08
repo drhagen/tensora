@@ -44,14 +44,17 @@ from typing import Sequence
 from .types import Type
 
 
-def to_expression(expression: Expression | float | int | str) -> Expression:
+def to_expression(expression: Expression | bool | int | float | str) -> Expression:
     match expression:
         case Expression():
             return expression
-        case float():
-            return FloatLiteral(expression)
+        case bool():
+            # bool is a subclass of int, so this must precede the int case
+            return BooleanLiteral(expression)
         case int():
             return IntegerLiteral(expression)
+        case float():
+            return FloatLiteral(expression)
         case str():
             return Variable(expression)
 

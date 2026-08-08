@@ -12,7 +12,7 @@ from functools import singledispatch
 
 import llvmlite.ir as llvm
 
-from ..ir.types import Array, FixedArray, Float, Integer, Mode, Pointer, Tensor, Type
+from ..ir.types import Array, Boolean, FixedArray, Float, Integer, Mode, Pointer, Tensor, Type
 
 llvm_integer_type = llvm.IntType(32)
 llvm_float_type = llvm.DoubleType()
@@ -24,6 +24,11 @@ llvm_size_type = llvm.IntType(64)
 @singledispatch
 def type_to_llvm(self: Type) -> llvm.Type:
     raise NotImplementedError(f"type_to_llvm not implemented for {type(self)}: {self}")
+
+
+@type_to_llvm.register(Boolean)
+def type_to_llvm_boolean(self: Boolean) -> llvm.Type:
+    return llvm_boolean_type
 
 
 @type_to_llvm.register(Integer)

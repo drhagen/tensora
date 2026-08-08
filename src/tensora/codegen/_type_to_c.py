@@ -2,7 +2,7 @@ __all__ = ["type_to_c"]
 
 from functools import singledispatch
 
-from ..ir.types import Array, FixedArray, Float, Integer, Mode, Pointer, Tensor, Type
+from ..ir.types import Array, Boolean, FixedArray, Float, Integer, Mode, Pointer, Tensor, Type
 
 
 def space_variable(variable: str | None = None) -> str:
@@ -15,6 +15,11 @@ def space_variable(variable: str | None = None) -> str:
 @singledispatch
 def type_to_c(self: Type, variable: str | None = None) -> str:
     raise NotImplementedError(f"type_to_c not implemented for {type(self)}: {self}")
+
+
+@type_to_c.register(Boolean)
+def type_to_c_boolean(self: Boolean, variable: str | None = None) -> str:
+    return "bool" + space_variable(variable)
 
 
 @type_to_c.register(Integer)
