@@ -77,6 +77,7 @@ single_lines = [
         "realloc(old, sizeof(double) * (previous + new))",
     ),
     # Declaration and types
+    (Declaration(Variable("x"), boolean), "bool x"),
     (Declaration(Variable("x"), integer), "int32_t x"),
     (Declaration(Variable("x"), float), "double x"),
     (Declaration(Variable("x"), tensor), "taco_tensor_t x"),
@@ -93,7 +94,6 @@ single_lines = [
     (Assignment(Variable("x"), Subtract(Variable("x"), IntegerLiteral(1))), "x--"),
     (Assignment(Variable("x"), Subtract(Variable("x"), IntegerLiteral(2))), "x -= 2"),
     (Assignment(Variable("x"), Multiply(Variable("x"), IntegerLiteral(2))), "x *= 2"),
-    (DeclarationAssignment(Declaration(Variable("x"), integer), Variable("y")), "int32_t x = y"),
     # Return
     (Return(IntegerLiteral(0)), "return 0"),
 ]

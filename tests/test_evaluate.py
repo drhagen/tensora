@@ -121,7 +121,7 @@ def test_output_format_precludes_illegal_iteration_graphs():
 
 def test_sparse_output_above_contraction_omits_explicit_zeros():
     # This test exercises a dense output layer (i) sitting above a sparse output layer (j),
-    # which in turn sits above a contraction (k). Here the contraction is often empty.
+    # which in turn sits above a contraction (r). Here the contraction is often empty.
     # The output is asserted to contain no explicit zeros from those empty contractions.
     S = Tensor.from_lol([[1, 0, 2], [0, 0, 0]], dimensions=(2, 3), format="ds")
     rdx = Tensor.from_lol([[1, 0], [0, 4], [5, 0]], dimensions=(3, 2), format="d1s0")

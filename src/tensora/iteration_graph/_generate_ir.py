@@ -53,9 +53,9 @@ def to_ir_terminal_expression(self: TerminalNode, output: Output, kernel_type: K
     # Record that a value was written by the terminal for each enclosing sparse output layer.
     # This is structural (independent of the computed value), so it is emitted in every kernel
     # type, allowing assemble and compute to agree on which coordinates are stored. A terminal
-    # whose expression has exhausted to zero (e.g. a dense output layer's structural fill where a sparse
-    # factor is absent) is not a real contribution, so it must not set the flag; otherwise it would
-    # make an enclosing sparse output layer store an all-zero region.
+    # whose expression has exhausted to zero (e.g. a dense output layer's structural fill where a
+    # sparse factor is absent) is not a real contribution, so it must not set the flag; otherwise
+    # it would make an enclosing sparse output layer store an all-zero region.
     if self.expression != Integer(0):
         for flag in output.written_flags():
             source.append(flag.assign(True))
@@ -305,11 +305,11 @@ def to_ir_iteration_variable(self: IterationNode, output: Output, kernel_type: K
                 if kernel_type.is_assemble() and self.is_sparse_output():
                     block.append(write_pos_allocation(self.output))
 
-                ############################
+                ###########################
                 # Reset this layer's flag #
-                ############################
-                # Reset the "value written" flag to zero before the subtree runs. The terminal
-                # sets it back to one if any contribution reaches it, at which point this layer
+                ###########################
+                # Reset the "value written" flag to false before the subtree runs. The terminal
+                # sets it back to true if any contribution reaches it, at which point this layer
                 # knows it must store this coordinate. This is reset per iteration of this output
                 # coordinate.
                 if self.is_sparse_output():
