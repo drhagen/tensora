@@ -32,6 +32,7 @@ from ._write_sparse_ir import (
 )
 from .identifiable_expression import to_ir
 from .identifiable_expression._tensor_layer import TensorLayer
+from .identifiable_expression.ast import Integer
 from .iteration_graph import IterationGraph, IterationNode, SumNode, TerminalNode
 from .outputs import AppendOutput, Output
 
@@ -49,11 +50,15 @@ def to_ir_iteration_graph(
 def to_ir_terminal_expression(self: TerminalNode, output: Output, kernel_type: KernelType):
     source = SourceBuilder("*** Computation of expression ***")
 
-    # Record that a contribution reached the terminal for each enclosing sparse output layer.
-    # This is structural (independent of the value), so it is emitted in every kernel type,
-    # allowing assemble and compute to agree on which coordinates are stored.
-    for flag in output.written_flags():
-        source.append(flag.assign(True))
+    # Record that a value was written by the terminal for each enclosing sparse output layer.
+    # This is structural (independent of the computed value), so it is emitted in every kernel
+    # type, allowing assemble and compute to agree on which coordinates are stored. A terminal
+    # whose expression has exhausted to zero (e.g. a dense output layer's structural fill where a sparse
+    # factor is absent) is not a real contribution, so it must not set the flag; otherwise it would
+    # make an enclosing sparse output layer store an all-zero region.
+    if self.expression != Integer(0):
+        for flag in output.written_flags():
+            source.append(flag.assign(True))
 
     if kernel_type.is_compute():
         source.append(output.write_assignment(to_ir(self.expression), kernel_type))

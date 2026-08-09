@@ -119,11 +119,10 @@ def test_output_format_precludes_illegal_iteration_graphs():
     )
 
 
-def test_compressed_output_omits_explicit_zeros():
-    # This test exercises the case where a layer with a dense input and a sparse
-    # output is followed by a contractions. Here the contraction is often empty.
-    # The output is asserted to contain no explicit zeros from those empty
-    # contractions.
+def test_sparse_output_above_contraction_omits_explicit_zeros():
+    # This test exercises a dense output layer (i) sitting above a sparse output layer (j),
+    # which in turn sits above a contraction (k). Here the contraction is often empty.
+    # The output is asserted to contain no explicit zeros from those empty contractions.
     S = Tensor.from_lol([[1, 0, 2], [0, 0, 0]], dimensions=(2, 3), format="ds")
     rdx = Tensor.from_lol([[1, 0], [0, 4], [5, 0]], dimensions=(3, 2), format="d1s0")
 
@@ -131,6 +130,18 @@ def test_compressed_output_omits_explicit_zeros():
 
     actual = evaluate("J(i,j) = S(i,r) * rdx(r,j)", "ds", S=S, rdx=rdx)
 
-    assert actual.to_dok() == expected
-    # The stored structure must contain no explicit zeros beyond the true nonzero.
+    assert actual.to_dok(explicit_zeros=True) == expected
+
+
+def test_sparse_output_above_dense_above_contraction_omits_explicit_zeros():
+    # This test exercises a sparse output layer (i) sitting above a dense output layer (j),
+    # which in turn sits above a contraction (k). Here the contraction is often empty.
+    # The output is asserted to contain no explicit zeros from those empty contractions.
+    B = Tensor.from_lol([[1, 0, 2], [0, 0, 0]], dimensions=(2, 3), format="ds")
+    C = Tensor.from_lol([[1, 2], [0, 0], [3, 4]], dimensions=(3, 2), format="dd")
+
+    expected = {(0, 0): 7.0, (0, 1): 10.0}
+
+    actual = evaluate("A(i,j) = B(i,k) * C(k,j)", "sd", B=B, C=C)
+
     assert actual.to_dok(explicit_zeros=True) == expected
