@@ -11,7 +11,9 @@ from ._cffi_ownership import taco_type_header, tensor_cdefs
 
 lock = threading.Lock()
 
+# stdbool.h is required until all compilers support C23
 taco_define_header = """
+    #include <stdbool.h>
     #ifndef TACO_C_HEADERS
     #define TACO_C_HEADERS
     #define TACO_MIN(_a,_b) ((_a) < (_b) ? (_a) : (_b))

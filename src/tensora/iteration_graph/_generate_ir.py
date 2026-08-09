@@ -15,7 +15,6 @@ from ..ir.ast import (
     Equal,
     Expression,
     FunctionDefinition,
-    GreaterThan,
     IntegerLiteral,
     LessThan,
     Min,
@@ -24,7 +23,7 @@ from ..ir.ast import (
 )
 from ..kernel_type import KernelType
 from ._definition import Definition
-from ._names import crd_name, dimension_name, pos_name, vals_name
+from ._names import crd_name, dimension_name, pos_name, vals_name, written_name
 from ._write_sparse_ir import (
     write_crd_assembly,
     write_pos_allocation,
@@ -33,6 +32,7 @@ from ._write_sparse_ir import (
 )
 from .identifiable_expression import to_ir
 from .identifiable_expression._tensor_layer import TensorLayer
+from .identifiable_expression.ast import Integer
 from .iteration_graph import IterationGraph, IterationNode, SumNode, TerminalNode
 from .outputs import AppendOutput, Output
 
@@ -49,6 +49,16 @@ def to_ir_iteration_graph(
 @to_ir_iteration_graph.register(TerminalNode)
 def to_ir_terminal_expression(self: TerminalNode, output: Output, kernel_type: KernelType):
     source = SourceBuilder("*** Computation of expression ***")
+
+    # Record that a value was written by the terminal for each enclosing sparse output layer.
+    # This is structural (independent of the computed value), so it is emitted in every kernel
+    # type, allowing assemble and compute to agree on which coordinates are stored. A terminal
+    # whose expression has exhausted to zero (e.g. a dense output layer's structural fill where a
+    # sparse factor is absent) is not a real contribution, so it must not set the flag; otherwise
+    # it would make an enclosing sparse output layer store an all-zero region.
+    if self.expression != Integer(0):
+        for flag in output.written_flags():
+            source.append(flag.assign(True))
 
     if kernel_type.is_compute():
         source.append(output.write_assignment(to_ir(self.expression), kernel_type))
@@ -88,11 +98,11 @@ def generate_subgraphs(graph: IterationNode) -> list[IterationNode]:
 def to_ir_iteration_variable(self: IterationNode, output: Output, kernel_type: KernelType):
     source = SourceBuilder(f"*** Iteration over {self.index_variable} ***")
 
-    if not kernel_type.is_compute() and not self.has_assemble():
-        # If not doing compute and no assembly is left, return early. This optimization avoids
-        # generating unecessary looping that would make the code look bad (because the peephole
-        # optimizer won't remove it) but wouldn't affect performance (because the backend compiler
-        # would remove it).
+    if not kernel_type.is_compute() and not output.has_sparse_layer():
+        # A fully dense output has no assemble code to emit, so skip the iteration entirely. This
+        # avoids generating unnecessary looping that would make the code look bad and in a way that
+        # the peephole optimizer won't remove. A dead-code elimination pass could eliminate the
+        # need for this early return.
         return source
 
     loop_variable = Variable(self.index_variable)
@@ -107,6 +117,11 @@ def to_ir_iteration_variable(self: IterationNode, output: Output, kernel_type: K
         self.output, kernel_type
     )
     source.append(next_output_declarations)
+
+    # A sparse output layer stores a coordinate only if a value is written somewhere below it.
+    # Gate its append on a flag that a terminal expression sets whenever a contribution reaches it.
+    if self.is_sparse_output():
+        written_flag = written_name(self.output.tensor.name, self.output.layer)
 
     ##################
     # Initialization #
@@ -141,11 +156,11 @@ def to_ir_iteration_variable(self: IterationNode, output: Output, kernel_type: K
             # 1. The input and output are both and dense, so we simply finish the loop.
             # 2. The input is sparse, but the output is dense, so we finish the loop, writing zeros
             #    to the dense layer.
-            # 3. The input is dense, but the output is sparse, so we finish the loop, writing
-            #    explicit zeros to the sparse layer.
+            # 3. The input is dense, but the output is sparse, so we finish the loop, storing the
+            #    coordinate only when a value was written (gated by the written flag).
             # 4. The input and output are both sparse, so we skip the implicit zero entirely.
             #
-            # This last case is handled by this if statement. Because it is guarenteed to the be
+            # This last case is handled by this if statement. Because it is guaranteed to the be
             # the last subnode, break or continue would do the same thing.
             continue
 
@@ -261,8 +276,8 @@ def to_ir_iteration_variable(self: IterationNode, output: Output, kernel_type: K
                     # the same four situations as for subnodes above:
                     # 1. The input and output are both and dense, so we write the value.
                     # 2. The input is sparse, but the output is dense, so we write a zero.
-                    # 3. The input is dense, but the output is sparse, so we write an explicit
-                    #    zero to the sparse layer.
+                    # 3. The input is dense, but the output is sparse, so we store the coordinate
+                    #    only where a value was written.
                     # 4. The input and output are both sparse, so we write nothing.
                     #
                     # Like above, this is necessarily the last subsubnode, so break or continue
@@ -287,30 +302,18 @@ def to_ir_iteration_variable(self: IterationNode, output: Output, kernel_type: K
                 ###################################
                 # This is done at this level, rather than up a level, because none of the
                 # subsubnode conditions may hit. In that case, no allocation should be done.
-                if (
-                    kernel_type.is_assemble()
-                    and self.is_sparse_output()
-                    and isinstance(next_output, AppendOutput)
-                ):
+                if kernel_type.is_assemble() and self.is_sparse_output():
                     block.append(write_pos_allocation(self.output))
 
-                ################################
-                # Store position of next layer #
-                ################################
-                # This allows the current sparse layer to remember if the next sparse layer had any
-                # nonzeros. This is conceptually part of the next layer, but it is used by this
-                # layer's crd assembly, so we put it here. We could constitutively have each layer
-                # store a bool indicating whether or not it wrote anything, which woould be
-                # optimized out when either layer was not sparse, but the upper layer would still
-                # need to probe the lower layer, so not that much would be gained.
-                if self.is_sparse_output() and self.next.is_sparse_output():
-                    with block.block("Save next layer's position"):
-                        next_output_layer: TensorLayer = self.next.output
-                        next_pointer = next_output_layer.layer_pointer()
-                        next_pointer_begin = next_output_layer.layer_begin_name().declare(
-                            types.integer
-                        )
-                        block.append(next_pointer_begin.assign(next_pointer))
+                ###########################
+                # Reset this layer's flag #
+                ###########################
+                # Reset the "value written" flag to false before the subtree runs. The terminal
+                # sets it back to true if any contribution reaches it, at which point this layer
+                # knows it must store this coordinate. This is reset per iteration of this output
+                # coordinate.
+                if self.is_sparse_output():
+                    block.append(written_flag.declare(types.boolean).assign(False))
 
                 #####################
                 # Invoke next layer #
@@ -320,18 +323,12 @@ def to_ir_iteration_variable(self: IterationNode, output: Output, kernel_type: K
                 ########################################################
                 # Write sparse output index and advance output pointer #
                 ########################################################
-                if self.is_sparse_output() and isinstance(next_output, AppendOutput):
-                    if self.next.is_sparse_output():
-                        # Only advance the index for this sparse layer if the next sparse layer
-                        # had any nonzeros.
-                        next_output_layer: TensorLayer = self.next.output
-                        next_pointer = next_output_layer.layer_pointer()
-                        next_pointer_begin = next_output_layer.layer_begin_name()
-                        with block.branch(GreaterThan(next_pointer, next_pointer_begin)):
-                            if kernel_type.is_assemble():
-                                block.append(write_crd_assembly(self.output))
-                            block.append(self.output.layer_pointer().increment())
-                    else:
+                # Only advance the index for this sparse layer if a value was written into this
+                # output coordinate. Otherwise the coordinate is an implicit zero and must not be
+                # stored. The flag is set structurally at the terminal expression for every
+                # enclosing sparse output layer.
+                if self.is_sparse_output():
+                    with block.branch(written_flag):
                         if kernel_type.is_assemble():
                             block.append(write_crd_assembly(self.output))
                         block.append(self.output.layer_pointer().increment())
@@ -366,11 +363,7 @@ def to_ir_iteration_variable(self: IterationNode, output: Output, kernel_type: K
     ################################
     # Write sparse output position #
     ################################
-    if (
-        kernel_type.is_assemble()
-        and self.is_sparse_output()
-        and isinstance(next_output, AppendOutput)
-    ):
+    if kernel_type.is_assemble() and self.is_sparse_output():
         source.append(write_pos_assembly(self.output))
 
     source.append(next_output_cleanup)
@@ -382,8 +375,10 @@ def to_ir_iteration_variable(self: IterationNode, output: Output, kernel_type: K
 def to_ir_sum(self: SumNode, output: Output, kernel_type: KernelType):
     source = SourceBuilder("*** Sum ***")
 
-    if kernel_type.is_compute():
-        # No assembly is currently allowed downstream of a Sum node
+    if kernel_type.is_compute() or output.has_sparse_layer():
+        # Like in the iteration node, a fully dense output has no assemble code to emit, so skip
+        # the declaration entirely. A dead-code elimination pass could eliminate the need for this
+        # guard.
         next_output, next_output_declarations, _ = output.next_output(None, kernel_type)
         source.append(next_output_declarations)
 

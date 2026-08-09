@@ -6,7 +6,6 @@ from ...ir import ast as ir
 from .._names import (
     crd_capacity_name,
     crd_name,
-    layer_begin_name,
     layer_pointer,
     pos_capacity_name,
     pos_name,
@@ -54,9 +53,6 @@ class TensorLayer:
 
     def sparse_end_name(self) -> ir.Variable:
         return sparse_end_name(self.tensor.id, self.layer)
-
-    def layer_begin_name(self) -> ir.Variable:
-        return layer_begin_name(self.tensor.id, self.layer)
 
     def value_from_crd(self) -> ir.Variable:
         return value_from_crd(self.tensor.id, self.layer)

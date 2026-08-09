@@ -1,5 +1,6 @@
 __all__ = [
     "Array",
+    "Boolean",
     "FixedArray",
     "Float",
     "Integer",
@@ -7,6 +8,7 @@ __all__ = [
     "Pointer",
     "Tensor",
     "Type",
+    "boolean",
     "float",
     "integer",
     "mode",
@@ -18,6 +20,14 @@ from dataclasses import dataclass
 
 class Type:
     __slots__ = ()
+
+
+@dataclass(frozen=True, slots=True)
+class Boolean(Type):
+    pass
+
+
+boolean = Boolean()
 
 
 @dataclass(frozen=True, slots=True)

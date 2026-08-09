@@ -148,7 +148,14 @@ class AppendOutput(Output):
                         Multiply.join(dimension_names)
                     )
                 )
-                return next_output, next_output.write_declarations(bucket), SourceBuilder()
+                # The bucket zero-init and accumulation are value work; the assemble kernel runs
+                # this subtree only to compute the gating flag structurally, so skip it there.
+                declarations = (
+                    next_output.write_declarations(bucket)
+                    if kernel_type.is_compute()
+                    else SourceBuilder()
+                )
+                return next_output, declarations, SourceBuilder()
             else:
                 raise NotImplementedError(
                     "Encountered a sparse output layer preceded by a contraction layer or a later "

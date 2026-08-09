@@ -71,6 +71,11 @@ def ir_to_c_array_index(self: ArrayIndex) -> str:
     return f"{ir_to_c_expression(self.target)}[{ir_to_c_expression(self.index)}]"
 
 
+@ir_to_c_expression.register(BooleanLiteral)
+def ir_to_c_boolean_literal(self: BooleanLiteral) -> str:
+    return "true" if self.value else "false"
+
+
 @ir_to_c_expression.register(IntegerLiteral)
 def ir_to_c_integer_literal(self: IntegerLiteral) -> str:
     return str(self.value)
@@ -79,11 +84,6 @@ def ir_to_c_integer_literal(self: IntegerLiteral) -> str:
 @ir_to_c_expression.register(FloatLiteral)
 def ir_to_c_float_literal(self: FloatLiteral) -> str:
     return str(self.value)
-
-
-@ir_to_c_expression.register(BooleanLiteral)
-def ir_to_c_boolean_literal(self: BooleanLiteral) -> str:
-    return str(int(self.value))
 
 
 @ir_to_c_expression.register(Add)

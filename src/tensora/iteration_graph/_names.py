@@ -12,6 +12,7 @@ __all__ = [
     "vals_capacity_name",
     "vals_name",
     "value_from_crd",
+    "written_name",
 ]
 
 
@@ -61,9 +62,9 @@ def sparse_end_name(reference: str, layer: int) -> Variable:
     return Variable(f"p_{reference}_{layer}_end")
 
 
-def layer_begin_name(reference: str, layer: int) -> Variable:
-    return Variable(f"p_{reference}_{layer}_begin")
-
-
 def value_from_crd(reference: str, layer: int) -> Variable:
     return Variable(f"i_{reference}_{layer}")
+
+
+def written_name(tensor: str, layer: int) -> Variable:
+    return Variable(f"written_{tensor}_{layer}")
