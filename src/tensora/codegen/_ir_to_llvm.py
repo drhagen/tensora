@@ -289,44 +289,46 @@ def ir_to_llvm_less_than_or_equal(
 def ir_to_llvm_and(
     self: And, builder: llvm.IRBuilder, locals: dict[str, llvm.Value]
 ) -> llvm.Value:
-    left_block = builder.block
+    left = ir_to_llvm_expression(self.left, builder, locals)
+    left_end_block = builder.block
+
     right_block = builder.append_basic_block()
     end_block = builder.append_basic_block()
-
-    left = ir_to_llvm_expression(self.left, builder, locals)
 
     builder.cbranch(left, right_block, end_block)
 
     builder.position_at_end(right_block)
     right = ir_to_llvm_expression(self.right, builder, locals)
+    right_end_block = builder.block
     builder.branch(end_block)
 
     builder.position_at_end(end_block)
     phi = builder.phi(llvm_boolean_type)
-    phi.add_incoming(llvm.Constant(llvm_boolean_type, 0), left_block)
-    phi.add_incoming(right, right_block)
+    phi.add_incoming(llvm.Constant(llvm_boolean_type, 0), left_end_block)
+    phi.add_incoming(right, right_end_block)
 
     return phi
 
 
 @ir_to_llvm_expression.register(Or)
 def ir_to_llvm_or(self: Or, builder: llvm.IRBuilder, locals: dict[str, llvm.Value]) -> llvm.Value:
-    left_block = builder.block
+    left = ir_to_llvm_expression(self.left, builder, locals)
+    left_end_block = builder.block
+
     right_block = builder.append_basic_block()
     end_block = builder.append_basic_block()
-
-    left = ir_to_llvm_expression(self.left, builder, locals)
 
     builder.cbranch(left, end_block, right_block)
 
     builder.position_at_end(right_block)
     right = ir_to_llvm_expression(self.right, builder, locals)
+    right_end_block = builder.block
     builder.branch(end_block)
 
     builder.position_at_end(end_block)
     phi = builder.phi(llvm_boolean_type)
-    phi.add_incoming(llvm.Constant(llvm_boolean_type, 1), left_block)
-    phi.add_incoming(right, right_block)
+    phi.add_incoming(llvm.Constant(llvm_boolean_type, 1), left_end_block)
+    phi.add_incoming(right, right_end_block)
 
     return phi
 
