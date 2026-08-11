@@ -63,6 +63,40 @@ def test_vector_binary(operator, dense1, dense2, format1, format2, format_out):
     )
 
 
+@pytest.mark.parametrize("dense1", [[0, 2, 4, 0], [0, 0, 0, 0]])
+@pytest.mark.parametrize("dense2", [[-1, 3.5, 0, 0], [0, 0, 0, 0]])
+@pytest.mark.parametrize("dense3", [[0, 0, 6, -2], [0, 0, 0, 0]])
+@pytest.mark.parametrize("format1", ["s", "d"])
+@pytest.mark.parametrize("format2", ["s", "d"])
+@pytest.mark.parametrize("format3", ["s", "d"])
+@pytest.mark.parametrize("format_out", ["s", "d"])
+def test_vector_add_3(dense1, dense2, dense3, format1, format2, format3, format_out):
+    assert_same_as_dense(
+        "out(i) = in1(i) + in2(i) + in3(i)",
+        format_out,
+        in1=(dense1, format1),
+        in2=(dense2, format2),
+        in3=(dense3, format3),
+    )
+
+
+@pytest.mark.parametrize("dense1", [[0, 2, 4, 0], [0, 0, 0, 0]])
+@pytest.mark.parametrize("dense2", [[-1, 3.5, 0, 0], [0, 0, 0, 0]])
+@pytest.mark.parametrize("dense3", [[0, 0, 6, -2], [0, 0, 0, 0]])
+@pytest.mark.parametrize("format1", ["s", "d"])
+@pytest.mark.parametrize("format2", ["s", "d"])
+@pytest.mark.parametrize("format3", ["s", "d"])
+@pytest.mark.parametrize("format_out", ["s", "d"])
+def test_vector_multiply_3(dense1, dense2, dense3, format1, format2, format3, format_out):
+    assert_same_as_dense(
+        "out(i) = in1(i) * in2(i) * in3(i)",
+        format_out,
+        in1=(dense1, format1),
+        in2=(dense2, format2),
+        in3=(dense3, format3),
+    )
+
+
 @pytest.mark.parametrize("dense1", [[[0, 2, 4], [0, -1, 0]], [[0, 0, 0], [0, 0, 0]]])
 @pytest.mark.parametrize("dense2", [[[-1, 3.5], [0, 0], [4, 0]], [[0, 0], [0, 0], [0, 0]]])
 @pytest.mark.parametrize("format1", ["ss", "dd", "sd", "ds", "d1d0"])
