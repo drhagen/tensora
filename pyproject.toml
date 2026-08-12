@@ -10,7 +10,7 @@ authors = [{ name = "David Hagen", email = "david@drhagen.com" }]
 license = "MIT"
 readme = "README.md"
 keywords = ["tensor", "sparse", "matrix", "array"]
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Science/Research",
@@ -20,7 +20,6 @@ classifiers = [
     "Operating System :: MacOS :: MacOS X",
     "Operating System :: Microsoft :: Windows",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
@@ -45,7 +44,7 @@ numpy = [
     "numpy >= 1.24,<3.0",
 ]
 scipy = [
-    "scipy ~= 1.7",
+    "scipy ~= 1.10",
 ]
 
 [project.urls]
