@@ -2,7 +2,8 @@ from __future__ import annotations
 
 __all__ = ["StableFrozenSet", "StableSet"]
 
-from typing import AbstractSet, Hashable, Iterator, MutableSet, TypeVar
+from collections.abc import Hashable, Iterator, MutableSet, Set
+from typing import TypeVar
 
 Element = TypeVar("Element", bound=Hashable, covariant=True)
 
@@ -43,7 +44,7 @@ class StableSet(MutableSet[Element]):
         del self[element]
 
 
-class StableFrozenSet(AbstractSet[Element]):
+class StableFrozenSet(Set[Element]):
     def __init__(self, *items: Element):
         used = set()
         unique_items = []

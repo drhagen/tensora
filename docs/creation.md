@@ -28,7 +28,7 @@ Convert a nested list of lists to a `Tensor`.
 ```python
 from tensora import Tensor
 
-tensor = Tensor.from_lol([[1,2,3], [4,5,6]])
+tensor = Tensor.from_lol([[1, 2, 3], [4, 5, 6]])
 
 assert tensor.dimensions == (2, 3)
 ```
@@ -65,13 +65,17 @@ Convert a dictionary of keys to a `Tensor`.
 ```python
 from tensora import Tensor
 
-tensor = Tensor.from_dok({
-    (1,0): 2.0,
-    (0,1): -2.0,
-    (1,2): 4.0,
-}, dimensions=(2,3), format='ds')
+tensor = Tensor.from_dok(
+    {
+        (1, 0): 2.0,
+        (0, 1): -2.0,
+        (1, 2): 4.0,
+    },
+    dimensions=(2, 3),
+    format="ds",
+)
 
-assert tensor == Tensor.from_lol([[0,-2,0], [2,0,4]])
+assert tensor == Tensor.from_lol([[0, -2, 0], [2, 0, 4]])
 ```
 
 ## `Tensor.from_aos`: array of structs
@@ -100,13 +104,13 @@ Convert a list of coordinates and a corresponding list of values to a `Tensor`.
 from tensora import Tensor
 
 tensor = Tensor.from_aos(
-    [(1,0), (0,1), (1,2)],
+    [(1, 0), (0, 1), (1, 2)],
     [2.0, -2.0, 4.0],
-    dimensions=(2,3),
-    format='ds',
+    dimensions=(2, 3),
+    format="ds",
 )
 
-assert tensor == Tensor.from_lol([[0,-2,0], [2,0,4]])
+assert tensor == Tensor.from_lol([[0, -2, 0], [2, 0, 4]])
 ```
 
 ## `Tensor.from_soa`: struct of arrays
@@ -135,13 +139,13 @@ Convert lists of indexes for each dimension and a corresponding list of values t
 from tensora import Tensor
 
 tensor = Tensor.from_soa(
-    ([1,0,1], [0,1,2]),
+    ([1, 0, 1], [0, 1, 2]),
     [2.0, -2.0, 4.0],
-    dimensions=(2,3),
-    format='ds',
+    dimensions=(2, 3),
+    format="ds",
 )
 
-assert tensor == Tensor.from_lol([[0,-2,0], [2,0,4]])
+assert tensor == Tensor.from_lol([[0, -2, 0], [2, 0, 4]])
 ```
 
 ## `Tensor.from_numpy`: convert a NumPy array
@@ -164,10 +168,10 @@ Convert a NumPy array to a `Tensor`.
 import numpy as np
 from tensora import Tensor
 
-array = np.array([[1,2,3], [4,5,6]])
+array = np.array([[1, 2, 3], [4, 5, 6]])
 tensor = Tensor.from_numpy(array)
 
-assert tensor == Tensor.from_lol([[1,2,3], [4,5,6]])
+assert tensor == Tensor.from_lol([[1, 2, 3], [4, 5, 6]])
 ```
 
 ## `Tensor.from_scipy_sparse`: convert a SciPy sparse matrix
@@ -190,9 +194,9 @@ Convert a SciPy sparse matrix to a `Tensor`.
 import scipy.sparse as sp
 from tensora import Tensor
 
-matrix = sp.csr_matrix(([2.0, -2.0, 4.0], ([1,0,1], [0,1,2])), shape=(2,3))
+matrix = sp.csr_matrix(([2.0, -2.0, 4.0], ([1, 0, 1], [0, 1, 2])), shape=(2, 3))
 tensor = Tensor.from_scipy_sparse(matrix)
 
-assert tensor.format.deparse() == 'ds'
-assert tensor == Tensor.from_lol([[0,-2,0], [2,0,4]])
+assert tensor.format.deparse() == "ds"
+assert tensor == Tensor.from_lol([[0, -2, 0], [2, 0, 4]])
 ```

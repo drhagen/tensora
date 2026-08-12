@@ -37,9 +37,9 @@ __all__ = [
     "Variable",
 ]
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 from functools import reduce
-from typing import Sequence
 
 from .types import Type
 

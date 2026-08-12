@@ -3,8 +3,8 @@ from __future__ import annotations
 __all__ = ["SourceBuilder"]
 
 from abc import abstractmethod
+from collections.abc import Mapping
 from contextlib import contextmanager
-from typing import Mapping
 
 from .._stable_set import StableSet
 from .ast import (
