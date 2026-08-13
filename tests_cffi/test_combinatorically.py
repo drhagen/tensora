@@ -43,6 +43,21 @@ def test_copy_2_backwards(dense, format_in, format_out):
     assert actual == a
 
 
+@pytest.mark.parametrize(
+    "dense",
+    [
+        [[[0, 2, 4], [0, -1, 0]], [[0, 0, 3], [5, 0, 0]]],
+        [[[0, 0, 0], [0, 0, 0]], [[0, 0, 0], [0, 0, 0]]],
+    ],
+)
+@pytest.mark.parametrize("format_in", ["ddd", "dds", "dsd", "dss", "sdd", "sds", "ssd", "sss"])
+@pytest.mark.parametrize("format_out", ["ddd", "dds", "dsd", "dss", "sdd", "sds", "ssd", "sss"])
+def test_copy_3(dense, format_in, format_out):
+    a = Tensor.from_lol(dense, format=format_in)
+    actual = evaluate("b(i,j,k) = a(i,j,k)", format_out, a=a)
+    assert actual == a
+
+
 @pytest.mark.parametrize("expression", [0, 1])
 def test_constant_scalar(expression):
     actual = evaluate(f"a() = {expression}", "")

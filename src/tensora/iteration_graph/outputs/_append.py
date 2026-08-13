@@ -4,7 +4,14 @@ from dataclasses import dataclass
 
 from ...format import Mode
 from ...ir import SourceBuilder, types
-from ...ir.ast import ArrayAllocate, Expression, IntegerLiteral, Multiply, Variable
+from ...ir.ast import (
+    ArrayAllocate,
+    ArrayReallocate,
+    Expression,
+    IntegerLiteral,
+    Multiply,
+    Variable,
+)
 from ...kernel_type import KernelType
 from .._names import (
     crd_capacity_name,
@@ -104,24 +111,47 @@ class AppendOutput(Output):
             target_name = self.output.name
             output_tensor = Variable(target_name)
 
+            # The number of positions in the previous layer; each dense layer multiplies it by its
+            # dimension, while each compressed layer replaces it with its final layer pointer.
+            previous_size: Expression = IntegerLiteral(1)
+            all_dense = True
             for i, mode in enumerate(self.output.modes):
                 if mode == Mode.dense:
-                    pass
+                    previous_size = previous_size.times(dimension_name(self.output.indexes[i]))
                 elif mode == Mode.compressed:
+                    pos_array = pos_name(target_name, i)
+                    if not all_dense:
+                        # If any previous layer was compressed, pos was allocated with a guessed
+                        # capacity, so shrink it to its final size
+                        source.append(
+                            pos_array.assign(
+                                ArrayReallocate(pos_array, types.integer, previous_size.plus(1))
+                            )
+                        )
+
+                    # crd is always allocated with a guessed capacity, so shrink it to its final
+                    # size
+                    crd_array = crd_name(target_name, i)
+                    final_size = layer_pointer(self.output.id, i)
                     source.append(
-                        output_tensor.attr("indices")
-                        .idx(i)
-                        .idx(0)
-                        .assign(pos_name(target_name, i))
+                        crd_array.assign(ArrayReallocate(crd_array, types.integer, final_size))
                     )
-                    source.append(
-                        output_tensor.attr("indices")
-                        .idx(i)
-                        .idx(1)
-                        .assign(crd_name(target_name, i))
-                    )
+
+                    source.append(output_tensor.attr("indices").idx(i).idx(0).assign(pos_array))
+                    source.append(output_tensor.attr("indices").idx(i).idx(1).assign(crd_array))
+
+                    previous_size = final_size
+                    all_dense = False
                 else:
                     raise NotImplementedError()
+
+            if not all_dense:
+                # If any layer was compressed, vals was allocated with a guessed capacity, so
+                # shrink it to its final size
+                vals_array = vals_name(target_name)
+                source.append(
+                    vals_array.assign(ArrayReallocate(vals_array, types.float, previous_size))
+                )
             source.append(output_tensor.attr("vals").assign(vals_name(target_name)))
 
         return source
