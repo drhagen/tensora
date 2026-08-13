@@ -41,7 +41,7 @@ cffi = [
     "setuptools >= 69; python_version >= '3.12'",
 ]
 numpy = [
-    "numpy >= 1.24,<3.0",
+    "numpy ~= 2.2",
 ]
 scipy = [
     "scipy ~= 1.10",
