@@ -1,7 +1,7 @@
 __all__ = ["app"]
 
 from pathlib import Path
-from typing import Annotated, Optional
+from typing import Annotated
 
 import typer
 from parsita import ParseError
@@ -53,7 +53,7 @@ def tensora(
         ),
     ] = Language.c,
     output_path: Annotated[
-        Optional[Path],
+        Path | None,
         typer.Option(
             "--output",
             "-o",

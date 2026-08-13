@@ -1,8 +1,8 @@
 __all__ = ["desugar_assignment"]
 
+from collections.abc import Iterator
 from functools import singledispatch
 from itertools import count
-from typing import Iterator
 
 from ..expression import ast as sugar
 from . import ast as desugar

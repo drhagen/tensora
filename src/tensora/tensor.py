@@ -3,8 +3,9 @@ from __future__ import annotations
 __all__ = ["Tensor"]
 
 import itertools
+from collections.abc import Iterable, Iterator, Sequence
 from numbers import Real
-from typing import Any, Dict, Iterable, Iterator, List, Optional, Sequence, Tuple, Union
+from typing import Any
 
 from .compile import taco_structure_to_cffi
 from .format import Format, Mode, parse_format
@@ -24,8 +25,8 @@ class Tensor:
     def from_lol(
         lol,
         *,
-        dimensions: Optional[Tuple[int, ...]] = None,
-        format: Union[Format, str, None] = None,
+        dimensions: tuple[int, ...] | None = None,
+        format: Format | str | None = None,
     ) -> Tensor:
         if dimensions is None:
             dimensions = default_lol_dimensions(lol)
@@ -41,10 +42,10 @@ class Tensor:
 
     @staticmethod
     def from_dok(
-        dictionary: Dict[Tuple[int, ...], float],
+        dictionary: dict[tuple[int, ...], float],
         *,
-        dimensions: Optional[Tuple[int, ...]] = None,
-        format: Union[Format, str, None] = None,
+        dimensions: tuple[int, ...] | None = None,
+        format: Format | str | None = None,
     ) -> Tensor:
         return Tensor.from_aos(
             dictionary.keys(), dictionary.values(), dimensions=dimensions, format=format
@@ -52,11 +53,11 @@ class Tensor:
 
     @staticmethod
     def from_aos(
-        coordinates: Iterable[Tuple[int, ...]],
+        coordinates: Iterable[tuple[int, ...]],
         values: Iterable[float],
         *,
-        dimensions: Optional[Tuple[int, ...]] = None,
-        format: Union[Format, str, None] = None,
+        dimensions: tuple[int, ...] | None = None,
+        format: Format | str | None = None,
     ) -> Tensor:
         # Lengths of modes, dimensions, and elements in coordinates must be equal. Lengths of coordinates and values
         # must be equal
@@ -93,11 +94,11 @@ class Tensor:
 
     @staticmethod
     def from_soa(
-        coordinates: Tuple[Iterable[int], ...],
+        coordinates: tuple[Iterable[int], ...],
         values: Iterable[float],
         *,
-        dimensions: Optional[Tuple[int, ...]] = None,
-        format: Union[Format, str, None] = None,
+        dimensions: tuple[int, ...] | None = None,
+        format: Format | str | None = None,
     ) -> Tensor:
         # Lengths of coordinates, modes, and dimensions must be equal. Lengths of elements of coordinates and values
         # must be equal
@@ -109,7 +110,7 @@ class Tensor:
         )
 
     @staticmethod
-    def from_numpy(array, *, format: Union[Format, str, None] = None):
+    def from_numpy(array, *, format: Format | str | None = None):
         import numpy
 
         order = array.ndim
@@ -125,7 +126,7 @@ class Tensor:
         return Tensor.from_lol(array, dimensions=dimensions, format=format)
 
     @staticmethod
-    def from_scipy_sparse(matrix, *, format: Union[Format, str, None] = None):
+    def from_scipy_sparse(matrix, *, format: Format | str | None = None):
         import scipy.sparse as scipy_sparse
 
         if format is None:
@@ -145,7 +146,7 @@ class Tensor:
             format=format,
         )
 
-    def to_format(self, format: Union[Format, str]):
+    def to_format(self, format: Format | str):
         return Tensor.from_dok(self.to_dok(), dimensions=self.dimensions, format=format)
 
     @property
@@ -153,21 +154,21 @@ class Tensor:
         return self.cffi_tensor.order
 
     @property
-    def dimensions(self) -> Tuple[int, ...]:
+    def dimensions(self) -> tuple[int, ...]:
         return tuple(self.cffi_tensor.dimensions[0 : self.order])
 
     @property
-    def modes(self) -> Tuple[Mode, ...]:
+    def modes(self) -> tuple[Mode, ...]:
         return tuple(
             Mode.from_c_int(value) for value in self.cffi_tensor.mode_types[0 : self.order]
         )
 
     @property
-    def mode_ordering(self) -> Tuple[int, ...]:
+    def mode_ordering(self) -> tuple[int, ...]:
         return tuple(self.cffi_tensor.mode_ordering[0 : self.order])
 
     @property
-    def taco_indices(self) -> List[List[List[int]]]:
+    def taco_indices(self) -> list[list[list[int]]]:
         from .compile import tensor_cdefs
 
         order = self.order
@@ -191,7 +192,7 @@ class Tensor:
         return indices
 
     @property
-    def taco_vals(self) -> List[float]:
+    def taco_vals(self) -> list[float]:
         from .compile import tensor_cdefs
 
         order = self.order
@@ -214,7 +215,7 @@ class Tensor:
     def format(self) -> Format:
         return Format(self.modes, self.mode_ordering)
 
-    def items(self) -> Iterator[Tuple[Tuple[int, ...], float]]:
+    def items(self) -> Iterator[tuple[tuple[int, ...], float]]:
         from .compile import tensor_cdefs
 
         order = self.order
@@ -244,7 +245,7 @@ class Tensor:
 
         yield from recurse(0, (), 0)
 
-    def to_dok(self, *, explicit_zeros=False) -> Dict[Tuple[int, ...], float]:
+    def to_dok(self, *, explicit_zeros=False) -> dict[tuple[int, ...], float]:
         if explicit_zeros:
             return dict(self.items())
         else:
@@ -325,11 +326,11 @@ class Tensor:
 
 def lol_to_coordinates_and_values(
     data: Any, keep_zero: bool = False
-) -> Tuple[Iterable[Tuple[int, ...]], Iterable[float]]:
+) -> tuple[Iterable[tuple[int, ...]], Iterable[float]]:
     coordinates = []
     values = []
 
-    def recurse(tree: List[Any], indexes: Tuple[int, ...]):
+    def recurse(tree: list[Any], indexes: tuple[int, ...]):
         if isinstance(tree, Real):
             # A leaf was reached
             if keep_zero or tree != 0.0:
@@ -344,10 +345,10 @@ def lol_to_coordinates_and_values(
     return coordinates, values
 
 
-def coordinates_to_tree(coordinates: Iterable[Tuple[int, ...]], values: Iterable[float]) -> Any:
+def coordinates_to_tree(coordinates: Iterable[tuple[int, ...]], values: Iterable[float]) -> Any:
     tree = None
 
-    def recurse(node: Dict[int, Any], remaining_coordinates: Tuple[int, ...], payload: float):
+    def recurse(node: dict[int, Any], remaining_coordinates: tuple[int, ...], payload: float):
         key = remaining_coordinates[0]
         if len(remaining_coordinates) == 1:
             node[key] = node.get(key, 0.0) + payload
@@ -371,8 +372,8 @@ def coordinates_to_tree(coordinates: Iterable[Tuple[int, ...]], values: Iterable
 
 
 def tree_to_indices_and_values(
-    tree: Any, modes: Tuple[Mode, ...], dimensions: Tuple[int, ...]
-) -> Tuple[List[List[List[int]]], List[float]]:
+    tree: Any, modes: tuple[Mode, ...], dimensions: tuple[int, ...]
+) -> tuple[list[list[list[int]]], list[float]]:
     order = len(modes)
 
     # Initialize indexes structure
@@ -420,9 +421,7 @@ def tree_to_indices_and_values(
     return indexes, values
 
 
-def evaluate_binary_operator(
-    left: Union[Tensor, Real], right: Union[Tensor, Real], operator: str
-) -> Tensor:
+def evaluate_binary_operator(left: Tensor | Real, right: Tensor | Real, operator: str) -> Tensor:
     from .compile import evaluate_tensora
 
     def indexes_string(tensor):
@@ -557,7 +556,7 @@ def evaluate_matrix_multiplication_operator(left: Tensor, right: Tensor):
         return NotImplemented
 
 
-def default_lol_dimensions(lol) -> Tuple[int, ...]:
+def default_lol_dimensions(lol) -> tuple[int, ...]:
     """Extract dimensions from dense list-of-lists.
 
     Given nested lists of lists representing a dense tensor in row-major format, discover the dimensions of the tensor
@@ -585,7 +584,7 @@ def default_lol_dimensions(lol) -> Tuple[int, ...]:
     return tuple(dimensions)
 
 
-def default_aos_dimensions(coordinates: Iterable[Tuple[int, ...]]) -> Tuple[int, ...]:
+def default_aos_dimensions(coordinates: Iterable[tuple[int, ...]]) -> tuple[int, ...]:
     order = None
     maximums = []
     for coordinate in coordinates:
@@ -607,7 +606,7 @@ def default_aos_dimensions(coordinates: Iterable[Tuple[int, ...]]) -> Tuple[int,
     return tuple(i + 1 for i in maximums)
 
 
-def default_format_given_nnz(dimensions: Tuple[int, ...], nnz: int) -> Format:
+def default_format_given_nnz(dimensions: tuple[int, ...], nnz: int) -> Format:
     # The default format is to use dense dimensions as long as the number of nonzeros is larger
     # than the product of those dimensions.
     needed_dense = 0
@@ -624,11 +623,11 @@ def default_format_given_nnz(dimensions: Tuple[int, ...], nnz: int) -> Format:
 
 
 def taco_indexes_from_aos_coordinates(
-    coordinates: Iterable[Tuple[int, ...]],
+    coordinates: Iterable[tuple[int, ...]],
     values: Iterable[float],
     *,
-    modes: Tuple[Mode, ...],
-    dimensions=Tuple[int, ...],
+    modes: tuple[Mode, ...],
+    dimensions=tuple[int, ...],
 ):  # pragma: no cover
     # This is an experimental alternative to coordinates_to_tree and tree_to_indices_and_values. It is not currently
     # used anywhere.

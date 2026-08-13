@@ -1,10 +1,10 @@
 __all__ = ["to_iteration_graphs"]
 
 from collections import defaultdict
+from collections.abc import Iterator
 from dataclasses import replace
 from functools import reduce, singledispatch
 from itertools import chain, count, permutations, product
-from typing import Iterator
 
 from ..format import Format, Mode
 from ..iteration_graph import iteration_graph as ig

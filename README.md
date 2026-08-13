@@ -29,17 +29,17 @@ Here is an example of multiplying a sparse matrix in CSR format with a dense vec
 from tensora import Tensor, evaluate
 
 elements = {
-    (1,0): 2.0,
-    (0,1): -2.0,
-    (1,2): 4.0, 
+    (1, 0): 2.0,
+    (0, 1): -2.0,
+    (1, 2): 4.0,
 }
 
-A = Tensor.from_dok(elements, dimensions=(2,3), format='ds')
+A = Tensor.from_dok(elements, dimensions=(2, 3), format="ds")
 x = Tensor.from_lol([0, -1, 2])
 
-y = evaluate('y(i) = A(i,j) * x(j)', 'd', A=A, x=x)
+y = evaluate("y(i) = A(i,j) * x(j)", "d", A=A, x=x)
 
-assert y == Tensor.from_lol([2,8])
+assert y == Tensor.from_lol([2, 8])
 ``` 
 
 

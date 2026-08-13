@@ -1,5 +1,5 @@
 [build-system]
-requires = ["uv_build == 0.11.*"]
+requires = ["uv_build == 0.12.*"]
 build-backend = "uv_build"
 
 [project]
@@ -10,7 +10,7 @@ authors = [{ name = "David Hagen", email = "david@drhagen.com" }]
 license = "MIT"
 readme = "README.md"
 keywords = ["tensor", "sparse", "matrix", "array"]
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Science/Research",
@@ -20,7 +20,6 @@ classifiers = [
     "Operating System :: MacOS :: MacOS X",
     "Operating System :: Microsoft :: Windows",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
@@ -28,11 +27,11 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 dependencies = [
-    "returns >= 0.20,<0.27",
+    "returns >= 0.20,<0.30",
     "cffi >=1.16,<3",
-    "llvmlite == 0.46.*",
+    "llvmlite == 0.49.*",
     "parsita == 2.*",
-    "typer == 0.21.*",
+    "typer == 0.27.*",
 ]
 
 [project.optional-dependencies]
@@ -42,10 +41,10 @@ cffi = [
     "setuptools >= 69; python_version >= '3.12'",
 ]
 numpy = [
-    "numpy >= 1.24,<3.0",
+    "numpy ~= 2.2",
 ]
 scipy = [
-    "scipy ~= 1.7",
+    "scipy ~= 1.10",
 ]
 
 [project.urls]
@@ -57,7 +56,7 @@ tensora = "tensora.cli:app"
 
 [dependency-groups]
 nox = [
-    "nox-uv == 0.6.*",
+    "nox-uv == 0.8.*",
 ]
 test = [
     "pytest == 9.*",
@@ -68,7 +67,7 @@ fuzz = [
     "hypofuzz == 25.*"
 ]
 lint = [
-    "ruff == 0.15.*"
+    "ruff == 0.16.*"
 ]
 docs = [
     "mkdocs-material == 9.*"
@@ -114,6 +113,14 @@ extend-select = [
     "PT", # flake8-pytest-style
     "PTH", # flake8-use-pathlib
     "ERA", # flake8-eradicate
+]
+extend-ignore = [
+    "PLC0105", # We do not name our type variables _co
+    "PYI025", # Renaming Set to AbstractSet is not actually better
+    "PYI041", # Python is wrong to consider int a subclass of float
+    "SIM118", # It is more explicit to use key in dict.keys()
+    "SIM114", # It is often cleaner to use branches with identical bodies
+    "UP028", # Using yield from is not clearer
 ]
 
 [tool.ruff.lint.flake8-bugbear]

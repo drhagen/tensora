@@ -11,7 +11,7 @@ from ..tensor import Tensor
 from ._tensor_method import BackendCompiler, TensorMethod
 
 
-@lru_cache()
+@lru_cache
 def cachable_tensor_method(problem: Problem, backend: BackendCompiler) -> TensorMethod:
     return TensorMethod(problem, backend=backend)
 

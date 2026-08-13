@@ -17,7 +17,7 @@ The order of a tensor is the number of dimensions it has. A scalar is a 0-order 
 ```python
 from tensora import Tensor
 
-tensor = Tensor.from_lol([[1,2,3], [4,5,6]])
+tensor = Tensor.from_lol([[1, 2, 3], [4, 5, 6]])
 assert tensor.order == 2
 ```
 
@@ -28,7 +28,7 @@ Each element of the `dimensions` tuple is the size of the corresponding dimensio
 ```python
 from tensora import Tensor
 
-tensor = Tensor.from_lol([[1,2,3], [4,5,6]])
+tensor = Tensor.from_lol([[1, 2, 3], [4, 5, 6]])
 assert tensor.dimensions == (2, 3)
 ```
 
@@ -43,8 +43,8 @@ The `format.deparse()` method will give you a human-readable string.
 ```python
 from tensora import Tensor
 
-tensor = Tensor.from_lol([[1,2,3], [4,5,6]])
-assert tensor.format.deparse() == 'dd'
+tensor = Tensor.from_lol([[1, 2, 3], [4, 5, 6]])
+assert tensor.format.deparse() == "dd"
 ```
 
 ## Arithmetic
@@ -58,11 +58,11 @@ Addition and subtraction are element-wise operations. If both operands are `Tens
 ```python
 from tensora import Tensor
 
-tensor1 = Tensor.from_lol([[1,2,3], [4,5,6]])
-tensor2 = Tensor.from_lol([[7,8,9], [10,11,12]])
+tensor1 = Tensor.from_lol([[1, 2, 3], [4, 5, 6]])
+tensor2 = Tensor.from_lol([[7, 8, 9], [10, 11, 12]])
 
-assert tensor1 + tensor2 == Tensor.from_lol([[8,10,12], [14,16,18]])
-assert tensor1 - tensor2 == Tensor.from_lol([[-6,-6,-6], [-6,-6,-6]])
+assert tensor1 + tensor2 == Tensor.from_lol([[8, 10, 12], [14, 16, 18]])
+assert tensor1 - tensor2 == Tensor.from_lol([[-6, -6, -6], [-6, -6, -6]])
 ```
 
 ### `tensor1 * tensor2`
@@ -72,10 +72,10 @@ Multiplication is and element-wise operation. If both operands are `Tensor`s, th
 ```python
 from tensora import Tensor
 
-tensor1 = Tensor.from_lol([[1,2,3], [4,5,6]])
-tensor2 = Tensor.from_lol([[7,8,9], [10,11,12]])
+tensor1 = Tensor.from_lol([[1, 2, 3], [4, 5, 6]])
+tensor2 = Tensor.from_lol([[7, 8, 9], [10, 11, 12]])
 
-assert tensor1 * tensor2 == Tensor.from_lol([[7,16,27], [40,55,72]])
+assert tensor1 * tensor2 == Tensor.from_lol([[7, 16, 27], [40, 55, 72]])
 ```
 
 ### `tensor1 @ tensor2`
@@ -92,8 +92,8 @@ Matrix multiplication is only permitted between vectors (order-1 tensors) and ma
 ```python
 from tensora import Tensor
 
-A = Tensor.from_lol([[1,2,3], [4,5,6]])
-x = Tensor.from_lol([1,2,3])
+A = Tensor.from_lol([[1, 2, 3], [4, 5, 6]])
+x = Tensor.from_lol([1, 2, 3])
 
 assert A @ x == Tensor.from_lol([14, 32])
 ```

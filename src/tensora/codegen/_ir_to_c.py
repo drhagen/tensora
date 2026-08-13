@@ -292,4 +292,4 @@ def ir_to_c_function_definition(self: FunctionDefinition) -> str:
 
 
 def ir_to_c(self: Module) -> str:
-    return "\n\n".join((ir_to_c_function_definition(function) for function in self.definitions))
+    return "\n\n".join(ir_to_c_function_definition(function) for function in self.definitions)

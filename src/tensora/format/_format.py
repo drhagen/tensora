@@ -11,7 +11,7 @@ class Mode(Enum):
     dense = (0, "d")
     compressed = (1, "s")
 
-    def __init__(self, c_int: int, character: "str"):
+    def __init__(self, c_int: int, character: str):
         self.c_int = c_int
         self.character = character
 
