@@ -18,7 +18,6 @@ global_weakkeydict = WeakKeyDictionary()
 
 # order: The number of dimensions of the tensor
 # dimensions: The size of each dimension of the tensor; has length `order`
-# csize: No idea what this is
 # mode_ordering: The dimension that each level refers to; has length `order` and
 #   has exactly the numbers 0 to `order` - 1; e.g. if `mode_ordering` is (2, 0, 1), then
 #   the first level describes the last dimension, the second level describes the first
@@ -28,10 +27,7 @@ global_weakkeydict = WeakKeyDictionary()
 # indices: A complex data structure storing all the index information of the structure;
 #   it has length `order`; each element is one level of the data structure; each level
 #   conceptually stores one dimension worth of indexes;
-#   *   if a level is dense, then the element in indices is a null pointer or a pointer to
-#       a length 0 array or a pointer to a length 1 array, which contains a pointer to a
-#       length 1 array, which contains the size of this level's dimension. It does not
-#       really matter what goes here because it is never used.
+#   *   if a level is dense, then the element in indices is a null pointer
 #   *   if a level is compressed (sparse), then the element in indices is a pointer to a
 #       length 2 array
 #       *   the first element is the `pos` arrays of compressed sparse matrix
@@ -45,20 +41,17 @@ global_weakkeydict = WeakKeyDictionary()
 # vals: The actual values of the sparse matrix; has a length equal to the number of indexes
 #   in the last dimension; one has to traverse the `indices` structure to determine the
 #   coordinate of each value
-# vals_size: Deprecated https://github.com/tensor-compiler/taco/issues/208#issuecomment-476314322
 
 taco_type_header = """
     typedef enum { taco_mode_dense, taco_mode_sparse } taco_mode_t;
 
     typedef struct {
-      int32_t      order;         // tensor order (number of modes)
+      int32_t      order;         // tensor order
       int32_t*     dimensions;    // tensor dimensions
-      int32_t      csize;         // component size
       int32_t*     mode_ordering; // mode storage ordering
       taco_mode_t* mode_types;    // mode storage types
       int32_t***   indices;       // tensor index data (per mode)
       double*      vals;          // tensor values
-      int32_t      vals_size;     // values array size
     } taco_tensor_t;
 
     void free(void *ptr);
@@ -164,8 +157,6 @@ def allocate_taco_structure(
 
     cffi_tensor.vals = tensor_cdefs.NULL
 
-    cffi_tensor.vals_size = 0
-
     global_weakkeydict[cffi_tensor] = memory_holder
 
     return cffi_tensor
@@ -268,8 +259,6 @@ def taco_structure_to_cffi(
     cffi_vals = tensor_cdefs.new("double[]", vals)
     memory_holder["vals"] = cffi_vals
     cffi_tensor.vals = tensor_cdefs.cast("double*", cffi_vals)
-
-    cffi_tensor.vals_size = len(vals)
 
     global_weakkeydict[cffi_tensor] = memory_holder
 
