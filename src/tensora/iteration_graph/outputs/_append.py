@@ -111,13 +111,18 @@ class AppendOutput(Output):
             target_name = self.output.name
             output_tensor = Variable(target_name)
 
+            all_dense = True
             # The number of positions in the previous layer; each dense layer multiplies it by its
             # dimension, while each compressed layer replaces it with its final layer pointer.
             previous_size: Expression = IntegerLiteral(1)
-            all_dense = True
+            # The same count, but with room for one more element, which is the size of the scratch
+            # space for vals.
+            padded_size: Expression = IntegerLiteral(1)
             for i, mode in enumerate(self.output.modes):
                 if mode == Mode.dense:
-                    previous_size = previous_size.times(dimension_name(self.output.indexes[i]))
+                    dimension = dimension_name(self.output.indexes[i])
+                    previous_size = previous_size.times(dimension)
+                    padded_size = padded_size.times(dimension)
                 elif mode == Mode.compressed:
                     pos_array = pos_name(target_name, i)
                     if not all_dense:
@@ -141,16 +146,17 @@ class AppendOutput(Output):
                     source.append(output_tensor.attr("indices").idx(i).idx(1).assign(crd_array))
 
                     previous_size = final_size
+                    padded_size = final_size.plus(1)
                     all_dense = False
                 else:
                     raise NotImplementedError()
 
             if not all_dense:
                 # If any layer was compressed, vals was allocated with a guessed capacity, so
-                # shrink it to its final size
+                # shrink it to its final size plus the scratch space
                 vals_array = vals_name(target_name)
                 source.append(
-                    vals_array.assign(ArrayReallocate(vals_array, types.float, previous_size))
+                    vals_array.assign(ArrayReallocate(vals_array, types.float, padded_size))
                 )
             source.append(output_tensor.attr("vals").assign(vals_name(target_name)))
 
