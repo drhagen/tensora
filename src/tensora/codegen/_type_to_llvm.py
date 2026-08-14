@@ -43,8 +43,8 @@ def type_to_llvm_float(self: Float) -> llvm.Type:
 
 tensor_attribute_indexes = {
     "dimensions": 1,
-    "indices": 5,
-    "vals": 6,
+    "indices": 4,
+    "vals": 5,
 }
 
 
@@ -54,12 +54,10 @@ def type_to_llvm_tensor(self: Tensor) -> llvm.Type:
         [
             llvm_integer_type,  # order
             llvm.PointerType(llvm_integer_type),  # dimensions
-            llvm_integer_type,  # csize
             llvm.PointerType(llvm_integer_type),  # mode_ordering
             llvm_mode_type,  # mode_types
             llvm.PointerType(llvm.PointerType(llvm.PointerType(llvm_integer_type))),  # indices
             llvm.PointerType(llvm_float_type),  # vals
-            llvm_integer_type,  # vals_size
         ]
     )
 
